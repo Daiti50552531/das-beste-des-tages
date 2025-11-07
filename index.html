@@ -2,91 +2,254 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Das Beste des Tages</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mein Tagebuch</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.10.0/dist/supabase.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
 
-    const supabaseUrl = https://github.com/Daiti50552531/das-beste-des-tages.git;
-    const supabaseKey = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhqbm94cHp2aXVpaXdiY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTc4MzIsImV4cCI6MjA3ODA3MzgzMn0.D5kFuUTHfVg92m1zzDNj9-PXaQzivm9uO1hNZyk6PAE;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+<div id="root"></div>
 
-    async function saveEntry() {
-      const date = new Date().toISOString().split("T")[0];
-      const text1 = document.getElementById("text1").value.trim();
-      const text2 = document.getElementById("text2").value.trim();
-      const text3 = document.getElementById("text3").value.trim();
-      const mood = document.querySelector("input[name='mood']:checked")?.value;
+<script type="text/javascript">
+const { useState, useEffect, useRef } = React;
 
-      if (!mood) {
-        alert("Bitte Stimmung auswählen");
-        return;
-      }
+// ---- Supabase einrichten ----
+const SUPABASE_URL = https://htbxjnoxpzviuiiwbciv.supabase.co;
+const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhqbm94cHp2aXVpaXdiY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTc4MzIsImV4cCI6MjA3ODA3MzgzMn0.D5kFuUTHfVg92m1zzDNj9-PXaQzivm9uO1hNZyk6PAE;
+const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      await supabase.from("entries").insert({ date, text1, text2, text3, mood });
-      await loadEntries();
+// ---- Hauptkomponente ----
+function DiaryApp() {
+  const [entries, setEntries] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingEntry, setEditingEntry] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const fileInputRef = useRef(null);
 
-      document.getElementById("text1").value = "";
-      document.getElementById("text2").value = "";
-      document.getElementById("text3").value = "";
-      document.querySelector("input[name='mood']:checked").checked = false;
-    }
+  const [fieldLabels, setFieldLabels] = useState({
+    field1: 'Was ist passiert?',
+    field2: 'Was habe ich gelernt?',
+    field3: 'Wofür bin ich dankbar?'
+  });
 
+  const [formData, setFormData] = useState({
+    date: new Date().toISOString().split('T')[0],
+    text1: '',
+    text2: '',
+    text3: '',
+    mood: null
+  });
+
+  // ---- Supabase laden ----
+  useEffect(() => {
     async function loadEntries() {
       const { data, error } = await supabase
-        .from("entries")
-        .select("*")
-        .order("date", { ascending: false });
-
-      const list = document.getElementById("list");
-      list.innerHTML = "";
-
+        .from('entries')
+        .select('*')
+        .order('date', { ascending: false });
       if (error) {
-        list.innerHTML = "<p class='text-red-500'>Fehler beim Laden der Einträge.</p>";
+        console.error(error);
+      } else {
+        setEntries(data);
+      }
+    }
+    loadEntries();
+  }, []);
+
+  const saveEntryToSupabase = async (entry) => {
+    if (editingEntry) {
+      const { error } = await supabase
+        .from('entries')
+        .update({
+          text1: entry.text1,
+          text2: entry.text2,
+          text3: entry.text3,
+          mood: entry.mood
+        })
+        .eq('id', entry.id);
+      if (error) console.error(error);
+    } else {
+      const { data, error } = await supabase
+        .from('entries')
+        .insert([{ ...entry }]);
+      if (error) console.error(error);
+      else setEntries(prev => [data[0], ...prev]);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.mood) {
+      alert('Bitte wähle eine Stimmung aus');
+      return;
+    }
+    const entry = { ...formData, id: editingEntry ? editingEntry.id : Date.now() };
+    await saveEntryToSupabase(entry);
+
+    if (editingEntry) {
+      setEntries(entries.map(en => en.id === editingEntry.id ? entry : en));
+      setEditingEntry(null);
+    } else {
+      setEntries([entry, ...entries]);
+    }
+    resetForm();
+    setShowForm(false);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      date: new Date().toISOString().split('T')[0],
+      text1: '',
+      text2: '',
+      text3: '',
+      mood: null
+    });
+  };
+
+  const handleEdit = (entry) => {
+    setEditingEntry(entry);
+    setFormData(entry);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Eintrag wirklich löschen?')) {
+      const { error } = await supabase
+        .from('entries')
+        .delete()
+        .eq('id', id);
+      if (error) console.error(error);
+      setEntries(entries.filter(entry => entry.id !== id));
+    }
+  };
+
+  const filteredEntries = entries.filter(entry => {
+    if (!searchTerm) return true;
+    const search = searchTerm.toLowerCase();
+    return (
+      entry.text1.toLowerCase().includes(search) ||
+      entry.text2.toLowerCase().includes(search) ||
+      entry.text3.toLowerCase().includes(search) ||
+      entry.date.includes(search)
+    );
+  });
+
+  const handleExport = () => {
+    const csvContent = [
+      ['Datum', fieldLabels.field1, fieldLabels.field2, fieldLabels.field3, 'Stimmung'],
+      ...filteredEntries.map(entry => [
+        entry.date,
+        entry.text1,
+        entry.text2,
+        entry.text3,
+        entry.mood === 1 ? 'Schlecht' : entry.mood === 2 ? 'Neutral' : 'Gut'
+      ])
+    ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `tagebuch_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const parseMood = (moodStr) => {
+    const str = String(moodStr).toLowerCase().trim();
+    if (str === 'gut' || str === '3') return 3;
+    if (str === 'neutral' || str === '2') return 2;
+    if (str === 'schlecht' || str === '1') return 1;
+    return 2;
+  };
+
+  const handleImport = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target.result;
+      const lines = text.split('\n').filter(line => line.trim());
+      if (lines.length < 2) {
+        alert('Die Datei enthält keine Daten');
         return;
       }
+      const importedEntries = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(val => val.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        if (values.length >= 5) {
+          const entry = {
+            id: Date.now() + i,
+            date: values[0],
+            text1: values[1] || '',
+            text2: values[2] || '',
+            text3: values[3] || '',
+            mood: parseMood(values[4])
+          };
+          importedEntries.push(entry);
+        }
+      }
+      for (let entry of importedEntries) {
+        await supabase.from('entries').upsert(entry);
+      }
+      setEntries(prev => [...importedEntries, ...prev]);
+      alert(`${importedEntries.length} Einträge erfolgreich importiert!`);
+      fileInputRef.current.value = '';
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
 
-      data.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "bg-white p-3 rounded shadow mb-2";
-        const moodSymbol = item.mood == 3 ? "😊" : item.mood == 2 ? "😐" : "😞";
-        div.innerHTML = `
-          <div class="text-sm text-gray-500">${item.date}</div>
-          <div>Stimmung: ${moodSymbol}</div>
-          <ul class="list-disc ml-4">
-            <li>${item.text1 || ""}</li>
-            <li>${item.text2 || ""}</li>
-            <li>${item.text3 || ""}</li>
-          </ul>
-        `;
-        list.appendChild(div);
-      });
-    }
+  const getMoodEmoji = (mood) => mood === 1 ? '😞' : mood === 2 ? '😐' : '🙂';
 
-    window.onload = loadEntries;
-  </script>
-</head>
-<body class="bg-gray-100 p-4">
-  <h1 class="text-2xl font-bold mb-4 text-center">Das Beste des Tages</h1>
-
-  <div class="max-w-md mx-auto bg-white p-4 rounded shadow">
-    <textarea id="text1" class="w-full p-2 border rounded mb-2" placeholder="Moment 1"></textarea>
-    <textarea id="text2" class="w-full p-2 border rounded mb-2" placeholder="Moment 2"></textarea>
-    <textarea id="text3" class="w-full p-2 border rounded mb-2" placeholder="Moment 3"></textarea>
-
-    <div class="flex justify-around my-3">
-      <label class="text-2xl"><input type="radio" name="mood" value="1"> 😞</label>
-      <label class="text-2xl"><input type="radio" name="mood" value="2"> 😐</label>
-      <label class="text-2xl"><input type="radio" name="mood" value="3"> 😊</label>
+  return (
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className="max-w-2xl mx-auto p-4">
+        <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Mein Tagebuch</h1>
+        <button onClick={() => setDarkMode(!darkMode)} className="my-2 px-4 py-2 rounded bg-blue-500 text-white">
+          {darkMode ? 'Light Mode' : 'Dark Mode'}
+        </button>
+        <button onClick={() => setShowForm(true)} className="my-2 px-4 py-2 rounded bg-green-500 text-white">Neuer Eintrag</button>
+        {entries.length > 0 && <button onClick={handleExport} className="my-2 px-4 py-2 rounded bg-yellow-500 text-white">Export</button>}
+        <input ref={fileInputRef} type="file" accept=".csv" onChange={handleImport} className="my-2"/>
+        {showForm && (
+          <form onSubmit={handleSubmit} className="my-4 p-4 border rounded bg-white">
+            <input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="block mb-2"/>
+            <textarea placeholder={fieldLabels.field1} value={formData.text1} onChange={e => setFormData({...formData, text1: e.target.value})} className="block w-full mb-2"></textarea>
+            <textarea placeholder={fieldLabels.field2} value={formData.text2} onChange={e => setFormData({...formData, text2: e.target.value})} className="block w-full mb-2"></textarea>
+            <textarea placeholder={fieldLabels.field3} value={formData.text3} onChange={e => setFormData({...formData, text3: e.target.value})} className="block w-full mb-2"></textarea>
+            <div className="flex gap-2 mb-2">
+              {[1,2,3].map(m => (
+                <button key={m} type="button" onClick={() => setFormData({...formData, mood: m})} className={`flex-1 p-2 ${formData.mood===m?'bg-blue-200':''}`}>
+                  {getMoodEmoji(m)}
+                </button>
+              ))}
+            </div>
+            <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded mr-2">Speichern</button>
+            <button type="button" onClick={() => {setShowForm(false); resetForm();}} className="px-4 py-2 bg-gray-300 rounded">Abbrechen</button>
+          </form>
+        )}
+        <div className="my-4 space-y-2">
+          {entries.map(entry => (
+            <div key={entry.id} className="p-2 border rounded bg-white">
+              <div>{entry.date} {getMoodEmoji(entry.mood)}</div>
+              <div>{entry.text1}</div>
+              <div>{entry.text2}</div>
+              <div>{entry.text3}</div>
+              <button onClick={() => handleEdit(entry)} className="mr-2 text-blue-500">Edit</button>
+              <button onClick={() => handleDelete(entry.id)} className="text-red-500">Delete</button>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
+  );
+}
 
-    <button onclick="saveEntry()" class="w-full bg-blue-600 text-white p-2 rounded">
-      Speichern
-    </button>
-  </div>
+ReactDOM.createRoot(document.getElementById('root')).render(<DiaryApp />);
+</script>
 
-  <h2 class="text-xl font-semibold my-4 text-center">Bisherige Einträge</h2>
-  <div id="list" class="max-w-md mx-auto"></div>
 </body>
 </html>
