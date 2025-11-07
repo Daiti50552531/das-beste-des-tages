@@ -4,133 +4,173 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>das-beste-des-tages</title>
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/supabase-js@2/dist/supabase.min.js"></script>
+<style>
+  body { font-family: sans-serif; margin:0; padding:0; background:#f9f9f9; }
+  .dark { background:#1f1f1f; color:#eee; }
+  .container { max-width:600px; margin:0 auto; padding:20px; }
+  .entry { border:1px solid #ccc; padding:15px; border-radius:12px; margin-bottom:15px; background:white; }
+  .dark .entry { background:#2a2a2a; border-color:#555; }
+  textarea { width:100%; padding:8px; border-radius:8px; border:1px solid #ccc; resize:none; }
+  .dark textarea { background:#333; color:#eee; border-color:#555; }
+  button { padding:10px 15px; border:none; border-radius:8px; cursor:pointer; }
+  .btn-blue { background:#3b82f6; color:white; }
+  .btn-red { background:#ef4444; color:white; }
+  .btn-gray { background:#ccc; }
+  .mood-btn { padding:10px; font-size:24px; border:2px solid #ccc; border-radius:12px; margin-right:5px; cursor:pointer; }
+  .mood-selected { border-color:#3b82f6; background:#dbeafe; }
+</style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900">
-<div id="app" class="max-w-2xl mx-auto px-4 py-6"></div>
+<body>
+<div class="container">
+  <h1>das-beste-des-tages</h1>
+  <button id="toggle-dark">Dark Mode</button>
+  <h2>Neuer Eintrag</h2>
+  <div>
+    <label>Datum</label>
+    <input type="date" id="entry-date">
+  </div>
+  <div>
+    <label>Was ist passiert?</label>
+    <textarea id="field1" rows="2"></textarea>
+  </div>
+  <div>
+    <label>Was habe ich gelernt?</label>
+    <textarea id="field2" rows="2"></textarea>
+  </div>
+  <div>
+    <label>Wofür bin ich dankbar?</label>
+    <textarea id="field3" rows="2"></textarea>
+  </div>
+  <div>
+    <label>Stimmung</label><br>
+    <button class="mood-btn" data-mood="1">😞</button>
+    <button class="mood-btn" data-mood="2">😐</button>
+    <button class="mood-btn" data-mood="3">🙂</button>
+  </div>
+  <button id="save-entry" class="btn-blue">Speichern</button>
+  <button id="export-csv" class="btn-gray">Export CSV</button>
+  <input type="file" id="import-csv" style="display:none;">
+  <button id="import-csv-btn" class="btn-gray">Import CSV</button>
+  <h2>Einträge</h2>
+  <div id="entries-list"></div>
+</div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
-  // -----------------------------
-  // Supabase config hier einsetzen
-  const SUPABASE_URL = https://htbxjnoxpzviuiiwbciv.supabase.co;
-  const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhqbm94cHp2aXVpaXdiY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTc4MzIsImV4cCI6MjA3ODA3MzgzMn0.D5kFuUTHfVg92m1zzDNj9-PXaQzivm9uO1hNZyk6PAE;
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseUrl = https://github.com/Daiti50552531/das-beste-des-tages.git;
+  const supabaseKey = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhqbm94cHp2aXVpaXdiY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTc4MzIsImV4cCI6MjA3ODA3MzgzMn0.D5kFuUTHfVg92m1zzDNj9-PXaQzivm9uO1hNZyk6PAE;
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-  // -----------------------------
-  // State
   let entries = [];
-  let darkMode = false;
+  let selectedMood = null;
 
-  const fieldLabels = {
-    field1: "Was ist passiert?",
-    field2: "Was habe ich gelernt?",
-    field3: "Wofür bin ich dankbar?"
-  };
+  const entryDate = document.getElementById('entry-date');
+  const field1 = document.getElementById('field1');
+  const field2 = document.getElementById('field2');
+  const field3 = document.getElementById('field3');
+  const moodButtons = document.querySelectorAll('.mood-btn');
+  const entriesList = document.getElementById('entries-list');
 
-  // -----------------------------
-  // Hilfsfunktionen
-  function getMoodEmoji(mood) {
-    switch(mood){
-      case 1: return "😞";
-      case 2: return "😐";
-      case 3: return "🙂";
-      default: return "";
-    }
-  }
+  // Dark mode
+  const toggleDark = document.getElementById('toggle-dark');
+  toggleDark.addEventListener('click', () => document.body.classList.toggle('dark'));
 
-  function renderApp() {
-    const app = document.getElementById('app');
-    app.innerHTML = "";
-
-    // Header
-    const header = document.createElement('div');
-    header.className = "flex justify-between items-center mb-6";
-    header.innerHTML = `<h1 class="text-2xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}">das-beste-des-tages</h1>
-      <button id="toggle-dark" class="px-2 py-1 border rounded">${darkMode ? '🌙' : '☀️'}</button>`;
-    app.appendChild(header);
-
-    document.getElementById('toggle-dark').onclick = () => {
-      darkMode = !darkMode;
-      document.body.classList.toggle('dark', darkMode);
-      renderApp();
-    }
-
-    // Neueintrag-Form
-    const formDiv = document.createElement('div');
-    formDiv.className = `${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} p-4 rounded-2xl mb-6 shadow-sm`;
-    formDiv.innerHTML = `
-      <input type="date" id="entry-date" class="w-full mb-2 p-2 border rounded" value="${new Date().toISOString().split('T')[0]}"/>
-      <textarea id="entry-text1" rows="2" class="w-full mb-2 p-2 border rounded" placeholder="${fieldLabels.field1}"></textarea>
-      <textarea id="entry-text2" rows="2" class="w-full mb-2 p-2 border rounded" placeholder="${fieldLabels.field2}"></textarea>
-      <textarea id="entry-text3" rows="2" class="w-full mb-2 p-2 border rounded" placeholder="${fieldLabels.field3}"></textarea>
-      <div class="flex gap-2 mb-2">
-        <button data-mood="1" class="flex-1 py-2 border rounded">😞 Schlecht</button>
-        <button data-mood="2" class="flex-1 py-2 border rounded">😐 Neutral</button>
-        <button data-mood="3" class="flex-1 py-2 border rounded">🙂 Gut</button>
-      </div>
-      <button id="save-entry" class="w-full bg-blue-500 text-white py-2 rounded">Speichern</button>
-    `;
-    app.appendChild(formDiv);
-
-    let selectedMood = null;
-    formDiv.querySelectorAll('button[data-mood]').forEach(btn => {
-      btn.onclick = () => {
-        selectedMood = parseInt(btn.dataset.mood);
-        formDiv.querySelectorAll('button[data-mood]').forEach(b => b.classList.remove('bg-blue-100'));
-        btn.classList.add('bg-blue-100');
-      }
+  // Mood selection
+  moodButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedMood = parseInt(btn.dataset.mood);
+      moodButtons.forEach(b => b.classList.remove('mood-selected'));
+      btn.classList.add('mood-selected');
     });
+  });
 
-    document.getElementById('save-entry').onclick = async () => {
-      const newEntry = {
-        date: document.getElementById('entry-date').value,
-        text1: document.getElementById('entry-text1').value,
-        text2: document.getElementById('entry-text2').value,
-        text3: document.getElementById('entry-text3').value,
-        mood: selectedMood || 2
-      };
-
-      const { data, error } = await supabase
-        .from('entries')
-        .insert([newEntry]);
-
-      if (error) alert("Fehler beim Speichern: " + error.message);
-      else {
-        entries.push(newEntry);
-        renderApp();
-      }
-    };
-
-    // Liste der Einträge
-    const listDiv = document.createElement('div');
+  function renderEntries() {
+    entriesList.innerHTML = '';
     entries.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(e => {
-      const entryEl = document.createElement('div');
-      entryEl.className = `${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} p-4 rounded-2xl mb-4 shadow-sm`;
-      entryEl.innerHTML = `<div class="text-sm mb-2">${e.date}</div>
-                           <div>${fieldLabels.field1}: ${e.text1}</div>
-                           <div>${fieldLabels.field2}: ${e.text2}</div>
-                           <div>${fieldLabels.field3}: ${e.text3}</div>
-                           <div class="mt-1 text-2xl">${getMoodEmoji(e.mood)}</div>`;
-      listDiv.appendChild(entryEl);
+      const div = document.createElement('div');
+      div.className = 'entry';
+      div.innerHTML = `<div><strong>${e.date}</strong> - Stimmung: ${e.mood === 1 ? '😞' : e.mood === 2 ? '😐' : '🙂'}</div>
+                       <div>${e.text1}</div>
+                       <div>${e.text2}</div>
+                       <div>${e.text3}</div>
+                       <button class="btn-red" onclick="deleteEntry(${e.id})">Löschen</button>`;
+      entriesList.appendChild(div);
     });
-    app.appendChild(listDiv);
   }
 
-  // -----------------------------
-  // initial render
-  async function init() {
-    // Lade Einträge aus Supabase
-    const { data, error } = await supabase
-      .from('entries')
-      .select('*')
-      .order('date', { ascending: false });
-
-    if (!error) entries = data;
-    renderApp();
+  async function loadEntries() {
+    const { data } = await supabase.from('entries').select('*');
+    entries = data || [];
+    renderEntries();
   }
 
-  init();
+  async function saveEntry() {
+    if(!selectedMood) { alert('Bitte Stimmung auswählen'); return; }
+    const newEntry = {
+      id: Date.now(),
+      date: entryDate.value || new Date().toISOString().split('T')[0],
+      text1: field1.value,
+      text2: field2.value,
+      text3: field3.value,
+      mood: selectedMood
+    };
+    entries.push(newEntry);
+    await supabase.from('entries').insert(newEntry);
+    field1.value = field2.value = field3.value = '';
+    selectedMood = null;
+    moodButtons.forEach(b=>b.classList.remove('mood-selected'));
+    renderEntries();
+  }
+
+  async function deleteEntry(id) {
+    entries = entries.filter(e=>e.id !== id);
+    await supabase.from('entries').delete().eq('id', id);
+    renderEntries();
+  }
+
+  // CSV Export
+  document.getElementById('export-csv').addEventListener('click', () => {
+    const csvContent = "Datum,Feld1,Feld2,Feld3,Stimmung\n" +
+      entries.map(e=>`${e.date},"${e.text1}","${e.text2}","${e.text3}",${e.mood}`).join('\n');
+    const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `tagebuch_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  });
+
+  // CSV Import
+  document.getElementById('import-csv-btn').addEventListener('click', () => document.getElementById('import-csv').click());
+  document.getElementById('import-csv').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const lines = event.target.result.split('\n').slice(1);
+      lines.forEach(line=>{
+        const [date, t1, t2, t3, mood] = line.split(',');
+        if(date) {
+          const entry = {
+            id: Date.now()+Math.random(),
+            date: date.trim(),
+            text1: t1?.replace(/"/g,'').trim(),
+            text2: t2?.replace(/"/g,'').trim(),
+            text3: t3?.replace(/"/g,'').trim(),
+            mood: parseInt(mood)
+          };
+          entries.push(entry);
+          supabase.from('entries').insert(entry);
+        }
+      });
+      renderEntries();
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById('save-entry').addEventListener('click', saveEntry);
+
+  // initial load
+  loadEntries();
 </script>
 </body>
 </html>
