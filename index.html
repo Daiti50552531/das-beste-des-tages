@@ -14,9 +14,9 @@
 
     async function saveEntry() {
       const date = new Date().toISOString().split("T")[0];
-      const text1 = document.getElementById("text1").value;
-      const text2 = document.getElementById("text2").value;
-      const text3 = document.getElementById("text3").value;
+      const text1 = document.getElementById("text1").value.trim();
+      const text2 = document.getElementById("text2").value.trim();
+      const text3 = document.getElementById("text3").value.trim();
       const mood = document.querySelector("input[name='mood']:checked")?.value;
 
       if (!mood) {
@@ -25,7 +25,7 @@
       }
 
       await supabase.from("entries").insert({ date, text1, text2, text3, mood });
-      loadEntries();
+      await loadEntries();
 
       document.getElementById("text1").value = "";
       document.getElementById("text2").value = "";
@@ -34,7 +34,7 @@
     }
 
     async function loadEntries() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("entries")
         .select("*")
         .order("date", { ascending: false });
@@ -42,16 +42,22 @@
       const list = document.getElementById("list");
       list.innerHTML = "";
 
+      if (error) {
+        list.innerHTML = "<p class='text-red-500'>Fehler beim Laden der Einträge.</p>";
+        return;
+      }
+
       data.forEach(item => {
         const div = document.createElement("div");
         div.className = "bg-white p-3 rounded shadow mb-2";
+        const moodSymbol = item.mood == 3 ? "😊" : item.mood == 2 ? "😐" : "😞";
         div.innerHTML = `
           <div class="text-sm text-gray-500">${item.date}</div>
-          <div>😊 Stimmung: ${item.mood}</div>
+          <div>Stimmung: ${moodSymbol}</div>
           <ul class="list-disc ml-4">
-            <li>${item.text1}</li>
-            <li>${item.text2}</li>
-            <li>${item.text3}</li>
+            <li>${item.text1 || ""}</li>
+            <li>${item.text2 || ""}</li>
+            <li>${item.text3 || ""}</li>
           </ul>
         `;
         list.appendChild(div);
@@ -69,12 +75,10 @@
     <textarea id="text2" class="w-full p-2 border rounded mb-2" placeholder="Moment 2"></textarea>
     <textarea id="text3" class="w-full p-2 border rounded mb-2" placeholder="Moment 3"></textarea>
 
-    <div class="flex justify-between my-3">
-      <label><input type="radio" name="mood" value="5"> 😍</label>
-      <label><input type="radio" name="mood" value="4"> 🙂</label>
-      <label><input type="radio" name="mood" value="3"> 😐</label>
-      <label><input type="radio" name="mood" value="2"> 😕</label>
-      <label><input type="radio" name="mood" value="1"> 😣</label>
+    <div class="flex justify-around my-3">
+      <label class="text-2xl"><input type="radio" name="mood" value="1"> 😞</label>
+      <label class="text-2xl"><input type="radio" name="mood" value="2"> 😐</label>
+      <label class="text-2xl"><input type="radio" name="mood" value="3"> 😊</label>
     </div>
 
     <button onclick="saveEntry()" class="w-full bg-blue-600 text-white p-2 rounded">
