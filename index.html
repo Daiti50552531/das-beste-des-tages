@@ -1,120 +1,136 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>das-beste-des-tages</title>
-  <!-- Tailwind CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React & ReactDOM CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- Lucide Icons CDN -->
-  <script type="module" src="https://cdn.jsdelivr.net/npm/lucide-react@0.287.0/dist/esm/index.js"></script>
-  <!-- Supabase CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>das-beste-des-tages</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/supabase-js@2/dist/supabase.min.js"></script>
 </head>
-<body class="bg-gray-50">
-  <div id="root"></div>
+<body class="bg-gray-50 dark:bg-gray-900">
+<div id="app" class="max-w-2xl mx-auto px-4 py-6"></div>
 
-  <script type="text/javascript">
-    const { useState, useRef, useEffect } = React;
-    const { Search, Download, Plus, Edit2, Trash2, X, Calendar, Upload } = lucideReact;
+<script>
+  // -----------------------------
+  // Supabase config hier einsetzen
+  const SUPABASE_URL = https://htbxjnoxpzviuiiwbciv.supabase.co;
+  const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhqbm94cHp2aXVpaXdiY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTc4MzIsImV4cCI6MjA3ODA3MzgzMn0.D5kFuUTHfVg92m1zzDNj9-PXaQzivm9uO1hNZyk6PAE;
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Supabase Verbindung
-    const supabaseUrl = https://htbxjnoxpzviuiiwbciv.supabase.co;
-    const supabaseKey = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhqbm94cHp2aXVpaXdiY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTc4MzIsImV4cCI6MjA3ODA3MzgzMn0.D5kFuUTHfVg92m1zzDNj9-PXaQzivm9uO1hNZyk6PAE;
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  // -----------------------------
+  // State
+  let entries = [];
+  let darkMode = false;
 
-    function DiaryApp() {
-      const [entries, setEntries] = useState([]);
-      const [showForm, setShowForm] = useState(false);
-      const [editingEntry, setEditingEntry] = useState(null);
-      const [searchTerm, setSearchTerm] = useState('');
-      const [showSettings, setShowSettings] = useState(false);
-      const [darkMode, setDarkMode] = useState(false);
-      const fileInputRef = useRef(null);
-      
-      const [fieldLabels, setFieldLabels] = useState({
-        field1: 'Was ist passiert?',
-        field2: 'Was habe ich gelernt?',
-        field3: 'Wofür bin ich dankbar?'
-      });
-      
-      const [formData, setFormData] = useState({
-        date: new Date().toISOString().split('T')[0],
-        text1: '',
-        text2: '',
-        text3: '',
-        mood: null
-      });
+  const fieldLabels = {
+    field1: "Was ist passiert?",
+    field2: "Was habe ich gelernt?",
+    field3: "Wofür bin ich dankbar?"
+  };
 
-      // Funktion: Neues Entry hinzufügen oder bearbeiten
-      const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!formData.mood) { alert('Bitte wähle eine Stimmung aus'); return; }
+  // -----------------------------
+  // Hilfsfunktionen
+  function getMoodEmoji(mood) {
+    switch(mood){
+      case 1: return "😞";
+      case 2: return "😐";
+      case 3: return "🙂";
+      default: return "";
+    }
+  }
 
-        try {
-          if (editingEntry) {
-            await supabase.from('entries').update(formData).eq('id', editingEntry.id);
-          } else {
-            await supabase.from('entries').insert([formData]);
-          }
-          loadEntries();
-          resetForm();
-          setShowForm(false);
-          setEditingEntry(null);
-        } catch (error) {
-          console.error(error);
-          alert('Fehler beim Speichern');
-        }
-      };
+  function renderApp() {
+    const app = document.getElementById('app');
+    app.innerHTML = "";
 
-      const resetForm = () => {
-        setFormData({ date: new Date().toISOString().split('T')[0], text1:'', text2:'', text3:'', mood:null });
-      };
+    // Header
+    const header = document.createElement('div');
+    header.className = "flex justify-between items-center mb-6";
+    header.innerHTML = `<h1 class="text-2xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}">das-beste-des-tages</h1>
+      <button id="toggle-dark" class="px-2 py-1 border rounded">${darkMode ? '🌙' : '☀️'}</button>`;
+    app.appendChild(header);
 
-      const loadEntries = async () => {
-        const { data, error } = await supabase.from('entries').select('*').order('date', { ascending: false });
-        if (!error) setEntries(data);
-      };
-
-      useEffect(() => { loadEntries(); }, []);
-
-      const getMoodEmoji = (mood) => {
-        return mood === 1 ? '😞' : mood === 2 ? '😐' : mood === 3 ? '🙂' : '';
-      };
-
-      return (
-        React.createElement('div', { className: `min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}` },
-          React.createElement('div', { className: `${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b sticky top-0 z-10` },
-            React.createElement('div', { className: 'max-w-2xl mx-auto px-4 py-4 flex items-center justify-between' },
-              React.createElement('h1', { className: `text-2xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}` }, 'das-beste-des-tages'),
-              React.createElement('div', { className: 'flex items-center gap-3' },
-                React.createElement('button', { onClick: () => setDarkMode(!darkMode), className: `p-2 rounded-lg transition-colors ${darkMode ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}` },
-                  darkMode ? '🌙' : '☀️'
-                )
-              )
-            )
-          ),
-          React.createElement('div', { className: 'max-w-2xl mx-auto px-4 py-6' }, 
-            entries.map(entry =>
-              React.createElement('div', { key: entry.id, className: `${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-sm border p-5 mb-4` },
-                React.createElement('div', null,
-                  React.createElement('div', null, entry.date),
-                  React.createElement('div', null, getMoodEmoji(entry.mood)),
-                  React.createElement('div', null, entry.text1),
-                  React.createElement('div', null, entry.text2),
-                  React.createElement('div', null, entry.text3)
-                )
-              )
-            )
-          )
-        )
-      );
+    document.getElementById('toggle-dark').onclick = () => {
+      darkMode = !darkMode;
+      document.body.classList.toggle('dark', darkMode);
+      renderApp();
     }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(DiaryApp));
-  </script>
+    // Neueintrag-Form
+    const formDiv = document.createElement('div');
+    formDiv.className = `${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} p-4 rounded-2xl mb-6 shadow-sm`;
+    formDiv.innerHTML = `
+      <input type="date" id="entry-date" class="w-full mb-2 p-2 border rounded" value="${new Date().toISOString().split('T')[0]}"/>
+      <textarea id="entry-text1" rows="2" class="w-full mb-2 p-2 border rounded" placeholder="${fieldLabels.field1}"></textarea>
+      <textarea id="entry-text2" rows="2" class="w-full mb-2 p-2 border rounded" placeholder="${fieldLabels.field2}"></textarea>
+      <textarea id="entry-text3" rows="2" class="w-full mb-2 p-2 border rounded" placeholder="${fieldLabels.field3}"></textarea>
+      <div class="flex gap-2 mb-2">
+        <button data-mood="1" class="flex-1 py-2 border rounded">😞 Schlecht</button>
+        <button data-mood="2" class="flex-1 py-2 border rounded">😐 Neutral</button>
+        <button data-mood="3" class="flex-1 py-2 border rounded">🙂 Gut</button>
+      </div>
+      <button id="save-entry" class="w-full bg-blue-500 text-white py-2 rounded">Speichern</button>
+    `;
+    app.appendChild(formDiv);
+
+    let selectedMood = null;
+    formDiv.querySelectorAll('button[data-mood]').forEach(btn => {
+      btn.onclick = () => {
+        selectedMood = parseInt(btn.dataset.mood);
+        formDiv.querySelectorAll('button[data-mood]').forEach(b => b.classList.remove('bg-blue-100'));
+        btn.classList.add('bg-blue-100');
+      }
+    });
+
+    document.getElementById('save-entry').onclick = async () => {
+      const newEntry = {
+        date: document.getElementById('entry-date').value,
+        text1: document.getElementById('entry-text1').value,
+        text2: document.getElementById('entry-text2').value,
+        text3: document.getElementById('entry-text3').value,
+        mood: selectedMood || 2
+      };
+
+      const { data, error } = await supabase
+        .from('entries')
+        .insert([newEntry]);
+
+      if (error) alert("Fehler beim Speichern: " + error.message);
+      else {
+        entries.push(newEntry);
+        renderApp();
+      }
+    };
+
+    // Liste der Einträge
+    const listDiv = document.createElement('div');
+    entries.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(e => {
+      const entryEl = document.createElement('div');
+      entryEl.className = `${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} p-4 rounded-2xl mb-4 shadow-sm`;
+      entryEl.innerHTML = `<div class="text-sm mb-2">${e.date}</div>
+                           <div>${fieldLabels.field1}: ${e.text1}</div>
+                           <div>${fieldLabels.field2}: ${e.text2}</div>
+                           <div>${fieldLabels.field3}: ${e.text3}</div>
+                           <div class="mt-1 text-2xl">${getMoodEmoji(e.mood)}</div>`;
+      listDiv.appendChild(entryEl);
+    });
+    app.appendChild(listDiv);
+  }
+
+  // -----------------------------
+  // initial render
+  async function init() {
+    // Lade Einträge aus Supabase
+    const { data, error } = await supabase
+      .from('entries')
+      .select('*')
+      .order('date', { ascending: false });
+
+    if (!error) entries = data;
+    renderApp();
+  }
+
+  init();
+</script>
 </body>
 </html>
