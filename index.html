@@ -1,29 +1,88 @@
 <!DOCTYPE html>
 <html lang="de">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Das Beste des Tages</title>
-    <script type="module" crossorigin src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body class="bg-gray-50">
-    <div id="app"></div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Das Beste des Tages</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-    <script type="module">
-      import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+    const supabaseUrl = https://github.com/Daiti50552531/das-beste-des-tages.git;
+    const supabaseKey = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhqbm94cHp2aXVpaXdiY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTc4MzIsImV4cCI6MjA3ODA3MzgzMn0.D5kFuUTHfVg92m1zzDNj9-PXaQzivm9uO1hNZyk6PAE;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-      const supabaseUrl = https://htbxjnoxpzviuiiwbciv.supabase.co;
-      const supabaseKey = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhqbm94cHp2aXVpaXdiY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTc4MzIsImV4cCI6MjA3ODA3MzgzMn0.D5kFuUTHfVg92m1zzDNj9-PXaQzivm9uO1hNZyk6PAE;
-      const supabase = createClient(supabaseUrl, supabaseKey);
+    async function saveEntry() {
+      const date = new Date().toISOString().split("T")[0];
+      const text1 = document.getElementById("text1").value;
+      const text2 = document.getElementById("text2").value;
+      const text3 = document.getElementById("text3").value;
+      const mood = document.querySelector("input[name='mood']:checked")?.value;
 
-      // Hier kommt später dein React-Code oder vereinfachte Logik rein.
-      document.getElementById("app").innerHTML = `
-        <div class='max-w-md mx-auto p-6'>
-          <h1 class='text-2xl font-bold mb-4'>Das Beste des Tages 🌞</h1>
-          <p>Diese Version ist verbunden mit Supabase.</p>
-        </div>
-      `;
-    </script>
-  </body>
+      if (!mood) {
+        alert("Bitte Stimmung auswählen");
+        return;
+      }
+
+      await supabase.from("entries").insert({ date, text1, text2, text3, mood });
+      loadEntries();
+
+      document.getElementById("text1").value = "";
+      document.getElementById("text2").value = "";
+      document.getElementById("text3").value = "";
+      document.querySelector("input[name='mood']:checked").checked = false;
+    }
+
+    async function loadEntries() {
+      const { data } = await supabase
+        .from("entries")
+        .select("*")
+        .order("date", { ascending: false });
+
+      const list = document.getElementById("list");
+      list.innerHTML = "";
+
+      data.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "bg-white p-3 rounded shadow mb-2";
+        div.innerHTML = `
+          <div class="text-sm text-gray-500">${item.date}</div>
+          <div>😊 Stimmung: ${item.mood}</div>
+          <ul class="list-disc ml-4">
+            <li>${item.text1}</li>
+            <li>${item.text2}</li>
+            <li>${item.text3}</li>
+          </ul>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    window.onload = loadEntries;
+  </script>
+</head>
+<body class="bg-gray-100 p-4">
+  <h1 class="text-2xl font-bold mb-4 text-center">Das Beste des Tages</h1>
+
+  <div class="max-w-md mx-auto bg-white p-4 rounded shadow">
+    <textarea id="text1" class="w-full p-2 border rounded mb-2" placeholder="Moment 1"></textarea>
+    <textarea id="text2" class="w-full p-2 border rounded mb-2" placeholder="Moment 2"></textarea>
+    <textarea id="text3" class="w-full p-2 border rounded mb-2" placeholder="Moment 3"></textarea>
+
+    <div class="flex justify-between my-3">
+      <label><input type="radio" name="mood" value="5"> 😍</label>
+      <label><input type="radio" name="mood" value="4"> 🙂</label>
+      <label><input type="radio" name="mood" value="3"> 😐</label>
+      <label><input type="radio" name="mood" value="2"> 😕</label>
+      <label><input type="radio" name="mood" value="1"> 😣</label>
+    </div>
+
+    <button onclick="saveEntry()" class="w-full bg-blue-600 text-white p-2 rounded">
+      Speichern
+    </button>
+  </div>
+
+  <h2 class="text-xl font-semibold my-4 text-center">Bisherige Einträge</h2>
+  <div id="list" class="max-w-md mx-auto"></div>
+</body>
 </html>
