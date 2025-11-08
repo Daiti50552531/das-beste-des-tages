@@ -45,9 +45,7 @@
     }
     .topbar {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
+      justify-content: flex-end;
     }
     button {
       font-family: 'Inter', sans-serif;
@@ -57,7 +55,7 @@
       cursor: pointer;
       transition: all 0.25s ease;
     }
-    textarea, input[type=date], input[type=email], input[type=password] {
+    textarea, input[type=date] {
       width: 100%;
       padding: 12px;
       border-radius: 12px;
@@ -67,238 +65,95 @@
       font-size: 14px;
       margin-bottom: 12px;
       box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
-    }
-    label {
-      display: block;
-      font-weight: 500;
-      margin-bottom: 6px;
-      font-size: 14px;
     }
     .mood-container {
       display: flex;
       justify-content: space-between;
-      margin: 15px 0;
+      margin: 10px 0;
     }
     .mood-btn {
       flex: 1;
-      font-size: 32px;
+      font-size: 28px;
       border: 2px solid var(--border);
       background: var(--card);
       margin: 0 5px;
-      padding: 15px 0;
+      padding: 10px 0;
       border-radius: 12px;
-      transition: all 0.2s ease;
-    }
-    .mood-btn:hover {
-      transform: scale(1.05);
     }
     .mood-btn.selected {
       border-color: var(--accent);
       background: rgba(0,122,255,0.1);
-      transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(0,122,255,0.3);
     }
     .action-btn {
       width: 100%;
       background: var(--accent);
       color: white;
-      padding: 14px;
+      padding: 12px;
       border-radius: 12px;
-      margin-top: 15px;
+      margin-top: 10px;
       font-weight: 500;
-      font-size: 15px;
     }
-    .action-btn:hover { 
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
-    .action-btn:active {
-      transform: translateY(0);
-    }
+    .action-btn:hover { opacity: 0.9; }
     .small-btn {
       background: var(--card);
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 10px 14px;
-      margin-right: 8px;
+      padding: 10px 12px;
+      margin-right: 5px;
       border-radius: 10px;
-      font-size: 13px;
     }
-    .small-btn:hover { 
-      background: var(--border);
-    }
+    .small-btn:hover { background: rgba(0,0,0,0.05); }
     .entry {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 14px;
-      padding: 16px;
+      padding: 15px;
       margin-top: 15px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      position: relative;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    .entry-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .entry-date {
-      font-weight: 500;
-      color: var(--accent);
-      font-size: 14px;
-    }
-    .entry-mood {
-      font-size: 28px;
-    }
-    .entry strong { 
-      display: block;
-      font-size: 13px;
-      color: var(--accent);
-      margin-top: 10px;
-      margin-bottom: 4px;
-    }
-    .entry-text {
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    .delete-btn {
-      background: #ff3b30;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-    }
-    .delete-btn:hover {
-      opacity: 0.85;
-    }
-    #authSection {
-      max-width: 400px;
-      margin: 100px auto;
-      background: var(--card);
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-    #authSection h2 {
-      text-align: center;
-      margin-bottom: 25px;
-    }
-    .auth-toggle {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .auth-toggle button {
-      flex: 1;
-      padding: 10px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
-    .auth-toggle button.active {
-      background: var(--accent);
-      color: white;
-      border-color: var(--accent);
-    }
-    .hidden {
-      display: none;
-    }
-    .success-message {
-      background: #34c759;
-      color: white;
-      padding: 12px;
-      border-radius: 10px;
-      text-align: center;
-      margin-top: 10px;
-      font-size: 14px;
-    }
+    .entry strong { font-size: 14px; color: var(--accent); }
   </style>
 </head>
 <body>
-  <!-- Auth Section -->
-  <div id="authSection">
-    <h2>Das Beste des Tages</h2>
-    <div class="auth-toggle">
-      <button id="loginTab" class="active">Login</button>
-      <button id="signupTab">Registrieren</button>
+  <div class="container">
+    <div class="topbar">
+      <button id="toggleDark">🌙</button>
     </div>
-    <div id="authForm">
-      <label>E-Mail</label>
-      <input type="email" id="authEmail" placeholder="deine@email.de">
-      <label>Passwort</label>
-      <input type="password" id="authPassword" placeholder="Mindestens 6 Zeichen">
-      <button id="authSubmit" class="action-btn">Einloggen</button>
-      <div id="authMessage"></div>
-    </div>
-  </div>
+    <header>
+      <h1>Das Beste des Tages</h1>
+    </header>
 
-  <!-- Main App -->
-  <div id="mainApp" class="hidden">
-    <div class="container">
-      <div class="topbar">
-        <div></div>
-        <div>
-          <button id="toggleDark" class="small-btn">🌙</button>
-          <button id="logoutBtn" class="small-btn">Logout</button>
-        </div>
-      </div>
-      <header>
-        <h1>Das Beste des Tages</h1>
-      </header>
+    <div>
+      <input type="date" id="entryDate">
+      <label>Das Beste des Tages</label>
+      <textarea id="field1" rows="2" placeholder="Was hast du heute erlebt?"></textarea>
+      <label>Lotta</label>
+      <textarea id="field2" rows="2" placeholder="Was hast du mit Lotta heute erlebt?"></textarea>
+      <label>Thea</label>
+      <textarea id="field3" rows="2" placeholder="Was hast du mit Thea heute erlebt?"></textarea>
 
-      <div>
-        <input type="date" id="entryDate">
-        
-        <label>Das Beste des Tages</label>
-        <textarea id="field1" rows="3" placeholder="Was hast du heute erlebt?"></textarea>
-        
-        <label>👶 Lotta</label>
-        <textarea id="field2" rows="3" placeholder="Was hast du mit Lotta heute erlebt?"></textarea>
-        
-        <label>👧 Thea</label>
-        <textarea id="field3" rows="3" placeholder="Was hast du mit Thea heute erlebt?"></textarea>
-
-        <label>Wie war deine Stimmung?</label>
-        <div class="mood-container">
-          <button class="mood-btn" data-value="1">😞</button>
-          <button class="mood-btn" data-value="2">😐</button>
-          <button class="mood-btn" data-value="3">🙂</button>
-        </div>
-
-        <button id="saveEntry" class="action-btn">Eintrag speichern</button>
-        <div style="margin-top:12px;">
-          <button id="exportCsv" class="small-btn">📥 Export CSV</button>
-          <label class="small-btn" style="cursor: pointer;">
-            📤 Import CSV
-            <input type="file" id="importCsv" accept=".csv" style="display:none;">
-          </label>
-        </div>
+      <div class="mood-container">
+        <button class="mood-btn" data-value="1">😞</button>
+        <button class="mood-btn" data-value="2">😐</button>
+        <button class="mood-btn" data-value="3">🙂</button>
       </div>
 
-      <h2 style="margin-top: 40px;">Meine Einträge</h2>
-      <div id="entriesList"></div>
+      <button id="saveEntry" class="action-btn">Eintrag speichern</button>
+      <div style="margin-top:8px;">
+        <button id="exportCsv" class="small-btn">Export CSV</button>
+        <input type="file" id="importCsv" class="small-btn">
+      </div>
     </div>
+
+    <h2>Meine Einträge</h2>
+    <div id="entriesList"></div>
   </div>
 
   <script>
-    // Supabase Setup
-    const SUPABASE_URL = 'https://htbxinoxpzviujiwbctv.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhpbm94cHp2aXVqaXdiY3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA5OTk4MzYsImV4cCI6MjA0NjU3NTgzNn0.DSkFuUTHfVe92mY2l2iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA5OTk4MzYsImV4cCI6MjA0NjU3NTgzNn0';
-    
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_URL = 'https://htbxjnoxpzviuiiwbciv.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhqbm94cHp2aXVpaXdiY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTc4MzIsImV4cCI6MjA3ODA3MzgzMn0.D5kFuUTHfVg92m1zzDNj9-PXaQzivm9uO1hNZyk6PAE';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Elements
-    const authSection = document.getElementById('authSection');
-    const mainApp = document.getElementById('mainApp');
-    const loginTab = document.getElementById('loginTab');
-    const signupTab = document.getElementById('signupTab');
-    const authEmail = document.getElementById('authEmail');
-    const authPassword = document.getElementById('authPassword');
-    const authSubmit = document.getElementById('authSubmit');
-    const authMessage = document.getElementById('authMessage');
-    const logoutBtn = document.getElementById('logoutBtn');
-    
     const entryDate = document.getElementById('entryDate');
     const field1 = document.getElementById('field1');
     const field2 = document.getElementById('field2');
@@ -306,339 +161,4 @@
     const moodButtons = document.querySelectorAll('.mood-btn');
     const saveBtn = document.getElementById('saveEntry');
     const entriesList = document.getElementById('entriesList');
-    const toggleDark = document.getElementById('toggleDark');
-    const exportCsvBtn = document.getElementById('exportCsv');
-    const importCsvInput = document.getElementById('importCsv');
-
-    let selectedMood = null;
-    let currentUser = null;
-    let authMode = 'login';
-
-    // Set today's date
-    entryDate.valueAsDate = new Date();
-
-    // Check initial session
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        currentUser = session.user;
-        showMainApp();
-      }
-    });
-
-    // Auth state change
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        currentUser = session.user;
-        showMainApp();
-      } else if (event === 'SIGNED_OUT') {
-        currentUser = null;
-        showAuthSection();
-      }
-    });
-
-    // Auth Toggle
-    loginTab.addEventListener('click', () => {
-      authMode = 'login';
-      loginTab.classList.add('active');
-      signupTab.classList.remove('active');
-      authSubmit.textContent = 'Einloggen';
-      authMessage.innerHTML = '';
-    });
-
-    signupTab.addEventListener('click', () => {
-      authMode = 'signup';
-      signupTab.classList.add('active');
-      loginTab.classList.remove('active');
-      authSubmit.textContent = 'Registrieren';
-      authMessage.innerHTML = '';
-    });
-
-    // Auth Submit
-    authSubmit.addEventListener('click', async () => {
-      const email = authEmail.value.trim();
-      const password = authPassword.value;
-
-      if (!email || !password) {
-        showAuthMessage('Bitte E-Mail und Passwort eingeben', 'error');
-        return;
-      }
-
-      if (authMode === 'login') {
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) {
-          showAuthMessage('Login fehlgeschlagen: ' + error.message, 'error');
-        }
-      } else {
-        const { error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) {
-          showAuthMessage('Registrierung fehlgeschlagen: ' + error.message, 'error');
-        } else {
-          showAuthMessage('Registrierung erfolgreich! Prüfe deine E-Mails.', 'success');
-        }
-      }
-    });
-
-    // Logout
-    logoutBtn.addEventListener('click', async () => {
-      await supabaseClient.auth.signOut();
-    });
-
-    function showAuthMessage(msg, type) {
-      authMessage.innerHTML = `<div class="success-message" style="background: ${type === 'error' ? '#ff3b30' : '#34c759'}">${msg}</div>`;
-    }
-
-    function showAuthSection() {
-      authSection.classList.remove('hidden');
-      mainApp.classList.add('hidden');
-    }
-
-    function showMainApp() {
-      authSection.classList.add('hidden');
-      mainApp.classList.remove('hidden');
-      loadEntries();
-    }
-
-    // Mood Selection
-    moodButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        moodButtons.forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        selectedMood = parseInt(btn.dataset.value);
-      });
-    });
-
-    // Save Entry
-    saveBtn.addEventListener('click', async () => {
-      if (!selectedMood) {
-        alert('Bitte wähle eine Stimmung aus');
-        return;
-      }
-
-      const entry = {
-        user_id: currentUser.id,
-        entry_date: entryDate.value,
-        text_field_1: field1.value,
-        text_field_2: field2.value,
-        text_field_3: field3.value,
-        mood_score: selectedMood
-      };
-
-      const { error } = await supabaseClient
-        .from('diary_entries')
-        .insert([entry]);
-
-      if (error) {
-        alert('Fehler beim Speichern: ' + error.message);
-      } else {
-        saveBtn.textContent = '✓ Gespeichert!';
-        saveBtn.style.background = '#34c759';
-        setTimeout(() => {
-          saveBtn.textContent = 'Eintrag speichern';
-          saveBtn.style.background = '';
-        }, 2000);
-        
-        // Reset form
-        field1.value = '';
-        field2.value = '';
-        field3.value = '';
-        selectedMood = null;
-        moodButtons.forEach(b => b.classList.remove('selected'));
-        entryDate.valueAsDate = new Date();
-        
-        loadEntries();
-      }
-    });
-
-    // Load Entries
-    async function loadEntries() {
-      const { data, error } = await supabaseClient
-        .from('diary_entries')
-        .select('*')
-        .order('entry_date', { ascending: false });
-
-      if (error) {
-        console.error('Error loading entries:', error);
-        return;
-      }
-
-      renderEntries(data || []);
-    }
-
-    function renderEntries(entries) {
-      if (entries.length === 0) {
-        entriesList.innerHTML = '<p style="text-align:center; color: var(--border); margin-top: 30px;">🌟 Noch keine Einträge vorhanden</p>';
-        return;
-      }
-
-      entriesList.innerHTML = entries.map(entry => {
-        const mood = entry.mood_score === 1 ? '😞' : entry.mood_score === 2 ? '😐' : '🙂';
-        const date = formatDate(entry.entry_date);
-        
-        return `
-          <div class="entry">
-            <div class="entry-header">
-              <span class="entry-date">${date}</span>
-              <div>
-                <span class="entry-mood">${mood}</span>
-                <button class="delete-btn" onclick="deleteEntry('${entry.id}')">Löschen</button>
-              </div>
-            </div>
-            ${entry.text_field_1 ? `<strong>Das Beste des Tages</strong><div class="entry-text">${entry.text_field_1}</div>` : ''}
-            ${entry.text_field_2 ? `<strong>👶 Lotta</strong><div class="entry-text">${entry.text_field_2}</div>` : ''}
-            ${entry.text_field_3 ? `<strong>👧 Thea</strong><div class="entry-text">${entry.text_field_3}</div>` : ''}
-          </div>
-        `;
-      }).join('');
-    }
-
-    function formatDate(dateStr) {
-      const date = new Date(dateStr);
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-
-      if (date.toDateString() === today.toDateString()) return 'Heute';
-      if (date.toDateString() === yesterday.toDateString()) return 'Gestern';
-      
-      return date.toLocaleDateString('de-DE', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      });
-    }
-
-    // Delete Entry
-    window.deleteEntry = async function(id) {
-      if (!confirm('Eintrag wirklich löschen?')) return;
-
-      const { error } = await supabaseClient
-        .from('diary_entries')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        alert('Fehler beim Löschen: ' + error.message);
-      } else {
-        loadEntries();
-      }
-    };
-
-    // Dark Mode
-    toggleDark.addEventListener('click', () => {
-      document.body.classList.toggle('dark');
-      toggleDark.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
-      localStorage.setItem('darkMode', document.body.classList.contains('dark'));
-    });
-
-    // Load dark mode preference
-    if (localStorage.getItem('darkMode') === 'true') {
-      document.body.classList.add('dark');
-      toggleDark.textContent = '☀️';
-    }
-
-    // Export CSV
-    exportCsvBtn.addEventListener('click', async () => {
-      const { data } = await supabaseClient
-        .from('diary_entries')
-        .select('*')
-        .order('entry_date', { ascending: false });
-
-      if (!data || data.length === 0) {
-        alert('Keine Einträge zum Exportieren');
-        return;
-      }
-
-      const csvContent = [
-        ['Datum', 'Das Beste des Tages', 'Lotta', 'Thea', 'Stimmung'],
-        ...data.map(e => [
-          e.entry_date,
-          e.text_field_1 || '',
-          e.text_field_2 || '',
-          e.text_field_3 || '',
-          e.mood_score === 1 ? 'Schlecht' : e.mood_score === 2 ? 'Neutral' : 'Gut'
-        ])
-      ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-
-      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `das-beste-des-tages_${new Date().toISOString().split('T')[0]}.csv`;
-      link.click();
-    });
-
-    // Import CSV
-    importCsvInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        try {
-          const text = event.target.result;
-          const lines = text.split('\n').filter(line => line.trim());
-          
-          if (lines.length < 2) {
-            alert('Die Datei enthält keine Daten');
-            return;
-          }
-
-          const entries = [];
-          for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-            
-            if (values.length >= 5) {
-              const mood = values[4].toLowerCase() === 'gut' || values[4] === '3' ? 3 :
-                          values[4].toLowerCase() === 'neutral' || values[4] === '2' ? 2 : 1;
-              
-              entries.push({
-                user_id: currentUser.id,
-                entry_date: parseDateString(values[0]),
-                text_field_1: values[1],
-                text_field_2: values[2],
-                text_field_3: values[3],
-                mood_score: mood
-              });
-            }
-          }
-
-          for (const entry of entries) {
-            const { data: existing } = await supabaseClient
-              .from('diary_entries')
-              .select('id')
-              .eq('user_id', currentUser.id)
-              .eq('entry_date', entry.entry_date)
-              .single();
-
-            if (existing) {
-              await supabaseClient
-                .from('diary_entries')
-                .update(entry)
-                .eq('id', existing.id);
-            } else {
-              await supabaseClient
-                .from('diary_entries')
-                .insert([entry]);
-            }
-          }
-
-          alert(`${entries.length} Einträge importiert!`);
-          loadEntries();
-          e.target.value = '';
-        } catch (error) {
-          alert('Fehler beim Import: ' + error.message);
-        }
-      };
-      reader.readAsText(file, 'UTF-8');
-    });
-
-    function parseDateString(dateStr) {
-      if (dateStr.includes('.')) {
-        const parts = dateStr.split('.');
-        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-      }
-      return dateStr;
-    }
-  </script>
-</body>
-</html>
+    const toggleDark = document.getElementById('to
