@@ -1,215 +1,158 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
   <title>Das Beste des Tages</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg: #f5f6f8;
-      --card-bg: #fff;
-      --text: #1c1c1e;
-      --border: #ddd;
-      --accent: #4674ff;
-      --mood-border: #ccc;
+      --bg: #f5f5f7;
+      --text: #1d1d1f;
+      --card: #fff;
+      --border: #e0e0e0;
+      --accent: #007aff;
     }
     body.dark {
       --bg: #1c1c1e;
-      --card-bg: #2c2c2e;
       --text: #f5f5f7;
+      --card: #2c2c2e;
       --border: #3a3a3c;
-      --mood-border: #444;
+      --accent: #0a84ff;
     }
     body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Inter', sans-serif;
       background: var(--bg);
       color: var(--text);
+      margin: 0;
+      padding: 0;
       transition: background 0.3s, color 0.3s;
     }
     .container {
-      max-width: 700px;
+      max-width: 600px;
       margin: 0 auto;
       padding: 20px;
     }
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0 20px;
+      text-align: center;
+      margin-bottom: 25px;
     }
     header h1 {
-      font-size: 1.5em;
       font-weight: 600;
+      font-size: 1.8em;
       margin: 0;
     }
-    .toggle-dark {
-      border: none;
-      background: none;
-      font-size: 1.3em;
-      cursor: pointer;
-      color: var(--text);
+    .topbar {
+      display: flex;
+      justify-content: flex-end;
     }
-    .card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-      padding: 20px;
-      margin-bottom: 20px;
-      border: 1px solid var(--border);
-    }
-    label {
-      display: block;
-      margin-top: 15px;
-      margin-bottom: 5px;
-      font-size: 0.9em;
+    button {
+      font-family: 'Inter', sans-serif;
       font-weight: 500;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.25s ease;
     }
-    input[type="date"], textarea {
+    textarea, input[type=date] {
       width: 100%;
+      padding: 12px;
+      border-radius: 12px;
       border: 1px solid var(--border);
-      background: var(--card-bg);
+      background: var(--card);
       color: var(--text);
-      border-radius: 10px;
-      padding: 10px;
-      font-size: 1em;
+      font-size: 14px;
+      margin-bottom: 12px;
       box-sizing: border-box;
-      transition: border 0.2s;
     }
-    textarea {
-      resize: none;
-      min-height: 60px;
-    }
-    input[type="date"]:focus, textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    .mood-options {
+    .mood-container {
       display: flex;
       justify-content: space-between;
-      margin: 15px 0;
+      margin: 10px 0;
     }
     .mood-btn {
       flex: 1;
+      font-size: 28px;
+      border: 2px solid var(--border);
+      background: var(--card);
       margin: 0 5px;
-      padding: 12px 0;
-      text-align: center;
-      border-radius: 10px;
-      border: 2px solid var(--mood-border);
-      cursor: pointer;
-      font-size: 1.3em;
-      background: var(--card-bg);
-      color: var(--text);
-      transition: all 0.2s;
+      padding: 10px 0;
+      border-radius: 12px;
     }
     .mood-btn.selected {
       border-color: var(--accent);
+      background: rgba(0,122,255,0.1);
+    }
+    .action-btn {
+      width: 100%;
       background: var(--accent);
-      color: #fff;
-    }
-    .actions {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 20px;
-    }
-    .btn {
-      flex: 1;
+      color: white;
       padding: 12px;
-      font-size: 1em;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      transition: background 0.2s;
+      border-radius: 12px;
+      margin-top: 10px;
+      font-weight: 500;
     }
-    .btn.cancel {
-      background: var(--border);
-      color: var(--text);
-      margin-right: 10px;
-    }
-    .btn.add {
-      background: var(--accent);
-      color: #fff;
-    }
-    .entry {
+    .action-btn:hover { opacity: 0.9; }
+    .small-btn {
+      background: var(--card);
       border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      margin-right: 5px;
       border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 10px;
-      background: var(--card-bg);
     }
-    .entry strong {
-      display: block;
-      font-size: 0.9em;
-      margin-bottom: 4px;
+    .small-btn:hover { background: rgba(0,0,0,0.05); }
+    .entry {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 15px;
+      margin-top: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    .export-section {
-      text-align: center;
-      margin-top: 20px;
-    }
-    .export-section button {
-      margin: 5px;
-      padding: 8px 14px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      background: var(--accent);
-      color: #fff;
-    }
-    .export-section input {
-      display: none;
-    }
+    .entry strong { font-size: 14px; color: var(--accent); }
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="topbar">
+      <button id="toggleDark">🌙</button>
+    </div>
     <header>
       <h1>Das Beste des Tages</h1>
-      <button class="toggle-dark" id="toggleDark">🌙</button>
     </header>
 
-    <div class="card">
-      <h2>Neuer Eintrag</h2>
-      <label for="entryDate">Datum</label>
+    <div>
       <input type="date" id="entryDate">
+      <label>Das Beste des Tages</label>
+      <textarea id="field1" rows="2" placeholder="Schreibe hier das Highlight deines Tages..."></textarea>
+      <label>Lotta</label>
+      <textarea id="field2" rows="2" placeholder="Was war besonders schön mit Lotta?"></textarea>
+      <label>Thea</label>
+      <textarea id="field3" rows="2" placeholder="Was war besonders schön mit Thea?"></textarea>
 
-      <label for="field1">Das Beste des Tages</label>
-      <textarea id="field1" placeholder="Beschreibe deinen Tag..."></textarea>
-
-      <label for="field2">Lotta</label>
-      <textarea id="field2" placeholder="Erkenntnisse und Learnings..."></textarea>
-
-      <label for="field3">Thea</label>
-      <textarea id="field3" placeholder="Dankbarkeit und positive Momente..."></textarea>
-
-      <label>Wie war deine Stimmung?</label>
-      <div class="mood-options">
-        <div class="mood-btn" data-value="1">😞<br><small>Schlecht</small></div>
-        <div class="mood-btn" data-value="2">😐<br><small>Neutral</small></div>
-        <div class="mood-btn" data-value="3">🙂<br><small>Gut</small></div>
+      <div class="mood-container">
+        <button class="mood-btn" data-value="1">😞</button>
+        <button class="mood-btn" data-value="2">😐</button>
+        <button class="mood-btn" data-value="3">🙂</button>
       </div>
 
-      <div class="actions">
-        <button class="btn cancel" id="cancelEntry">Abbrechen</button>
-        <button class="btn add" id="saveEntry">Hinzufügen</button>
+      <button id="saveEntry" class="action-btn">Eintrag speichern</button>
+      <div style="margin-top:8px;">
+        <button id="exportCsv" class="small-btn">Export CSV</button>
+        <input type="file" id="importCsv" class="small-btn">
       </div>
     </div>
 
-    <div class="card">
-      <h2>Meine Einträge</h2>
-      <div id="entriesList"></div>
-      <div class="export-section">
-        <button id="exportCsv">Exportieren</button>
-        <label for="importCsv" class="btn">Importieren</label>
-        <input type="file" id="importCsv" accept=".csv">
-      </div>
-    </div>
+    <h2>Meine Einträge</h2>
+    <div id="entriesList"></div>
   </div>
 
   <script>
     const SUPABASE_URL = 'https://htbxjnoxpzviuiiwbciv.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhqbm94cHp2aXVpaXdiY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTc4MzIsImV4cCI6MjA3ODA3MzgzMn0.D5kFuUTHfVg92m1zzDNj9-PXaQzivm9uO1hNZyk6PAE';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const entryDate = document.getElementById('entryDate');
     const field1 = document.getElementById('field1');
@@ -217,88 +160,5 @@
     const field3 = document.getElementById('field3');
     const moodButtons = document.querySelectorAll('.mood-btn');
     const saveBtn = document.getElementById('saveEntry');
-    const cancelBtn = document.getElementById('cancelEntry');
     const entriesList = document.getElementById('entriesList');
-    const toggleDark = document.getElementById('toggleDark');
-    const exportBtn = document.getElementById('exportCsv');
-    const importInput = document.getElementById('importCsv');
-    let selectedMood = null;
-
-    moodButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        selectedMood = parseInt(btn.dataset.value);
-        moodButtons.forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-      });
-    });
-
-    toggleDark.addEventListener('click', () => {
-      document.body.classList.toggle('dark');
-      toggleDark.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
-    });
-
-    cancelBtn.addEventListener('click', () => {
-      field1.value = field2.value = field3.value = '';
-      moodButtons.forEach(b => b.classList.remove('selected'));
-      selectedMood = null;
-    });
-
-    async function fetchEntries() {
-      const { data, error } = await supabaseClient.from('entries').select('*').order('date', { ascending:false });
-      if (error) return console.error(error);
-      entriesList.innerHTML = '';
-      data.forEach(e => {
-        const div = document.createElement('div');
-        div.className = 'entry';
-        div.innerHTML = `
-          <strong>${new Date(e.date).toLocaleDateString('de-DE')}</strong>
-          ${['','😞 Schlecht','😐 Neutral','🙂 Gut'][e.mood]}<br>
-          ${e.text1 ? e.text1+'<br>':''}
-          ${e.text2 ? e.text2+'<br>':''}
-          ${e.text3 ? e.text3:''}
-        `;
-        entriesList.appendChild(div);
-      });
-    }
-
-    saveBtn.addEventListener('click', async () => {
-      if (!entryDate.value || !selectedMood) return alert('Bitte Datum und Stimmung wählen.');
-      const { error } = await supabaseClient.from('entries').upsert([{
-        date: entryDate.value,
-        text1: field1.value,
-        text2: field2.value,
-        text3: field3.value,
-        mood: selectedMood
-      }]);
-      if (error) return console.error(error);
-      cancelBtn.click();
-      fetchEntries();
-    });
-
-    exportBtn.addEventListener('click', async () => {
-      const { data } = await supabaseClient.from('entries').select('*');
-      const csv = ['Datum,Text1,Text2,Text3,Mood', ...data.map(e => `${e.date},"${e.text1}","${e.text2}","${e.text3}",${e.mood}`)].join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'tagebuch.csv';
-      a.click();
-    });
-
-    importInput.addEventListener('change', async e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const text = await file.text();
-      const lines = text.split('\n').slice(1);
-      for (const line of lines) {
-        const [date, t1, t2, t3, mood] = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g,''));
-        await supabaseClient.from('entries').upsert([{ date, text1: t1, text2: t2, text3: t3, mood: parseInt(mood) }]);
-      }
-      fetchEntries();
-    });
-
-    entryDate.value = new Date().toISOString().split('T')[0];
-    fetchEntries();
-  </script>
-</body>
-</html>
+    const toggleDark = document.getElementById('to
