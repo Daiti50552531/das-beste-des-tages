@@ -2,786 +2,1155 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Das Beste des Tages</title>
   
   <!-- Supabase Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
-  <!-- SheetJS für Excel-Export -->
+  <!-- SheetJS für Excel-Export/Import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Fuse.js für unscharfe Suche -->
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
   
   <style>
     :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --text: #e2e8f0;
-      --muted: #94a3b8;
-      --border: #334155;
-      --primary: #22c55e;
-      --primary-hover: #16a34a;
-      --danger: #ef4444;
-      --danger-hover: #dc2626;
+      /* Dark Mode (Default) */
+      --bg: #000000;
+      --card: #1c1c1e;
+      --input-bg: #2c2c2e;
+      
+      --text: #ffffff;
+      --text-secondary: #9898a0;
+      --text-matte: #e0e0e0;
+      
+      --header-bg: rgba(0, 0, 0, 0.75);
+      
+      --border: #38383a;
+      --primary: #30d158; /* Apple Green */
+      --primary-hover: #28cd41;
+      --danger: #ff453a;
+      --accent: #0a84ff; /* Apple Blue */
+      --warning: #ff9f0a; /* Apple Orange */
+      
+      --radius: 14px;
+      --shadow: 0 4px 16px rgba(0,0,0,0.3);
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* Light Mode */
+    body.light-mode {
+      --bg: #f2f2f7;
+      --card: #ffffff;
+      --input-bg: #e5e5ea;
+      
+      --text: #000000;
+      --text-secondary: #8e8e93;
+      --text-matte: #3a3a3c;
+      
+      --header-bg: rgba(242, 242, 247, 0.85);
+      
+      --border: #d1d1d6;
+      --shadow: 0 2px 12px rgba(0,0,0,0.06);
     }
     
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: var(--font);
       background: var(--bg);
       color: var(--text);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
+      line-height: 1.5;
+      transition: background 0.3s ease, color 0.3s ease;
+      padding-bottom: 80px; 
     }
     
     .container {
-      width: 100%;
-      max-width: 800px;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 0 20px;
     }
-
-    /* Card Styling */
+    
+    /* Typography */
+    h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; text-align: center; margin-bottom: 24px; }
+    
+    /* Cards */
     .card {
       background: var(--card);
-      border-radius: 12px;
-      padding: 20px;
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      transition: background 0.3s ease;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    /* Sticky Header */
+    .sticky-header-wrapper {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--header-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       margin-bottom: 20px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-      border: 1px solid var(--border);
-    }
-    
-    h1 {
-      font-size: 1.8rem;
-      color: var(--primary);
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    
-    /* Form Styling */
-    .form-group {
-      margin-bottom: 15px;
-    }
-    
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 600;
-      color: var(--muted);
-    }
-    
-    input[type="date"],
-    textarea,
-    select {
-      width: 100%;
-      padding: 10px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      resize: vertical;
+      padding: 16px 0;
+      border-bottom: 0.5px solid rgba(128,128,128, 0.2);
     }
 
-    textarea {
-        min-height: 100px;
-    }
-
-    /* Button Styling */
-    .btn {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: background-color 0.2s;
-    }
-    
-    .btn-primary {
-      background: var(--primary);
-      color: var(--bg);
-    }
-    
-    .btn-primary:hover {
-      background: var(--primary-hover);
-    }
-    
-    .btn-danger {
-      background: var(--danger);
-      color: var(--text);
-    }
-    
-    .btn-danger:hover {
-      background: var(--danger-hover);
-    }
-
-    .btn-group {
-        display: flex;
-        gap: 10px;
-        justify-content: flex-end;
-        margin-top: 15px;
-    }
-
-    /* Mood Selection */
-    .mood-selector {
-        display: flex;
-        gap: 15px;
-        margin-top: 5px;
-        justify-content: center;
-    }
-
-    .mood-option {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        cursor: pointer;
-        padding: 8px;
-        border-radius: 8px;
-        transition: background 0.2s;
-        border: 2px solid transparent;
-    }
-
-    .mood-option:hover {
-        background: var(--bg);
-    }
-
-    .mood-option.selected {
-        border-color: var(--primary);
-        background: var(--bg);
-    }
-
-    .mood-icon {
-        font-size: 2rem;
-        transition: transform 0.2s;
-    }
-
-    .mood-option:hover .mood-icon {
-        transform: scale(1.1);
-    }
-
-    /* Entry List Styling */
-    #entries-list {
-      display: grid;
-      gap: 15px;
-    }
-    
-    .entry-item {
-      background: var(--card);
-      border-left: 5px solid var(--primary);
-      padding: 15px;
-      border-radius: 8px;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .entry-date {
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: var(--primary);
-      margin-bottom: 10px;
+    .topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    .app-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    .entry-content p {
-        margin-bottom: 8px;
-        padding-left: 10px;
-        border-left: 2px solid var(--border);
+    /* Buttons Interaction */
+    button, .btn, .icon-btn, .mood-btn {
+        transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s, background-color 0.2s;
+    }
+    button:active, .btn:active, .icon-btn:active, .mood-btn:active {
+        transform: scale(0.96); 
+        opacity: 0.8;
     }
 
-    .entry-content strong {
-        color: var(--muted);
-        display: block;
-        margin-left: -12px; /* Zieht den Label-Text etwas nach links */
+    .text-btn {
+        background: none;
+        border: none;
+        color: var(--accent);
+        font-size: 16px;
+        cursor: pointer;
+        padding: 6px 10px;
+        font-weight: 500;
+    }
+    
+    .icon-btn {
+      background: var(--input-bg);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--text);
     }
 
-    .mood-display {
-        font-size: 1.5rem;
-        line-height: 1;
-        margin-right: 5px;
+    /* Inputs */
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin: 20px 0 8px;
+      letter-spacing: 0.5px;
+      padding-left: 4px;
+    }
+    label:first-of-type { margin-top: 0; }
+    
+    input, textarea, select {
+      width: 100%;
+      padding: 16px;
+      border-radius: 12px;
+      border: none; 
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 17px; 
+      font-family: inherit;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      background: var(--card);
+      box-shadow: 0 0 0 2px var(--accent); 
     }
 
-    /* Import/Export */
-    .import-export-controls {
+    textarea {
+      resize: none;
+      min-height: 86px; 
+      line-height: 1.5;
+    }
+
+    /* Mood Selector */
+    .mood-section {
+      margin-top: 32px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .mood-label {
+        font-size:12px; 
+        color: var(--text-secondary); 
+        text-transform:uppercase; 
+        font-weight:600; 
+        margin-bottom: 12px;
+        letter-spacing: 0.5px;
+    }
+    .mood-buttons {
+      display: inline-flex;
+      background: var(--input-bg);
+      padding: 5px;
+      border-radius: 24px;
+      gap: 2px;
+    }
+    .mood-btn {
+      font-size: 28px;
+      width: 60px;
+      height: 50px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.4; 
+    }
+    .mood-btn.selected {
+      background: var(--card);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      opacity: 1;
+      transform: scale(1.05);
+    }
+
+    /* Action Bar */
+    .action-bar {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 120px;
+    }
+    
+    .btn-primary { background: var(--primary); color: #000; } 
+    .btn-secondary { background: var(--input-bg); color: var(--text); }
+    .btn-danger { background: var(--danger); color: #fff; }
+
+    /* Danger Text Button (for list items) */
+    .btn-danger-text { 
+        background: transparent; 
+        color: var(--danger); 
+        padding: 10px 14px; 
+        font-size: 14px; 
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        border-radius: 8px;
+    }
+    .btn-danger-text:hover { background: rgba(255, 69, 58, 0.1); }
+    
+    .btn-edit-text {
+        background: transparent; 
+        color: var(--accent); 
+        padding: 10px 14px; 
+        font-size: 14px; 
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        border-radius: 8px;
+    }
+    .btn-edit-text:hover { background: rgba(10, 132, 255, 0.1); }
+
+    .hidden-input { display: none; }
+
+    /* Filter & Search Bar */
+    .filter-wrapper {
         display: flex;
         gap: 10px;
-        justify-content: space-between;
+        margin-bottom: 12px;
         flex-wrap: wrap;
     }
+    .filter-control { flex: 1; min-width: 140px; }
+    .filter-control label { 
+        display: block; 
+        font-size: 11px; 
+        text-transform: uppercase; 
+        color: var(--text-secondary); 
+        margin-bottom: 4px; 
+        font-weight: 600;
+    }
 
-    .import-export-controls > div {
+    /* Entries List */
+    .entries-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .entry-card {
+      background: var(--card);
+      padding: 24px;
+      border-radius: var(--radius);
+      position: relative;
+    }
+    
+    .entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .entry-date { font-size: 16px; font-weight: 700; color: var(--text); }
+    .entry-mood { font-size: 26px; }
+    
+    .entry-block { margin-bottom: 20px; }
+    
+    .entry-field-display {
+        background: var(--input-bg);
+        padding: 14px 16px;
+        border-radius: 10px;
+        font-size: 16px;
+        line-height: 1.6;
+        color: var(--text-matte);
+        white-space: pre-wrap; 
+    }
+    
+    .entry-actions-row {
         display: flex;
-        gap: 10px;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 8px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(128,128,128, 0.1);
     }
 
-    .file-input-wrapper {
-        position: relative;
-        overflow: hidden;
-        display: inline-block;
+    /* Reminder Box */
+    .reminder-box {
+        background: rgba(255, 159, 10, 0.1); /* Orange tint */
+        border: 1px solid var(--warning);
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        display: none; /* Hidden by default */
     }
+    .reminder-title { color: var(--warning); font-weight: 700; margin-bottom: 8px; font-size: 15px; }
+    .reminder-text { font-size: 14px; margin-bottom: 12px; opacity: 0.9; }
+    .reminder-actions { display: flex; gap: 10px; }
 
-    .file-input-wrapper input[type=file] {
-        position: absolute;
-        left: 0;
-        top: 0;
-        opacity: 0;
-        cursor: pointer;
+    /* Export Popover */
+    .export-popover {
+      position: absolute;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      width: 180px;
+      bottom: 70px; 
+      left: 50%;
+      transform: translateX(-50%);
     }
+    .export-popover button {
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+    }
+    .export-popover button:hover { background: var(--input-bg); }
 
-    /* Loader */
-    #loader {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        display: none;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
+    .hidden { display: none !important; }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(40, 40, 40, 0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-weight: 600;
+      z-index: 1000;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      white-space: nowrap;
     }
+    .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: rgba(255, 69, 58, 0.95); }
 
-    .spinner {
-        border: 4px solid rgba(255, 255, 255, 0.3);
-        border-top: 4px solid var(--primary);
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
+    /* Auth Screen */
+    .auth-container {
+      max-width: 400px;
+      margin: 10vh auto;
+      text-align: center;
+      padding: 0 20px;
     }
+    .auth-btn-row { margin-top: 24px; display: flex; gap: 10px; }
 
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
   </style>
 </head>
 <body>
 
-  <div id="loader"><div class="spinner"></div></div>
+  <!-- Toast -->
+  <div id="toast" class="toast">Nachricht</div>
 
-  <div class="container">
-    <h1>Das Beste des Tages</h1>
-
-    <!-- Import/Export Card -->
+  <!-- AUTH SECTION -->
+  <div id="authSection" class="auth-container">
+    <h1 style="margin-bottom:40px; font-weight:800;">Willkommen</h1>
     <div class="card">
-        <h2>Daten-Tools</h2>
-        <div class="import-export-controls">
-            <div>
-                <button id="export-btn" class="btn btn-primary">Exportieren (Excel)</button>
-            </div>
-            <div>
-                <div class="file-input-wrapper">
-                    <button class="btn btn-primary">Importieren (CSV)</button>
-                    <input type="file" id="import-file" accept=".csv">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Entry Form Card -->
-    <div class="card">
-      <div class="form-group">
-        <label for="entry-date">Datum</label>
-        <input type="date" id="entry-date">
-      </div>
-
-      <div class="form-group">
-        <label for="best-of-day">Das Beste (Bete)</label>
-        <textarea id="best-of-day" placeholder="Was war dein Highlight des Tages?"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label for="lotta">Lotta</label>
-        <textarea id="lotta" placeholder="Lottas Highlight"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label for="thea">Thea</label>
-        <textarea id="thea" placeholder="Theas Highlight"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Stimmung</label>
-        <div class="mood-selector" id="mood-selector">
-            <div class="mood-option" data-mood="sad">
-                <span class="mood-icon">😞</span>
-                <span>Traurig</span>
-            </div>
-            <div class="mood-option selected" data-mood="neutral">
-                <span class="mood-icon">😐</span>
-                <span>Neutral</span>
-            </div>
-            <div class="mood-option" data-mood="happy">
-                <span class="mood-icon">😄</span>
-                <span>Glücklich</span>
-            </div>
-        </div>
-      </div>
+      <label>E-Mail Adresse</label>
+      <input type="email" id="authEmail" placeholder="name@beispiel.de">
       
-      <div class="btn-group">
-        <button id="delete-btn" class="btn btn-danger" style="display: none;">Löschen</button>
-        <button id="save-btn" class="btn btn-primary">Speichern</button>
-      </div>
-    </div>
-
-    <!-- Entries List Card -->
-    <div class="card">
-      <h2>Deine Einträge</h2>
-      <div id="entries-list">
-        <!-- Einträge werden hier eingefügt -->
-        <p id="no-entries-message" style="color: var(--muted);">Noch keine Einträge vorhanden.</p>
+      <label>Passwort</label>
+      <input type="password" id="authPassword" placeholder="••••••••">
+      
+      <div class="auth-btn-row">
+        <button id="loginBtn" class="btn btn-primary">Anmelden</button>
+        <button id="signupBtn" class="btn btn-secondary">Registrieren</button>
       </div>
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  <!-- APP SECTION -->
+  <div id="appSection" class="hidden">
     
-    // Globale Variablen aus dem Canvas-Environment
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-    // --- Supabase Setup ---
-    // Dies muss an die korrekten Supabase-Daten angepasst werden!
-    const SUPABASE_URL = firebaseConfig.supabaseUrl || 'YOUR_SUPABASE_URL'; 
-    const SUPABASE_ANON_KEY = firebaseConfig.supabaseAnonKey || 'YOUR_SUPABASE_ANON_KEY';
-    
-    let supabase = null;
-    let auth = null;
-    let userId = null;
-    let currentEntryId = null; // Für den Bearbeitungsmodus
-    let allEntries = []; // Speichert alle Einträge für Export und Anzeige
-
-    // --- DOM Elemente ---
-    const entryDateInput = document.getElementById('entry-date');
-    const bestOfDayInput = document.getElementById('best-of-day');
-    const lottaInput = document.getElementById('lotta');
-    const theaInput = document.getElementById('thea');
-    const moodSelector = document.getElementById('mood-selector');
-    const saveBtn = document.getElementById('save-btn');
-    const deleteBtn = document.getElementById('delete-btn');
-    const entriesList = document.getElementById('entries-list');
-    const noEntriesMessage = document.getElementById('no-entries-message');
-    const exportBtn = document.getElementById('export-btn');
-    const importFile = document.getElementById('import-file');
-    const loader = document.getElementById('loader');
-
-    // --- Initialisierung ---
-
-    function showLoader() { loader.style.display = 'flex'; }
-    function hideLoader() { loader.style.display = 'none'; }
-
-    function getDBPath(collectionName) {
-        return `artifacts/${appId}/users/${userId}/${collectionName}`;
-    }
-
-    async function initializeApp() {
-        showLoader();
-        try {
-            // Initialisiere Supabase
-            if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
-                console.error("Bitte ersetze 'YOUR_SUPABASE_URL' und 'YOUR_SUPABASE_ANON_KEY' durch deine tatsächlichen Werte.");
-                return;
-            }
-            supabase = supabase_js.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-            // Da Supabase keine direkte Custom Token Auth wie Firebase hat,
-            // überspringen wir die Firebase Auth und verwenden Supabase, 
-            // oder melden uns bei einer hypothetischen Firebase-Instanz an, 
-            // um eine user id zu erhalten (falls das Canvas-Backend Firebase erwartet).
-            // Hier verwenden wir eine einfache zufällige ID als Platzhalter,
-            // da die Supabase-Auth-Details fehlen und Supabase direkt angesprochen wird.
-            userId = 'guest-' + crypto.randomUUID();
-            
-            // Setze das heutige Datum
-            entryDateInput.value = new Date().toISOString().split('T')[0];
-            
-            loadEntries();
-            
-        } catch (error) {
-            console.error("Fehler bei der Initialisierung:", error);
-            alert("Fehler bei der Initialisierung der App. Bitte überprüfe die Konfiguration.");
-        } finally {
-            hideLoader();
-        }
-    }
-
-    // --- Funktionen ---
-
-    /**
-     * Konvertiert Datums-Strings in das YYYY-MM-DD-Format.
-     * Unterstützt gängige Formate wie DD.MM.YYYY und YYYY-MM-DD.
-     * @param {string} dateString 
-     * @returns {string | null} YYYY-MM-DD String oder null bei Fehler
-     */
-    function parseDate(dateString) {
-        if (!dateString) return null;
-        dateString = dateString.trim();
-
-        // 1. Versucht, DD.MM.YYYY oder DD/MM/YYYY in YYYY-MM-DD umzuwandeln
-        const parts = dateString.match(/(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})/);
-        if (parts) {
-            // parts[3] = YYYY, parts[2] = MM, parts[1] = DD
-            const [_, day, month, year] = parts;
-            // Erstellt den ISO-konformen String
-            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        }
-
-        // 2. Versucht, das Datum direkt zu parsen (für YYYY-MM-DD oder andere Standardformate)
-        const date = new Date(dateString);
-        // Prüft, ob das Date-Objekt gültig ist und nicht in der Ferne liegt (z.B. > Jahr 3000)
-        if (!isNaN(date) && dateString && date.getFullYear() < 3000) {
-            return date.toISOString().split('T')[0];
-        }
-
-        // Wenn alles fehlschlägt, null zurückgeben
-        return null;
-    }
-
-
-    function resetForm() {
-      currentEntryId = null;
-      entryDateInput.value = new Date().toISOString().split('T')[0];
-      bestOfDayInput.value = '';
-      lottaInput.value = '';
-      theaInput.value = '';
-      deleteBtn.style.display = 'none';
-      saveBtn.textContent = 'Speichern';
-      selectMood('neutral');
-    }
-
-    function selectMood(mood) {
-        document.querySelectorAll('.mood-option').forEach(option => {
-            option.classList.remove('selected');
-            if (option.dataset.mood === mood) {
-                option.classList.add('selected');
-            }
-        });
-    }
-
-    function getSelectedMood() {
-        return document.querySelector('.mood-option.selected').dataset.mood;
-    }
-
-    async function loadEntries() {
-        if (!supabase) return;
-        
-        showLoader();
-        
-        // Holt alle Einträge, sortiert nach Datum absteigend
-        const { data, error } = await supabase
-            .from('entries')
-            .select('*')
-            .order('date', { ascending: false });
-
-        if (error) {
-            console.error('Fehler beim Laden der Einträge:', error);
-            hideLoader();
-            return;
-        }
-
-        allEntries = data || [];
-        renderEntries(allEntries);
-        hideLoader();
-    }
-
-    function renderEntries(entries) {
-      entriesList.innerHTML = '';
-      if (entries.length === 0) {
-        noEntriesMessage.style.display = 'block';
-        return;
-      }
-      noEntriesMessage.style.display = 'none';
-
-      entries.forEach(entry => {
-        const item = document.createElement('div');
-        item.className = 'card entry-item';
-        item.dataset.id = entry.id;
-
-        const dateDisplay = new Date(entry.date).toLocaleDateString('de-DE', {
-            weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit'
-        });
-        
-        const moodEmoji = {
-            'sad': '😞',
-            'neutral': '😐',
-            'happy': '😄'
-        }[entry.mood || 'neutral'];
-
-        item.innerHTML = `
-          <div class="entry-date">
-            ${dateDisplay}
-            <div>
-                <span class="mood-display">${moodEmoji}</span>
-                <button class="btn btn-primary btn-edit" data-id="${entry.id}">Bearbeiten</button>
+    <!-- STICKY HEADER -->
+    <div class="sticky-header-wrapper">
+        <div class="topbar">
+            <h1 class="app-title">Mein Journal</h1>
+            <div class="top-actions">
+              <button id="themeToggle" class="icon-btn" title="Design umschalten">☀️</button>
+              <button id="logoutBtn" class="text-btn">Logout</button>
             </div>
-          </div>
-          <div class="entry-content">
-            ${entry.best_of_day ? `<strong>Beste:</strong> <p>${entry.best_of_day.replace(/\n/g, '<br>')}</p>` : ''}
-            ${entry.lotta ? `<strong>Lotta:</strong> <p>${entry.lotta.replace(/\n/g, '<br>')}</p>` : ''}
-            ${entry.thea ? `<strong>Thea:</strong> <p>${entry.thea.replace(/\n/g, '<br>')}</p>` : ''}
-          </div>
-        `;
-        entriesList.appendChild(item);
-      });
+        </div>
+    </div>
 
-      document.querySelectorAll('.btn-edit').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const id = e.target.dataset.id;
-          const entry = allEntries.find(e => e.id == id);
-          if (entry) {
-            loadEntryForEdit(entry);
-          }
+    <div class="container">
+      
+      <!-- Reminder Box -->
+      <div id="reminderBox" class="reminder-box">
+          <div class="reminder-title">Backup Erinnerung</div>
+          <div class="reminder-text">Du hast diesen Monat noch keinen Export gemacht. Sichere deine Gedanken!</div>
+          <div class="reminder-actions">
+              <!-- Nur noch ein Button für direkten Excel Export -->
+              <button id="remindExportBtn" class="btn btn-primary" style="font-size:14px; padding:10px;">Jetzt als Excel exportieren</button>
+          </div>
+      </div>
+
+      <!-- Create/Edit Entry Card -->
+      <div class="card" id="editorCard">
+        <h2 id="editorTitle" style="text-align:center; font-size:16px; margin-bottom:12px; color:var(--text-secondary); text-transform:uppercase;">Neuer Eintrag</h2>
+        
+        <label style="margin-top:0">Datum</label>
+        <input type="date" id="entryDate">
+
+        <label>Das Beste des Tages</label>
+        <textarea id="bestOfDay" placeholder="Was war heute besonders schön?"></textarea>
+
+        <label>Lotta</label>
+        <textarea id="lotta" placeholder="Neues von Lotta..."></textarea>
+
+        <label>Thea</label>
+        <textarea id="thea" placeholder="Neues von Thea..."></textarea>
+
+        <!-- Mood Selector -->
+        <div class="mood-section">
+          <div class="mood-label">Stimmung</div>
+          <div class="mood-buttons">
+            <button class="mood-btn" data-mood="sad">😞</button>
+            <button class="mood-btn" data-mood="neutral">😐</button>
+            <button class="mood-btn" data-mood="happy">🙂</button>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar" style="position: relative;">
+          <button id="saveBtn" class="btn btn-primary">
+            <span>Speichern</span>
+          </button>
+          
+          <button id="cancelEditBtn" class="btn btn-secondary hidden">
+            <span>Abbrechen</span>
+          </button>
+
+          <button id="exportTriggerBtn" class="btn btn-secondary">
+            <span>Export</span>
+          </button>
+          
+          <label class="btn btn-secondary" style="margin:0;">
+            <span>Import</span>
+            <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
+          </label>
+          
+          <!-- Delete All Button (für Cleanup) -->
+          <button id="deleteAllBtn" class="btn btn-danger" style="margin-left: auto;">
+            <span>Alle Löschen</span>
+          </button>
+
+          <!-- Export Choice Popover -->
+          <div id="exportPopover" class="export-popover">
+            <button id="exportCsvBtn">Als CSV exportieren</button>
+            <button id="exportXlsxBtn">Als Excel exportieren</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Bar (Bereinigt) -->
+      <div class="card" style="padding:16px;">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin-bottom:12px;">Filter & Suche</div>
+        <div class="filter-wrapper">
+             <div class="filter-control" style="flex-grow: 2;">
+                 <label>Suchen</label>
+                 <input type="text" id="searchInput" placeholder="Suche (Fuzzy)...">
+             </div>
+             <!-- Stimmung Filter entfernt -->
+             <div class="filter-control">
+                 <label>Von Datum</label>
+                 <input type="date" id="filterDateFrom">
+             </div>
+             <div class="filter-control">
+                 <label>Bis Datum</label>
+                 <input type="date" id="filterDateTo">
+             </div>
+        </div>
+      </div>
+
+      <!-- Entries List -->
+      <div id="entriesContainer" class="entries-grid">
+        <!-- Entries will be loaded here -->
+      </div>
+    
+    </div> <!-- End Container -->
+  </div> <!-- End App Section -->
+
+  <script>
+    console.log('🚀 App startet...');
+    
+    // --- KONFIGURATION ---
+    const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdhb3NiaXljY3dhd3V6ZmphZ3ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMDYzODAsImV4cCI6MjA3ODY4MjM4MH0.s30-UTEY1xR3DP521ewc03aMRsG3WLH_I5VTi4_xu-4';
+    
+    // --- INITIALISIERUNG ---
+    const { createClient } = window.supabase;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Globale Variablen
+    let currentUser = null;
+    let selectedMood = null;
+    let allEntriesCache = []; // Rohdaten
+    let currentEditingId = null; // ID des Eintrags, der gerade bearbeitet wird
+    let fuse; // Search Engine
+
+    // DOM Elemente
+    const $ = id => document.getElementById(id);
+    const elements = {
+      authSection: $('authSection'),
+      appSection: $('appSection'),
+      email: $('authEmail'),
+      password: $('authPassword'),
+      entriesContainer: $('entriesContainer'),
+      searchInput: $('searchInput'),
+      // filterMood entfernt
+      filterDateFrom: $('filterDateFrom'),
+      filterDateTo: $('filterDateTo'),
+      themeToggle: $('themeToggle'),
+      exportPopover: $('exportPopover'),
+      saveBtn: $('saveBtn'),
+      deleteAllBtn: $('deleteAllBtn'), // Neu referenziert
+      editorTitle: $('editorTitle'),
+      cancelEditBtn: $('cancelEditBtn'),
+      reminderBox: $('reminderBox'),
+      fields: {
+        date: $('entryDate'),
+        best: $('bestOfDay'),
+        lotta: $('lotta'),
+        thea: $('thea')
+      }
+    };
+
+    // --- HELPER: TOAST ---
+    function showToast(msg, isError = false) {
+      const el = $('toast');
+      el.textContent = msg;
+      el.className = 'toast visible';
+      if(isError) el.classList.add('error');
+      else el.classList.remove('error');
+      
+      setTimeout(() => el.classList.remove('visible'), 3000);
+    }
+
+    // --- THEME LOGIC ---
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+        elements.themeToggle.textContent = '🌙';
+      }
+    }
+    elements.themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('light-mode');
+      const isLight = document.body.classList.contains('light-mode');
+      elements.themeToggle.textContent = isLight ? '🌙' : '☀️';
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    });
+
+    // --- AUTO RESIZE TEXTAREAS ---
+    function autoResize(textarea) {
+      textarea.style.height = 'auto'; 
+      textarea.style.height = textarea.scrollHeight + 'px'; 
+    }
+    ['best', 'lotta', 'thea'].forEach(id => {
+      const el = elements.fields[id];
+      el.addEventListener('input', () => autoResize(el));
+      autoResize(el);
+    });
+
+    // --- AUTHENTIFIZIERUNG ---
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) showApp(session.user);
+      else showAuth();
+    });
+
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) showApp(session.user);
+      else if (event === 'SIGNED_OUT') showAuth();
+    });
+
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          currentUser = session.user;
+          loadEntries();
+        } else {
+          showAuth();
+        }
+      }
+    });
+
+    function showAuth() {
+      elements.authSection.classList.remove('hidden');
+      elements.appSection.classList.add('hidden');
+      currentUser = null;
+    }
+
+    function showApp(user) {
+      currentUser = user;
+      elements.authSection.classList.add('hidden');
+      elements.appSection.classList.remove('hidden');
+      resetEditor();
+      loadEntries();
+      checkMonthlyReminder();
+    }
+
+    $('loginBtn').addEventListener('click', async () => {
+      showToast('Anmelden...');
+      const { error } = await supabase.auth.signInWithPassword({
+        email: elements.email.value.trim(),
+        password: elements.password.value
+      });
+      if (error) showToast('Fehler: ' + error.message, true);
+    });
+
+    $('signupBtn').addEventListener('click', async () => {
+      showToast('Registriere...');
+      const { error } = await supabase.auth.signUp({
+        email: elements.email.value.trim(),
+        password: elements.password.value
+      });
+      if (error) showToast('Fehler: ' + error.message, true);
+      else showToast('Registrierung erfolgreich! Bitte einloggen.');
+    });
+
+    $('logoutBtn').addEventListener('click', () => supabase.auth.signOut());
+
+    // --- REMINDER LOGIC ---
+    function checkMonthlyReminder() {
+        const lastDismissed = localStorage.getItem('last_dismissed_export_month');
+        const currentMonth = new Date().toISOString().slice(0, 7); 
+        
+        if (lastDismissed !== currentMonth) {
+            elements.reminderBox.style.display = 'block';
+        } else {
+            elements.reminderBox.style.display = 'none';
+        }
+    }
+
+    function dismissReminder() {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        localStorage.setItem('last_dismissed_export_month', currentMonth);
+        elements.reminderBox.style.display = 'none';
+    }
+
+    // Neuer Handler: Direkt Exportieren (Excel) & Ausblenden
+    $('remindExportBtn').addEventListener('click', () => {
+        exportData('xlsx');
+        // dismissReminder() wird in exportData aufgerufen
+    });
+
+    // --- EDITOR LOGIC (CREATE & UPDATE) ---
+    document.querySelectorAll('.mood-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedMood = btn.dataset.mood;
+      });
+    });
+
+    function resetEditor() {
+        currentEditingId = null;
+        elements.editorTitle.textContent = "Neuer Eintrag";
+        elements.saveBtn.innerHTML = "<span>Speichern</span>";
+        elements.cancelEditBtn.classList.add('hidden');
+        
+        elements.fields.date.value = new Date().toISOString().split('T')[0];
+        elements.fields.best.value = '';
+        elements.fields.lotta.value = '';
+        elements.fields.thea.value = '';
+        
+        selectedMood = null;
+        document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+        
+        ['best', 'lotta', 'thea'].forEach(id => autoResize(elements.fields[id]));
+    }
+
+    function startEdit(entry) {
+        currentEditingId = entry.id;
+        elements.editorTitle.textContent = "Eintrag Bearbeiten";
+        elements.saveBtn.innerHTML = "<span>Änderungen speichern</span>";
+        elements.cancelEditBtn.classList.remove('hidden');
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        elements.fields.date.value = entry.entry_date;
+        elements.fields.best.value = entry.best_of_day || '';
+        elements.fields.lotta.value = entry.lotta || '';
+        elements.fields.thea.value = entry.thea || '';
+
+        selectedMood = entry.mood;
+        document.querySelectorAll('.mood-btn').forEach(b => {
+            if (b.dataset.mood === entry.mood) b.classList.add('selected');
+            else b.classList.remove('selected');
         });
-      });
+        
+        ['best', 'lotta', 'thea'].forEach(id => autoResize(elements.fields[id]));
     }
 
-    function loadEntryForEdit(entry) {
-      currentEntryId = entry.id;
-      entryDateInput.value = entry.date;
-      bestOfDayInput.value = entry.best_of_day || '';
-      lottaInput.value = entry.lotta || '';
-      theaInput.value = entry.thea || '';
-      saveBtn.textContent = 'Änderungen speichern';
-      deleteBtn.style.display = 'inline-block';
-      selectMood(entry.mood || 'neutral');
-      // Scroll zum Formular
-      document.body.scrollTop = 0;
-      document.documentElement.scrollTop = 0;
-    }
+    elements.cancelEditBtn.addEventListener('click', resetEditor);
 
-    async function saveEntry() {
-      showLoader();
-      const entryDate = entryDateInput.value;
-      const entry = {
-        date: entryDate,
-        best_of_day: bestOfDayInput.value.trim() || null,
-        lotta: lottaInput.value.trim() || null,
-        thea: theaInput.value.trim() || null,
-        mood: getSelectedMood()
+    elements.saveBtn.addEventListener('click', async () => {
+      if (!selectedMood) return showToast('Bitte Stimmung wählen! 😐', true);
+      if (!currentUser) return showToast('Nicht eingeloggt.', true);
+
+      const originalText = elements.saveBtn.innerHTML;
+      elements.saveBtn.disabled = true;
+      elements.saveBtn.innerHTML = "<span>Wird gespeichert...</span>";
+
+      const entryData = {
+        user_id: currentUser.id,
+        entry_date: elements.fields.date.value,
+        best_of_day: elements.fields.best.value || null,
+        lotta: elements.fields.lotta.value || null,
+        thea: elements.fields.thea.value || null,
+        mood: selectedMood
       };
 
-      if (!entryDate) {
-        alert('Bitte wähle ein Datum aus.');
-        hideLoader();
-        return;
-      }
+      let error;
       
-      let error = null;
-      
-      if (currentEntryId) {
-        // Update (Bearbeiten)
-        const { error: updateError } = await supabase
-            .from('entries')
-            .update(entry)
-            .eq('id', currentEntryId);
-        error = updateError;
+      if (currentEditingId) {
+          const res = await supabase.from('entries').update(entryData).eq('id', currentEditingId);
+          error = res.error;
       } else {
-        // Insert (Neu anlegen) - Nutzen Sie hier auch upsert, um Duplikate zu verhindern
-        // Wenn bereits ein Eintrag für dieses Datum existiert, wird dieser aktualisiert.
-        const { error: insertError } = await supabase
-            .from('entries')
-            .upsert(entry, { onConflict: 'date' });
-        error = insertError;
+          const res = await supabase.from('entries').insert(entryData);
+          error = res.error;
       }
+      
+      elements.saveBtn.disabled = false;
+      elements.saveBtn.innerHTML = originalText;
 
       if (error) {
-        alert('Fehler beim Speichern: ' + error.message);
+        showToast('Fehler: ' + error.message, true);
       } else {
-        alert('Eintrag erfolgreich gespeichert! ✅');
-        resetForm();
+        showToast(currentEditingId ? 'Aktualisiert! 🎉' : 'Gespeichert! 🎉');
+        resetEditor();
         loadEntries();
       }
-      hideLoader();
-    }
-    
-    async function deleteEntry() {
-        if (!currentEntryId) return;
+    });
 
-        // Custom Modal-Ersatz für alert/confirm
-        if (!confirm("Bist du sicher, dass du diesen Eintrag löschen möchtest?")) {
-            return;
+    // --- DATA LOADING & FILTERING ---
+    async function loadEntries() {
+      elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:20px;">Lade...</div>';
+      
+      const { data, error } = await supabase
+        .from('entries')
+        .select('*')
+        .order('entry_date', { ascending: false })
+        .limit(2000);
+
+      if (error) return showToast('Ladefehler: ' + error.message, true);
+
+      allEntriesCache = data || [];
+      
+      fuse = new Fuse(allEntriesCache, {
+        includeScore: true,
+        threshold: 0.4, 
+        keys: ['best_of_day', 'lotta', 'thea', 'entry_date']
+      });
+
+      renderFilteredEntries();
+    }
+
+    function renderFilteredEntries() {
+        const searchTerm = elements.searchInput.value.toLowerCase().trim();
+        const dateFrom = elements.filterDateFrom.value;
+        const dateTo = elements.filterDateTo.value;
+
+        // 1. Standard Filters (Nur Datum, Stimmung entfernt)
+        let filtered = allEntriesCache.filter(entry => {
+            if (dateFrom && entry.entry_date < dateFrom) return false;
+            if (dateTo && entry.entry_date > dateTo) return false;
+            return true;
+        });
+
+        // 2. Fuzzy Search
+        if (searchTerm.length > 0) {
+            const fuseResult = fuse.search(searchTerm).map(r => r.item);
+            filtered = filtered.filter(item => fuseResult.includes(item));
         }
 
-        showLoader();
-        const { error } = await supabase
-            .from('entries')
-            .delete()
-            .eq('id', currentEntryId);
+        renderDOM(filtered);
+    }
 
+    // Filter Listeners
+    elements.searchInput.addEventListener('input', renderFilteredEntries);
+    elements.filterDateFrom.addEventListener('change', renderFilteredEntries);
+    elements.filterDateTo.addEventListener('change', renderFilteredEntries);
+
+    function renderDOM(entries) {
+      if (!entries.length) {
+        elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:40px;">Keine Einträge gefunden.</div>';
+        return;
+      }
+
+      elements.entriesContainer.innerHTML = entries.map(entry => {
+        const moodMap = { 'happy': '🙂', 'neutral': '😐', 'sad': '😞' };
+        const displayDate = new Date(entry.entry_date).toLocaleDateString('de-DE', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit' });
+
+        return `
+          <div class="entry-card">
+            <div class="entry-header">
+              <span class="entry-date">${displayDate}</span>
+              <span class="entry-mood">${moodMap[entry.mood] || ''}</span>
+            </div>
+            <div class="entry-body">
+              ${entry.best_of_day ? `
+                <div class="entry-block">
+                    <span class="label-text">Das Beste des Tages</span>
+                    <div class="entry-field-display">${escapeHtml(entry.best_of_day)}</div>
+                </div>` : ''}
+              
+              ${entry.lotta ? `
+                <div class="entry-block">
+                    <span class="label-text">Lotta</span>
+                    <div class="entry-field-display">${escapeHtml(entry.lotta)}</div>
+                </div>` : ''}
+
+              ${entry.thea ? `
+                <div class="entry-block">
+                    <span class="label-text">Thea</span>
+                    <div class="entry-field-display">${escapeHtml(entry.thea)}</div>
+                </div>` : ''}
+            </div>
+            <div class="entry-actions-row">
+                <button class="btn-edit-text" onclick="window.editEntry('${entry.id}')">Bearbeiten</button>
+                <button class="btn-danger-text" onclick="window.deleteEntry('${entry.id}')">Löschen</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.editEntry = (id) => {
+        const entry = allEntriesCache.find(e => e.id === id);
+        if (entry) startEdit(entry);
+    };
+
+    window.deleteEntry = async (id) => {
+      // WICHTIG: Verwenden Sie hier KEIN alert()/confirm().
+      // Für diese Demo verwenden wir das Browser-Confirm, da ein Custom Modal fehlt.
+      if (!window.confirm('Eintrag wirklich löschen?')) return; 
+      
+      const { error } = await supabase.from('entries').delete().eq('id', id);
+      if (error) showToast(error.message, true);
+      else {
+        showToast('Gelöscht. 👋');
+        allEntriesCache = allEntriesCache.filter(e => e.id !== id);
+        fuse.setCollection(allEntriesCache);
+        renderFilteredEntries();
+      }
+    };
+
+    // --- DELETE ALL (CLEANUP) ---
+    // Dies löscht alle Einträge des aktuellen Users.
+    elements.deleteAllBtn.addEventListener('click', async () => {
+        if (!confirm('Vorsicht! Willst du wirklich ALLE deine Einträge unwiderruflich löschen?')) return;
+        if (!confirm('Wirklich sicher? Das kann nicht rückgängig gemacht werden.')) return;
+        
+        showToast('Lösche alle Einträge...');
+        
+        // Da wir keine 'delete-all' Funktion haben, müssen wir erst alle IDs holen oder hoffen, dass RLS uns erlaubt
+        // `delete()` ohne Filter löscht oft nichts ohne explizite Policy.
+        // Besser: delete where user_id equals current user.
+        // Aber Supabase Client erlaubt oft kein Delete ohne Filter.
+        // Trick: Filter auf etwas, das immer wahr ist für diesen User, z.B. user_id = currentUser.id
+        
+        const { error } = await supabase.from('entries').delete().eq('user_id', currentUser.id);
+        
         if (error) {
-            alert('Fehler beim Löschen: ' + error.message);
+            showToast('Fehler beim Löschen: ' + error.message, true);
         } else {
-            alert('Eintrag erfolgreich gelöscht! 🗑️');
-            resetForm();
+            showToast('Alle Einträge gelöscht.');
             loadEntries();
         }
-        hideLoader();
+    });
+
+    // --- IMPORT / EXPORT ---
+    const popover = elements.exportPopover;
+    const trigger = $('exportTriggerBtn');
+    
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = popover.style.display === 'flex';
+      popover.style.display = isVisible ? 'none' : 'flex';
+    });
+    document.addEventListener('click', (e) => {
+      if (!trigger.contains(e.target) && !popover.contains(e.target)) {
+        popover.style.display = 'none';
+      }
+    });
+
+    $('exportCsvBtn').addEventListener('click', () => { popover.style.display = 'none'; exportData('csv'); });
+    $('exportXlsxBtn').addEventListener('click', () => { popover.style.display = 'none'; exportData('xlsx'); });
+
+    async function exportData(type) {
+      showToast(`Exportiere ${type.toUpperCase()}...`);
+      const data = allEntriesCache; 
+      
+      const moodScore = { 'sad': 1, 'neutral': 2, 'happy': 3 };
+      const processedData = data.map(row => ({
+          entry_date: row.entry_date,
+          best_of_day: row.best_of_day,
+          lotta: row.lotta,
+          thea: row.thea,
+          mood: moodScore[row.mood] || row.mood 
+      }));
+
+      const filename = `journal_export_${new Date().toISOString().slice(0, 10)}.${type}`;
+
+      if (type === 'csv') {
+        const headers = ['entry_date', 'best_of_day', 'lotta', 'thea', 'mood'];
+        const csvContent = [
+          headers.join(','),
+          ...processedData.map(row => headers.map(h => {
+              const val = String(row[h] || '').replace(/"/g, '""');
+              return `"${val}"`;
+          }).join(','))
+        ].join('\n');
+        downloadBlob(csvContent, filename, 'text/csv;charset=utf-8;');
+      } else {
+        const ws = XLSX.utils.json_to_sheet(processedData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Journal");
+        XLSX.writeFile(wb, filename);
+      }
+      
+      showToast('Export abgeschlossen! ✅');
+      dismissReminder(); 
     }
 
+    // --- ROBUST IMPORT ---
+    function normalizeDate(val) {
+        if (!val) {
+            // Wenn kein Wert da ist, geben wir null zurück, damit der Filter es aussortieren kann.
+            // Der User möchte keine leeren Einträge.
+            return null;
+        }
+        
+        const numericVal = Number(val);
+        
+        // 1. Versuch: Excel Serial (wenn XLSX verfügbar ist)
+        if (typeof XLSX !== 'undefined' && typeof XLSX.utils.numberToDate === 'function' && 
+            !isNaN(numericVal) && numericVal > 20000 && numericVal < 70000) { 
+             
+             try {
+                const date = XLSX.utils.numberToDate(numericVal); 
+                // UTC-Korrektur (Excel Serial ist oft lokale Zeit 00:00, was UTC Vorabend sein kann)
+                // Wir nehmen einfach das Datumstring-Format, das schneidet die Zeit ab.
+                // Aber Vorsicht bei Zeitzonen. numberToDate gibt meist lokale Zeit.
+                // Um sicher zu gehen, addieren wir ein paar Stunden, um 00:00 Probleme zu vermeiden
+                date.setHours(12); 
+                return date.toISOString().split('T')[0];
+             } catch(e) {
+                 console.warn("XLSX Konvertierungsfehler, versuche String-Parsing.", e);
+             }
+        }
+        
+        const str = String(val).trim();
+
+        // 2. Versuch: String-Parsing (DD.MM.YYYY, YYYY-MM-DD, etc.)
+        // DD.MM.YYYY (Deutsch)
+        if (str.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
+            const parts = str.split('.');
+            return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+        }
+        
+        // 3. YYYY-MM-DD or standard
+        try {
+            const date = new Date(str);
+            if (!isNaN(date.getTime())) { 
+                return date.toISOString().split('T')[0];
+            }
+        } catch(e) {}
+        
+        // Fallback: Aktuelles Datum (aber nur wenn ein Wert da war, sonst null)
+        // Aber Achtung: Wenn val da war (z.B. "Gestern"), aber nicht parsbar, 
+        // nehmen wir heute oder ignorieren? Der User will das Datum des Eintrags.
+        // Wenn es nicht parsbar ist, ist 'Heute' der sicherste Fallback, 
+        // aber wir loggen es.
+        console.warn(`Ungültiger Datumswert (${val}) gefunden. Verwende aktuelles Datum.`);
+        return new Date().toISOString().split('T')[0];
+    }
+
+    $('importFile').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      showToast('Importiere Daten. Bitte warten...');
+      
+      try {
+        let rows;
+        if (file.name.endsWith('.csv')) {
+          const text = await file.text();
+          rows = parseCSV(text);
+        } else {
+          const buffer = await file.arrayBuffer();
+          // Hier wird die XLSX-Datei gelesen
+          const wb = XLSX.read(buffer, { type: 'array' });
+          rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: true }); 
+        }
+
+        const entries = rows.map(r => {
+            const moodMap = { '1': 'sad', '2': 'neutral', '3': 'happy' };
+            let mood = String(r.mood || '').toLowerCase().trim();
+            if (moodMap[mood]) mood = moodMap[mood];
+            if (!['sad','neutral','happy'].includes(mood)) mood = 'neutral';
+            
+            // Check headers: User might use 'Datum' or 'date' or 'entry_date'
+            const rawDate = r.entry_date || r.date || r.Datum || r.datum;
+            const normDate = normalizeDate(rawDate);
+
+            // Check Content: At least one text field must be present
+            // User headers: best_of_day/best, lotta, thea
+            const bestText = r.best_of_day || r.best || r['Das Beste'] || null;
+            const lottaText = r.lotta || r.Lotta || null;
+            const theaText = r.thea || r.Thea || null;
+
+            return {
+                user_id: currentUser.id,
+                entry_date: normDate, 
+                best_of_day: bestText,
+                lotta: lottaText,
+                thea: theaText,
+                mood: mood,
+                _validDate: !!normDate, // Hilfsflag
+                _hasContent: !!(bestText || lottaText || theaText) // Hilfsflag
+            };
+        })
+        // FILTER: Nur Einträge mit Datum UND Inhalt
+        .filter(e => e._validDate && e._hasContent)
+        .map(e => {
+            // Clean up helper props
+            delete e._validDate;
+            delete e._hasContent;
+            return e;
+        }); 
+
+        if (entries.length === 0) {
+            return showToast('Keine gültigen Einträge gefunden (Datum + Inhalt benötigt).', true);
+        }
+
+        const { error } = await supabase.from('entries').insert(entries);
+        if (error) {
+           console.error('Supabase Import Fehler:', error);
+           throw new Error(error.message || 'Unbekannter Datenbankfehler beim Import.');
+        }
+        
+        showToast(`${entries.length} Einträge importiert!`);
+        loadEntries();
+      } catch (err) {
+        showToast('Import Fehler: ' + err.message, true);
+      }
+      $('importFile').value = ''; 
+    });
+
+    // --- UTILS ---
+    function escapeHtml(text) {
+      if (typeof text !== 'string') return '';
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function downloadBlob(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+    
     function parseCSV(text) {
       const lines = text.split('\n').filter(l => l.trim());
-      // Annahme: Header in der ersten Zeile, Komma als Trennzeichen
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/\"/g, ''));
-      
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
       return lines.slice(1).map(line => {
-        // Nutzt regex, um Werte in Anführungszeichen korrekt zu behandeln
-        const values = line.match(/(".*?"|[^",\n]+)(,|$)/g) || [];
-        
+        const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
         const obj = {};
-        headers.forEach((h, i) => {
-            // Wert bereinigen (Anführungszeichen entfernen, trimmen)
-            obj[h] = (values[i] || '').replace(/,$/, '').replace(/^\"|\"$/g, '').trim();
-        });
+        headers.forEach((h, i) => obj[h] = vals[i] || '');
         return obj;
       });
     }
 
-    async function handleImport(event) {
-        if (!supabase) return;
-        const file = event.target.files[0];
-        if (!file) return;
-
-        showLoader();
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const text = e.target.result;
-                const parsedData = parseCSV(text);
-                
-                if (parsedData.length === 0) {
-                    alert('Die Datei enthält keine Daten.');
-                    hideLoader();
-                    importFile.value = '';
-                    return;
-                }
-
-                // Daten in das Datenbank-Format umwandeln und Datum parsen
-                const entries = parsedData.map(row => {
-                    // Ersetze 'date' mit 'datum' oder anderen möglichen Header-Namen
-                    const dateKey = Object.keys(row).find(k => k.includes('date') || k.includes('datum'));
-                    const dateValue = dateKey ? row[dateKey] : null;
-
-                    const parsedDate = parseDate(dateValue);
-
-                    // Ungültige Datumsangaben überspringen
-                    if (!parsedDate) {
-                        console.warn('Ungültiges Datum übersprungen:', dateValue);
-                        return null; 
-                    }
-                    
-                    // Supabase-Spaltennamen:
-                    return {
-                        date: parsedDate,
-                        // Verschiedene Header-Namen abfangen ('best' oder 'best_of_day')
-                        best_of_day: row.best_of_day || row.best || null, 
-                        lotta: row.lotta || null,
-                        thea: row.thea || null,
-                        mood: ['sad', 'neutral', 'happy'].includes(row.mood) ? row.mood : 'neutral'
-                    };
-                }).filter(e => e !== null); // Ungültige Einträge filtern
-
-                if (entries.length === 0) {
-                    alert('Keine gültigen Einträge zum Importieren gefunden.');
-                    hideLoader();
-                    importFile.value = '';
-                    return;
-                }
-                
-                // *** WICHTIGE ÄNDERUNG: UPSERT statt INSERT ***
-                // upsert sorgt dafür, dass Einträge mit demselben Datum ('date') 
-                // zusammengeführt (aktualisiert) werden, anstatt Duplikate zu erstellen.
-                const { error } = await supabase
-                    .from('entries')
-                    .upsert(entries, { onConflict: 'date' }); 
-                
-                if (error) {
-                    alert('Fehler beim Import: ' + error.message);
-                } else {
-                    alert(`${entries.length} Einträge erfolgreich importiert/aktualisiert! ✅`);
-                    loadEntries();
-                }
-            } catch (error) {
-                alert('Import-Fehler: ' + error.message);
-            } finally {
-                hideLoader();
-                importFile.value = '';
-            }
-        };
-        reader.readAsText(file);
-    }
-
-    function downloadFile(content, filename, mimeType) {
-        const a = document.createElement('a');
-        const blob = new Blob([content], { type: mimeType });
-        a.href = URL.createObjectURL(blob);
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-
-    function handleExport() {
-        if (allEntries.length === 0) {
-            alert('Keine Einträge zum Exportieren vorhanden.');
-            return;
-        }
-
-        const dataForExport = allEntries.map(entry => ({
-            Datum: new Date(entry.date).toLocaleDateString('de-DE'),
-            'Datum (ISO)': entry.date, // ISO Format als Backup
-            'Das Beste (Bete)': entry.best_of_day || '',
-            Lotta: entry.lotta || '',
-            Thea: entry.thea || '',
-            Stimmung: entry.mood || 'neutral'
-        }));
-
-        const ws = XLSX.utils.json_to_sheet(dataForExport);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Tagebuch");
-        
-        // Erzeugt eine Excel-Datei (.xlsx)
-        XLSX.writeFile(wb, "Tagebuch_Export.xlsx");
-        alert('Daten erfolgreich exportiert! 💾');
-    }
-
-    // --- Event Listeners ---
-    saveBtn.addEventListener('click', saveEntry);
-    deleteBtn.addEventListener('click', deleteEntry);
-    exportBtn.addEventListener('click', handleExport);
-    importFile.addEventListener('change', handleImport);
-
-    moodSelector.addEventListener('click', (e) => {
-        const option = e.target.closest('.mood-option');
-        if (option) {
-            selectMood(option.dataset.mood);
-        }
-    });
-
-    // Stellt sicher, dass das Formular geleert wird, wenn man ein neues Datum auswählt
-    entryDateInput.addEventListener('change', () => {
-        const existingEntry = allEntries.find(e => e.date === entryDateInput.value);
-        if (!existingEntry) {
-            // Nur zurücksetzen, wenn es KEINEN Eintrag für dieses Datum gibt
-            if (currentEntryId) {
-                resetForm();
-                entryDateInput.value = entryDateInput.value; // behält das neue Datum
-            }
-        } else {
-            // Eintrag laden, wenn er existiert
-            loadEntryForEdit(existingEntry);
-        }
-    });
-
-    // Initialisierung starten
-    initializeApp();
+    initTheme();
   </script>
 </body>
 </html>
