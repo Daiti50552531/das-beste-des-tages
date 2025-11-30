@@ -8,7 +8,7 @@
   <!-- Supabase Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
-  <!-- SheetJS für Excel-Export/Import (0.18.5 ist die stabile Version mit numberToDate) -->
+  <!-- SheetJS für Excel-Export/Import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- Fuse.js für unscharfe Suche -->
@@ -514,6 +514,11 @@
             <span>Import</span>
             <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
           </label>
+          
+          <!-- Delete All Button (für Cleanup) -->
+          <button id="deleteAllBtn" class="btn btn-danger" style="margin-left: auto;">
+            <span>Alle Löschen</span>
+          </button>
 
           <!-- Export Choice Popover -->
           <div id="exportPopover" class="export-popover">
@@ -584,6 +589,7 @@
       themeToggle: $('themeToggle'),
       exportPopover: $('exportPopover'),
       saveBtn: $('saveBtn'),
+      deleteAllBtn: $('deleteAllBtn'), // Neu referenziert
       editorTitle: $('editorTitle'),
       cancelEditBtn: $('cancelEditBtn'),
       reminderBox: $('reminderBox'),
@@ -917,6 +923,30 @@
       }
     };
 
+    // --- DELETE ALL (CLEANUP) ---
+    // Dies löscht alle Einträge des aktuellen Users.
+    elements.deleteAllBtn.addEventListener('click', async () => {
+        if (!confirm('Vorsicht! Willst du wirklich ALLE deine Einträge unwiderruflich löschen?')) return;
+        if (!confirm('Wirklich sicher? Das kann nicht rückgängig gemacht werden.')) return;
+        
+        showToast('Lösche alle Einträge...');
+        
+        // Da wir keine 'delete-all' Funktion haben, müssen wir erst alle IDs holen oder hoffen, dass RLS uns erlaubt
+        // `delete()` ohne Filter löscht oft nichts ohne explizite Policy.
+        // Besser: delete where user_id equals current user.
+        // Aber Supabase Client erlaubt oft kein Delete ohne Filter.
+        // Trick: Filter auf etwas, das immer wahr ist für diesen User, z.B. user_id = currentUser.id
+        
+        const { error } = await supabase.from('entries').delete().eq('user_id', currentUser.id);
+        
+        if (error) {
+            showToast('Fehler beim Löschen: ' + error.message, true);
+        } else {
+            showToast('Alle Einträge gelöscht.');
+            loadEntries();
+        }
+    });
+
     // --- IMPORT / EXPORT ---
     const popover = elements.exportPopover;
     const trigger = $('exportTriggerBtn');
@@ -974,27 +1004,27 @@
     // --- ROBUST IMPORT ---
     function normalizeDate(val) {
         if (!val) {
-            // Fallback 1: Wenn leer, gib heutiges Datum zurück
-            return new Date().toISOString().split('T')[0];
+            // Wenn kein Wert da ist, geben wir null zurück, damit der Filter es aussortieren kann.
+            // Der User möchte keine leeren Einträge.
+            return null;
         }
         
         const numericVal = Number(val);
         
         // 1. Versuch: Excel Serial (wenn XLSX verfügbar ist)
         if (typeof XLSX !== 'undefined' && typeof XLSX.utils.numberToDate === 'function' && 
-            !isNaN(numericVal) && numericVal > 0) { // Muss positive Zahl sein
+            !isNaN(numericVal) && numericVal > 20000 && numericVal < 70000) { 
              
              try {
-                // Konvertiere die Excel-Serienzahl (z.B. 44141) in ein JS-Date-Objekt
                 const date = XLSX.utils.numberToDate(numericVal); 
-                
-                // Prüfen, ob das generierte Datum gültig ist und nicht außerhalb des Bereichs
-                if (!isNaN(date.getTime()) && date.getFullYear() > 1900 && date.getFullYear() < 3000) {
-                   return date.toISOString().split('T')[0];
-                }
+                // UTC-Korrektur (Excel Serial ist oft lokale Zeit 00:00, was UTC Vorabend sein kann)
+                // Wir nehmen einfach das Datumstring-Format, das schneidet die Zeit ab.
+                // Aber Vorsicht bei Zeitzonen. numberToDate gibt meist lokale Zeit.
+                // Um sicher zu gehen, addieren wir ein paar Stunden, um 00:00 Probleme zu vermeiden
+                date.setHours(12); 
+                return date.toISOString().split('T')[0];
              } catch(e) {
                  console.warn("XLSX Konvertierungsfehler, versuche String-Parsing.", e);
-                 // Fallback zu String-Parsing unten
              }
         }
         
@@ -1004,24 +1034,23 @@
         // DD.MM.YYYY (Deutsch)
         if (str.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
             const parts = str.split('.');
-            // Wichtig: Date-Objekte in JS werden als MM/DD/YYYY erwartet.
-            const dateStr = `${parts[1]}/${parts[0]}/${parts[2]}`; 
-            const date = new Date(dateStr);
-            if (!isNaN(date.getTime())) { 
-                return date.toISOString().split('T')[0];
-            }
+            return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
         }
         
-        // Standard ISO-Format (YYYY-MM-DD) oder andere Standards
+        // 3. YYYY-MM-DD or standard
         try {
             const date = new Date(str);
-            if (!isNaN(date.getTime()) && date.getFullYear() > 1900 && date.getFullYear() < 3000) {
+            if (!isNaN(date.getTime())) { 
                 return date.toISOString().split('T')[0];
             }
         } catch(e) {}
         
-        // Finaler Fallback: Aktuelles Datum, um Datenbankfehler zu vermeiden
-        console.warn(`Ungültiger Datumswert (${val}) gefunden. Verwende aktuelles Datum als Fallback.`);
+        // Fallback: Aktuelles Datum (aber nur wenn ein Wert da war, sonst null)
+        // Aber Achtung: Wenn val da war (z.B. "Gestern"), aber nicht parsbar, 
+        // nehmen wir heute oder ignorieren? Der User will das Datum des Eintrags.
+        // Wenn es nicht parsbar ist, ist 'Heute' der sicherste Fallback, 
+        // aber wir loggen es.
+        console.warn(`Ungültiger Datumswert (${val}) gefunden. Verwende aktuelles Datum.`);
         return new Date().toISOString().split('T')[0];
     }
 
@@ -1039,7 +1068,7 @@
           const buffer = await file.arrayBuffer();
           // Hier wird die XLSX-Datei gelesen
           const wb = XLSX.read(buffer, { type: 'array' });
-          rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: true }); // Wichtig: { raw: true } beibehalten
+          rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: true }); 
         }
 
         const entries = rows.map(r => {
@@ -1048,24 +1077,42 @@
             if (moodMap[mood]) mood = moodMap[mood];
             if (!['sad','neutral','happy'].includes(mood)) mood = 'neutral';
             
+            // Check headers: User might use 'Datum' or 'date' or 'entry_date'
+            const rawDate = r.entry_date || r.date || r.Datum || r.datum;
+            const normDate = normalizeDate(rawDate);
+
+            // Check Content: At least one text field must be present
+            // User headers: best_of_day/best, lotta, thea
+            const bestText = r.best_of_day || r.best || r['Das Beste'] || null;
+            const lottaText = r.lotta || r.Lotta || null;
+            const theaText = r.thea || r.Thea || null;
+
             return {
                 user_id: currentUser.id,
-                // RUFT DIE NEUE, ROBUSTERE FUNKTION AUF
-                entry_date: normalizeDate(r.entry_date || r.date), 
-                best_of_day: r.best_of_day || r.best || null,
-                lotta: r.lotta || null,
-                thea: r.thea || null,
-                mood: mood
+                entry_date: normDate, 
+                best_of_day: bestText,
+                lotta: lottaText,
+                thea: theaText,
+                mood: mood,
+                _validDate: !!normDate, // Hilfsflag
+                _hasContent: !!(bestText || lottaText || theaText) // Hilfsflag
             };
-        }).filter(e => e.entry_date); 
+        })
+        // FILTER: Nur Einträge mit Datum UND Inhalt
+        .filter(e => e._validDate && e._hasContent)
+        .map(e => {
+            // Clean up helper props
+            delete e._validDate;
+            delete e._hasContent;
+            return e;
+        }); 
 
         if (entries.length === 0) {
-            return showToast('Keine gültigen Einträge gefunden.', true);
+            return showToast('Keine gültigen Einträge gefunden (Datum + Inhalt benötigt).', true);
         }
 
         const { error } = await supabase.from('entries').insert(entries);
         if (error) {
-           // Verbessertes Error-Handling
            console.error('Supabase Import Fehler:', error);
            throw new Error(error.message || 'Unbekannter Datenbankfehler beim Import.');
         }
