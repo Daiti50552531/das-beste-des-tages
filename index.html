@@ -903,8 +903,9 @@
     };
 
     window.deleteEntry = async (id) => {
-      // WICHTIG: Verwenden Sie hier KEIN alert()/confirm()
-      if (!confirm('Eintrag wirklich löschen?')) return; // Custom modal müsste hier eingebaut werden, aber für die schnelle Korrektur bleibt confirm drin.
+      // WICHTIG: Verwenden Sie hier KEIN alert()/confirm().
+      // Für diese Demo verwenden wir das Browser-Confirm, da ein Custom Modal fehlt.
+      if (!window.confirm('Eintrag wirklich löschen?')) return; 
       
       const { error } = await supabase.from('entries').delete().eq('id', id);
       if (error) showToast(error.message, true);
@@ -972,41 +973,55 @@
 
     // --- ROBUST IMPORT ---
     function normalizeDate(val) {
-        if (!val) return new Date().toISOString().split('T')[0];
+        if (!val) {
+            // Fallback 1: Wenn leer, gib heutiges Datum zurück
+            return new Date().toISOString().split('T')[0];
+        }
         
         const numericVal = Number(val);
         
-        // 1. Excel Serial
+        // 1. Versuch: Excel Serial (wenn XLSX verfügbar ist)
         if (typeof XLSX !== 'undefined' && typeof XLSX.utils.numberToDate === 'function' && 
-            !isNaN(numericVal) && numericVal > 20000 && numericVal < 70000) {
+            !isNaN(numericVal) && numericVal > 0) { // Muss positive Zahl sein
              
-             // Wenn die Funktion verfügbar ist und die Zahl wie ein Excel-Datum aussieht
              try {
+                // Konvertiere die Excel-Serienzahl (z.B. 44141) in ein JS-Date-Objekt
                 const date = XLSX.utils.numberToDate(numericVal); 
-                return date.toISOString().split('T')[0];
+                
+                // Prüfen, ob das generierte Datum gültig ist und nicht außerhalb des Bereichs
+                if (!isNaN(date.getTime()) && date.getFullYear() > 1900 && date.getFullYear() < 3000) {
+                   return date.toISOString().split('T')[0];
+                }
              } catch(e) {
-                 console.error("Fehler bei XLSX.utils.numberToDate:", e);
-                 // Fallback
+                 console.warn("XLSX Konvertierungsfehler, versuche String-Parsing.", e);
+                 // Fallback zu String-Parsing unten
              }
         }
         
         const str = String(val).trim();
 
-        // 2. DD.MM.YYYY
+        // 2. Versuch: String-Parsing (DD.MM.YYYY, YYYY-MM-DD, etc.)
+        // DD.MM.YYYY (Deutsch)
         if (str.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
             const parts = str.split('.');
-            return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+            // Wichtig: Date-Objekte in JS werden als MM/DD/YYYY erwartet.
+            const dateStr = `${parts[1]}/${parts[0]}/${parts[2]}`; 
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) { 
+                return date.toISOString().split('T')[0];
+            }
         }
         
-        // 3. YYYY-MM-DD or standard
+        // Standard ISO-Format (YYYY-MM-DD) oder andere Standards
         try {
             const date = new Date(str);
-            if (!isNaN(date.getTime())) { // Prüfen, ob Datum gültig ist
+            if (!isNaN(date.getTime()) && date.getFullYear() > 1900 && date.getFullYear() < 3000) {
                 return date.toISOString().split('T')[0];
             }
         } catch(e) {}
         
-        // Fallback: Aktuelles Datum
+        // Finaler Fallback: Aktuelles Datum, um Datenbankfehler zu vermeiden
+        console.warn(`Ungültiger Datumswert (${val}) gefunden. Verwende aktuelles Datum als Fallback.`);
         return new Date().toISOString().split('T')[0];
     }
 
@@ -1024,7 +1039,7 @@
           const buffer = await file.arrayBuffer();
           // Hier wird die XLSX-Datei gelesen
           const wb = XLSX.read(buffer, { type: 'array' });
-          rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+          rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: true }); // Wichtig: { raw: true } beibehalten
         }
 
         const entries = rows.map(r => {
@@ -1035,7 +1050,8 @@
             
             return {
                 user_id: currentUser.id,
-                entry_date: normalizeDate(r.entry_date || r.date),
+                // RUFT DIE NEUE, ROBUSTERE FUNKTION AUF
+                entry_date: normalizeDate(r.entry_date || r.date), 
                 best_of_day: r.best_of_day || r.best || null,
                 lotta: r.lotta || null,
                 thea: r.thea || null,
@@ -1048,7 +1064,11 @@
         }
 
         const { error } = await supabase.from('entries').insert(entries);
-        if (error) throw error;
+        if (error) {
+           // Verbessertes Error-Handling
+           console.error('Supabase Import Fehler:', error);
+           throw new Error(error.message || 'Unbekannter Datenbankfehler beim Import.');
+        }
         
         showToast(`${entries.length} Einträge importiert!`);
         loadEntries();
@@ -1074,7 +1094,7 @@
     
     function parseCSV(text) {
       const lines = text.split('\n').filter(l => l.trim());
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
       return lines.slice(1).map(line => {
         const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
         const obj = {};
