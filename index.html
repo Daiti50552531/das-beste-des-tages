@@ -8,7 +8,7 @@
   <!-- Supabase Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
-  <!-- SheetJS für Excel-Export/Import -->
+  <!-- SheetJS für Excel-Import/Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- Fuse.js für unscharfe Suche -->
@@ -515,9 +515,9 @@
             <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
           </label>
           
-          <!-- Delete All Button (für Cleanup) -->
-          <button id="deleteAllBtn" class="btn btn-danger" style="margin-left: auto;">
-            <span>Alle Löschen</span>
+          <!-- Delete All Button (Cleanup) -->
+          <button id="deleteAllBtn" class="btn btn-danger" style="margin-left: auto; width:auto; min-width:auto; padding:14px;">
+            Alle Einträge löschen
           </button>
 
           <!-- Export Choice Popover -->
@@ -528,7 +528,7 @@
         </div>
       </div>
 
-      <!-- Filter Bar (Bereinigt) -->
+      <!-- Filter Bar -->
       <div class="card" style="padding:16px;">
         <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin-bottom:12px;">Filter & Suche</div>
         <div class="filter-wrapper">
@@ -536,7 +536,6 @@
                  <label>Suchen</label>
                  <input type="text" id="searchInput" placeholder="Suche (Fuzzy)...">
              </div>
-             <!-- Stimmung Filter entfernt -->
              <div class="filter-control">
                  <label>Von Datum</label>
                  <input type="date" id="filterDateFrom">
@@ -559,7 +558,7 @@
   <script>
     console.log('🚀 App startet...');
     
-    // --- KONFIGURATION ---
+    // --- KONFIGURATION (Hardcoded for reliability based on chat history) ---
     const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdhb3NiaXljY3dhd3V6ZmphZ3ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMDYzODAsImV4cCI6MjA3ODY4MjM4MH0.s30-UTEY1xR3DP521ewc03aMRsG3WLH_I5VTi4_xu-4';
     
@@ -583,13 +582,12 @@
       password: $('authPassword'),
       entriesContainer: $('entriesContainer'),
       searchInput: $('searchInput'),
-      // filterMood entfernt
       filterDateFrom: $('filterDateFrom'),
       filterDateTo: $('filterDateTo'),
       themeToggle: $('themeToggle'),
       exportPopover: $('exportPopover'),
       saveBtn: $('saveBtn'),
-      deleteAllBtn: $('deleteAllBtn'), // Neu referenziert
+      deleteAllBtn: $('deleteAllBtn'),
       editorTitle: $('editorTitle'),
       cancelEditBtn: $('cancelEditBtn'),
       reminderBox: $('reminderBox'),
@@ -715,10 +713,8 @@
         elements.reminderBox.style.display = 'none';
     }
 
-    // Neuer Handler: Direkt Exportieren (Excel) & Ausblenden
     $('remindExportBtn').addEventListener('click', () => {
         exportData('xlsx');
-        // dismissReminder() wird in exportData aufgerufen
     });
 
     // --- EDITOR LOGIC (CREATE & UPDATE) ---
@@ -791,11 +787,20 @@
       let error;
       
       if (currentEditingId) {
+          // UPDATE (normaler Update wenn ID bekannt)
           const res = await supabase.from('entries').update(entryData).eq('id', currentEditingId);
           error = res.error;
       } else {
-          const res = await supabase.from('entries').insert(entryData);
-          error = res.error;
+          // INSERT (Upsert auf Datum, falls man für heute schon was hat)
+          const res = await supabase.from('entries').upsert(entryData, { onConflict: 'user_id, entry_date' });
+          // Falls onConflict nicht konfiguriert ist, fallback auf insert
+          if(res.error && res.error.message.includes('conflict')) {
+             // Try standard insert
+             const retry = await supabase.from('entries').insert(entryData);
+             error = retry.error;
+          } else {
+             error = res.error;
+          }
       }
       
       elements.saveBtn.disabled = false;
@@ -838,14 +843,12 @@
         const dateFrom = elements.filterDateFrom.value;
         const dateTo = elements.filterDateTo.value;
 
-        // 1. Standard Filters (Nur Datum, Stimmung entfernt)
         let filtered = allEntriesCache.filter(entry => {
             if (dateFrom && entry.entry_date < dateFrom) return false;
             if (dateTo && entry.entry_date > dateTo) return false;
             return true;
         });
 
-        // 2. Fuzzy Search
         if (searchTerm.length > 0) {
             const fuseResult = fuse.search(searchTerm).map(r => r.item);
             filtered = filtered.filter(item => fuseResult.includes(item));
@@ -854,7 +857,6 @@
         renderDOM(filtered);
     }
 
-    // Filter Listeners
     elements.searchInput.addEventListener('input', renderFilteredEntries);
     elements.filterDateFrom.addEventListener('change', renderFilteredEntries);
     elements.filterDateTo.addEventListener('change', renderFilteredEntries);
@@ -909,9 +911,7 @@
     };
 
     window.deleteEntry = async (id) => {
-      // WICHTIG: Verwenden Sie hier KEIN alert()/confirm().
-      // Für diese Demo verwenden wir das Browser-Confirm, da ein Custom Modal fehlt.
-      if (!window.confirm('Eintrag wirklich löschen?')) return; 
+      if (!confirm('Eintrag wirklich löschen?')) return;
       
       const { error } = await supabase.from('entries').delete().eq('id', id);
       if (error) showToast(error.message, true);
@@ -923,26 +923,19 @@
       }
     };
 
-    // --- DELETE ALL (CLEANUP) ---
-    // Dies löscht alle Einträge des aktuellen Users.
+    // --- DELETE ALL ---
     elements.deleteAllBtn.addEventListener('click', async () => {
-        if (!confirm('Vorsicht! Willst du wirklich ALLE deine Einträge unwiderruflich löschen?')) return;
-        if (!confirm('Wirklich sicher? Das kann nicht rückgängig gemacht werden.')) return;
+        if (!confirm('Wirklich ALLE Einträge löschen? Das kann nicht rückgängig gemacht werden.')) return;
         
-        showToast('Lösche alle Einträge...');
-        
-        // Da wir keine 'delete-all' Funktion haben, müssen wir erst alle IDs holen oder hoffen, dass RLS uns erlaubt
-        // `delete()` ohne Filter löscht oft nichts ohne explizite Policy.
-        // Besser: delete where user_id equals current user.
-        // Aber Supabase Client erlaubt oft kein Delete ohne Filter.
-        // Trick: Filter auf etwas, das immer wahr ist für diesen User, z.B. user_id = currentUser.id
-        
+        showToast('Lösche...');
+        // Leider erlaubt Supabase DELETE ohne Filter nicht standardmäßig. 
+        // Wir müssen die IDs laden und löschen oder einen Filter nutzen, der auf alles zutrifft.
+        // user_id = current ist sicher.
         const { error } = await supabase.from('entries').delete().eq('user_id', currentUser.id);
         
-        if (error) {
-            showToast('Fehler beim Löschen: ' + error.message, true);
-        } else {
-            showToast('Alle Einträge gelöscht.');
+        if (error) showToast(error.message, true);
+        else {
+            showToast('Alles gelöscht.');
             loadEntries();
         }
     });
@@ -1001,63 +994,35 @@
       dismissReminder(); 
     }
 
-    // --- ROBUST IMPORT ---
+    // --- ROBUST IMPORT WITH MERGE ---
     function normalizeDate(val) {
-        if (!val) {
-            // Wenn kein Wert da ist, geben wir null zurück, damit der Filter es aussortieren kann.
-            // Der User möchte keine leeren Einträge.
-            return null;
-        }
-        
+        if (!val) return null;
         const numericVal = Number(val);
-        
-        // 1. Versuch: Excel Serial (wenn XLSX verfügbar ist)
-        if (typeof XLSX !== 'undefined' && typeof XLSX.utils.numberToDate === 'function' && 
-            !isNaN(numericVal) && numericVal > 20000 && numericVal < 70000) { 
-             
+        // Excel Serial
+        if (!isNaN(numericVal) && numericVal > 20000 && numericVal < 70000) { 
              try {
                 const date = XLSX.utils.numberToDate(numericVal); 
-                // UTC-Korrektur (Excel Serial ist oft lokale Zeit 00:00, was UTC Vorabend sein kann)
-                // Wir nehmen einfach das Datumstring-Format, das schneidet die Zeit ab.
-                // Aber Vorsicht bei Zeitzonen. numberToDate gibt meist lokale Zeit.
-                // Um sicher zu gehen, addieren wir ein paar Stunden, um 00:00 Probleme zu vermeiden
-                date.setHours(12); 
                 return date.toISOString().split('T')[0];
-             } catch(e) {
-                 console.warn("XLSX Konvertierungsfehler, versuche String-Parsing.", e);
-             }
+             } catch(e) {}
         }
-        
         const str = String(val).trim();
-
-        // 2. Versuch: String-Parsing (DD.MM.YYYY, YYYY-MM-DD, etc.)
-        // DD.MM.YYYY (Deutsch)
+        // DD.MM.YYYY
         if (str.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
             const parts = str.split('.');
             return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
         }
-        
-        // 3. YYYY-MM-DD or standard
+        // YYYY-MM-DD
         try {
             const date = new Date(str);
-            if (!isNaN(date.getTime())) { 
-                return date.toISOString().split('T')[0];
-            }
+            if (!isNaN(date.getTime())) return date.toISOString().split('T')[0];
         } catch(e) {}
-        
-        // Fallback: Aktuelles Datum (aber nur wenn ein Wert da war, sonst null)
-        // Aber Achtung: Wenn val da war (z.B. "Gestern"), aber nicht parsbar, 
-        // nehmen wir heute oder ignorieren? Der User will das Datum des Eintrags.
-        // Wenn es nicht parsbar ist, ist 'Heute' der sicherste Fallback, 
-        // aber wir loggen es.
-        console.warn(`Ungültiger Datumswert (${val}) gefunden. Verwende aktuelles Datum.`);
-        return new Date().toISOString().split('T')[0];
+        return null; // Invalid date
     }
 
     $('importFile').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      showToast('Importiere Daten. Bitte warten...');
+      showToast('Analysiere Datei...');
       
       try {
         let rows;
@@ -1066,58 +1031,73 @@
           rows = parseCSV(text);
         } else {
           const buffer = await file.arrayBuffer();
-          // Hier wird die XLSX-Datei gelesen
           const wb = XLSX.read(buffer, { type: 'array' });
           rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: true }); 
         }
 
-        const entries = rows.map(r => {
-            const moodMap = { '1': 'sad', '2': 'neutral', '3': 'happy' };
-            let mood = String(r.mood || '').toLowerCase().trim();
-            if (moodMap[mood]) mood = moodMap[mood];
-            if (!['sad','neutral','happy'].includes(mood)) mood = 'neutral';
-            
-            // Check headers: User might use 'Datum' or 'date' or 'entry_date'
-            const rawDate = r.entry_date || r.date || r.Datum || r.datum;
+        // 1. Merge Strategy: Group by Date
+        const mergedMap = new Map();
+
+        rows.forEach(r => {
+            // Find Date Key
+            const dateKey = Object.keys(r).find(k => k.toLowerCase().includes('date') || k.toLowerCase().includes('datum')) || 'entry_date';
+            const rawDate = r[dateKey] || r.date || r.Date;
             const normDate = normalizeDate(rawDate);
 
-            // Check Content: At least one text field must be present
-            // User headers: best_of_day/best, lotta, thea
-            const bestText = r.best_of_day || r.best || r['Das Beste'] || null;
-            const lottaText = r.lotta || r.Lotta || null;
-            const theaText = r.thea || r.Thea || null;
+            if (!normDate) return; // Skip invalid dates
 
-            return {
-                user_id: currentUser.id,
-                entry_date: normDate, 
-                best_of_day: bestText,
-                lotta: lottaText,
-                thea: theaText,
-                mood: mood,
-                _validDate: !!normDate, // Hilfsflag
-                _hasContent: !!(bestText || lottaText || theaText) // Hilfsflag
-            };
-        })
-        // FILTER: Nur Einträge mit Datum UND Inhalt
-        .filter(e => e._validDate && e._hasContent)
-        .map(e => {
-            // Clean up helper props
-            delete e._validDate;
-            delete e._hasContent;
-            return e;
-        }); 
+            // Content keys
+            const best = r.best_of_day || r.best || r['Das Beste'] || null;
+            const lotta = r.lotta || r.Lotta || null;
+            const thea = r.thea || r.Thea || null;
+            
+            // Skip empty content rows
+            if (!best && !lotta && !thea) return;
 
-        if (entries.length === 0) {
-            return showToast('Keine gültigen Einträge gefunden (Datum + Inhalt benötigt).', true);
+            // Mood
+            const moodMap = { '1': 'sad', '2': 'neutral', '3': 'happy' };
+            let rawMood = String(r.mood || r.Stimmung || '').toLowerCase().trim();
+            if (moodMap[rawMood]) rawMood = moodMap[rawMood];
+            if (!['sad','neutral','happy'].includes(rawMood)) rawMood = 'neutral';
+
+            if (mergedMap.has(normDate)) {
+                // Merge Logic: Overwrite only if new value exists
+                const existing = mergedMap.get(normDate);
+                existing.best_of_day = best || existing.best_of_day;
+                existing.lotta = lotta || existing.lotta;
+                existing.thea = thea || existing.thea;
+                if(r.mood) existing.mood = rawMood; // Overwrite mood if present
+            } else {
+                mergedMap.set(normDate, {
+                    user_id: currentUser.id,
+                    entry_date: normDate,
+                    best_of_day: best,
+                    lotta: lotta,
+                    thea: thea,
+                    mood: rawMood
+                });
+            }
+        });
+
+        const entriesToUpsert = Array.from(mergedMap.values());
+
+        if (entriesToUpsert.length === 0) {
+            return showToast('Keine gültigen Einträge gefunden.', true);
         }
 
-        const { error } = await supabase.from('entries').insert(entries);
+        showToast(`Speichere ${entriesToUpsert.length} zusammengefügte Einträge...`);
+
+        // Use Upsert to merge with server data
+        const { error } = await supabase.from('entries').upsert(entriesToUpsert, { onConflict: 'user_id, entry_date' });
+        
         if (error) {
-           console.error('Supabase Import Fehler:', error);
-           throw new Error(error.message || 'Unbekannter Datenbankfehler beim Import.');
+           // Fallback if unique constraint is just on 'id' not date
+           // But 'upsert' works best with unique index. 
+           console.error('Upsert Error:', error);
+           throw error;
         }
         
-        showToast(`${entries.length} Einträge importiert!`);
+        showToast(`${entriesToUpsert.length} Tage erfolgreich importiert!`);
         loadEntries();
       } catch (err) {
         showToast('Import Fehler: ' + err.message, true);
