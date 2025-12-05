@@ -2,376 +2,1155 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Das Beste des Tages</title>
+  
+  <!-- Supabase Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- SheetJS für Excel-Export/Import -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Fuse.js für unscharfe Suche -->
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+  
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f7;
-      padding: 20px;
-      color: #1d1d1f;
+    :root {
+      /* Dark Mode (Default) */
+      --bg: #000000;
+      --card: #1c1c1e;
+      --input-bg: #2c2c2e;
+      
+      --text: #ffffff;
+      --text-secondary: #9898a0;
+      --text-matte: #e0e0e0;
+      
+      --header-bg: rgba(0, 0, 0, 0.75);
+      
+      --border: #38383a;
+      --primary: #30d158; /* Apple Green */
+      --primary-hover: #28cd41;
+      --danger: #ff453a;
+      --accent: #0a84ff; /* Apple Blue */
+      --warning: #ff9f0a; /* Apple Orange */
+      
+      --radius: 14px;
+      --shadow: 0 4px 16px rgba(0,0,0,0.3);
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
-    .container { max-width: 600px; margin: 0 auto; }
-    .card { 
-      background: white; 
-      border-radius: 16px; 
-      padding: 24px; 
+
+    /* Light Mode */
+    body.light-mode {
+      --bg: #f2f2f7;
+      --card: #ffffff;
+      --input-bg: #e5e5ea;
+      
+      --text: #000000;
+      --text-secondary: #8e8e93;
+      --text-matte: #3a3a3c;
+      
+      --header-bg: rgba(242, 242, 247, 0.85);
+      
+      --border: #d1d1d6;
+      --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      transition: background 0.3s ease, color 0.3s ease;
+      padding-bottom: 80px; 
+    }
+    
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    /* Typography */
+    h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; text-align: center; margin-bottom: 24px; }
+    
+    /* Cards */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      transition: background 0.3s ease;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    /* Sticky Header */
+    .sticky-header-wrapper {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--header-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 16px 0;
+      border-bottom: 0.5px solid rgba(128,128,128, 0.2);
     }
-    h1 { font-size: 28px; margin-bottom: 24px; text-align: center; }
-    h2 { font-size: 20px; margin-bottom: 16px; }
-    input, textarea { 
-      width: 100%; 
-      padding: 12px; 
-      border: 1px solid #ddd; 
-      border-radius: 10px;
-      font-size: 15px;
-      margin-bottom: 12px;
-      font-family: inherit;
-    }
-    button { 
-      background: #007aff; 
-      color: white; 
-      border: none; 
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 500;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 8px;
-    }
-    button:hover { opacity: 0.9; }
-    button.secondary { background: #f0f0f0; color: #333; }
-    .moods { display: flex; gap: 10px; margin: 12px 0; }
-    .mood { 
-      flex: 1; 
-      font-size: 32px; 
-      padding: 16px; 
-      border: 2px solid #ddd;
-      border-radius: 12px;
-      cursor: pointer;
-      text-align: center;
-      background: white;
-      transition: all 0.2s;
-    }
-    .mood:hover { transform: scale(1.05); }
-    .mood.selected { 
-      border-color: #007aff; 
-      background: rgba(0,122,255,0.1);
-      transform: scale(1.1);
-    }
-    .entry { 
-      padding: 16px; 
-      border-bottom: 1px solid #eee;
+
+    .topbar {
       display: flex;
       justify-content: space-between;
-      align-items: start;
+      align-items: center;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 0 20px;
     }
-    .entry:last-child { border-bottom: none; }
-    .entry-date { font-weight: 600; color: #007aff; font-size: 14px; }
-    .entry-mood { font-size: 24px; margin-left: 12px; }
-    .entry-text { margin-top: 8px; line-height: 1.5; }
-    .delete-btn { 
-      background: #ff3b30; 
-      padding: 6px 12px; 
+    
+    .app-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Buttons Interaction */
+    button, .btn, .icon-btn, .mood-btn {
+        transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s, background-color 0.2s;
+    }
+    button:active, .btn:active, .icon-btn:active, .mood-btn:active {
+        transform: scale(0.96); 
+        opacity: 0.8;
+    }
+
+    .text-btn {
+        background: none;
+        border: none;
+        color: var(--accent);
+        font-size: 16px;
+        cursor: pointer;
+        padding: 6px 10px;
+        font-weight: 500;
+    }
+    
+    .icon-btn {
+      background: var(--input-bg);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    /* Inputs */
+    label {
+      display: block;
       font-size: 12px;
-      margin-left: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin: 20px 0 8px;
+      letter-spacing: 0.5px;
+      padding-left: 4px;
     }
-    .hidden { display: none; }
-    label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 14px; }
+    label:first-of-type { margin-top: 0; }
+    
+    input, textarea, select {
+      width: 100%;
+      padding: 16px;
+      border-radius: 12px;
+      border: none; 
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 17px; 
+      font-family: inherit;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      background: var(--card);
+      box-shadow: 0 0 0 2px var(--accent); 
+    }
+
+    textarea {
+      resize: none;
+      min-height: 86px; 
+      line-height: 1.5;
+    }
+
+    /* Mood Selector */
+    .mood-section {
+      margin-top: 32px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .mood-label {
+        font-size:12px; 
+        color: var(--text-secondary); 
+        text-transform:uppercase; 
+        font-weight:600; 
+        margin-bottom: 12px;
+        letter-spacing: 0.5px;
+    }
+    .mood-buttons {
+      display: inline-flex;
+      background: var(--input-bg);
+      padding: 5px;
+      border-radius: 24px;
+      gap: 2px;
+    }
+    .mood-btn {
+      font-size: 28px;
+      width: 60px;
+      height: 50px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.4; 
+    }
+    .mood-btn.selected {
+      background: var(--card);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      opacity: 1;
+      transform: scale(1.05);
+    }
+
+    /* Action Bar */
+    .action-bar {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 120px;
+    }
+    
+    .btn-primary { background: var(--primary); color: #000; } 
+    .btn-secondary { background: var(--input-bg); color: var(--text); }
+    .btn-danger { background: var(--danger); color: #fff; }
+
+    /* Danger Text Button (for list items) */
+    .btn-danger-text { 
+        background: transparent; 
+        color: var(--danger); 
+        padding: 10px 14px; 
+        font-size: 14px; 
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        border-radius: 8px;
+    }
+    .btn-danger-text:hover { background: rgba(255, 69, 58, 0.1); }
+    
+    .btn-edit-text {
+        background: transparent; 
+        color: var(--accent); 
+        padding: 10px 14px; 
+        font-size: 14px; 
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        border-radius: 8px;
+    }
+    .btn-edit-text:hover { background: rgba(10, 132, 255, 0.1); }
+
+    .hidden-input { display: none; }
+
+    /* Filter & Search Bar */
+    .filter-wrapper {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+    .filter-control { flex: 1; min-width: 140px; }
+    .filter-control label { 
+        display: block; 
+        font-size: 11px; 
+        text-transform: uppercase; 
+        color: var(--text-secondary); 
+        margin-bottom: 4px; 
+        font-weight: 600;
+    }
+
+    /* Entries List */
+    .entries-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .entry-card {
+      background: var(--card);
+      padding: 24px;
+      border-radius: var(--radius);
+      position: relative;
+    }
+    
+    .entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .entry-date { font-size: 16px; font-weight: 700; color: var(--text); }
+    .entry-mood { font-size: 26px; }
+    
+    .entry-block { margin-bottom: 20px; }
+    
+    .entry-field-display {
+        background: var(--input-bg);
+        padding: 14px 16px;
+        border-radius: 10px;
+        font-size: 16px;
+        line-height: 1.6;
+        color: var(--text-matte);
+        white-space: pre-wrap; 
+    }
+    
+    .entry-actions-row {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 8px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(128,128,128, 0.1);
+    }
+
+    /* Reminder Box */
+    .reminder-box {
+        background: rgba(255, 159, 10, 0.1); /* Orange tint */
+        border: 1px solid var(--warning);
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        display: none; /* Hidden by default */
+    }
+    .reminder-title { color: var(--warning); font-weight: 700; margin-bottom: 8px; font-size: 15px; }
+    .reminder-text { font-size: 14px; margin-bottom: 12px; opacity: 0.9; }
+    .reminder-actions { display: flex; gap: 10px; }
+
+    /* Export Popover */
+    .export-popover {
+      position: absolute;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      width: 180px;
+      bottom: 70px; 
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .export-popover button {
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+    }
+    .export-popover button:hover { background: var(--input-bg); }
+
+    .hidden { display: none !important; }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(40, 40, 40, 0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-weight: 600;
+      z-index: 1000;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      white-space: nowrap;
+    }
+    .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: rgba(255, 69, 58, 0.95); }
+
+    /* Auth Screen */
+    .auth-container {
+      max-width: 400px;
+      margin: 10vh auto;
+      text-align: center;
+      padding: 0 20px;
+    }
+    .auth-btn-row { margin-top: 24px; display: flex; gap: 10px; }
+
   </style>
 </head>
 <body>
-  <!-- Auth -->
-  <div id="authSection" class="container">
+
+  <!-- Toast -->
+  <div id="toast" class="toast">Nachricht</div>
+
+  <!-- AUTH SECTION -->
+  <div id="authSection" class="auth-container">
+    <h1 style="margin-bottom:40px; font-weight:800;">Willkommen</h1>
     <div class="card">
-      <h1>Das Beste des Tages</h1>
-      <p style="text-align: center; color: #666; margin-bottom: 24px;">Dein persönliches Tagebuch</p>
-      
-      <label>E-Mail</label>
-      <input type="email" id="email" placeholder="deine@email.de">
+      <label>E-Mail Adresse</label>
+      <input type="email" id="authEmail" placeholder="name@beispiel.de">
       
       <label>Passwort</label>
-      <input type="password" id="password" placeholder="Mindestens 6 Zeichen">
+      <input type="password" id="authPassword" placeholder="••••••••">
       
-      <button id="loginBtn">Einloggen</button>
-      <button id="signupBtn" class="secondary">Registrieren</button>
-      
-      <p id="authMsg" style="margin-top: 12px; text-align: center; font-size: 14px;"></p>
+      <div class="auth-btn-row">
+        <button id="loginBtn" class="btn btn-primary">Anmelden</button>
+        <button id="signupBtn" class="btn btn-secondary">Registrieren</button>
+      </div>
     </div>
   </div>
 
-  <!-- App -->
-  <div id="app" class="container hidden">
-    <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h1 style="margin: 0;">Das Beste des Tages</h1>
-        <button id="logoutBtn" class="secondary" style="width: auto; padding: 8px 16px; font-size: 13px;">Logout</button>
-      </div>
+  <!-- APP SECTION -->
+  <div id="appSection" class="hidden">
+    
+    <!-- STICKY HEADER -->
+    <div class="sticky-header-wrapper">
+        <div class="topbar">
+            <h1 class="app-title">Mein Journal</h1>
+            <div class="top-actions">
+              <button id="themeToggle" class="icon-btn" title="Design umschalten">☀️</button>
+              <button id="logoutBtn" class="text-btn">Logout</button>
+            </div>
+        </div>
     </div>
 
-    <div class="card">
-      <label>Wie war deine Stimmung?</label>
-      <div class="moods">
-        <div class="mood" data-value="1">😞</div>
-        <div class="mood" data-value="2">😐</div>
-        <div class="mood" data-value="3">🙂</div>
-      </div>
-
-      <label>Das Beste des Tages</label>
-      <textarea id="field1" rows="3" placeholder="Was hast du heute erlebt?"></textarea>
-
-      <label>👶 Lotta</label>
-      <textarea id="field2" rows="3" placeholder="Was hast du mit Lotta heute erlebt?"></textarea>
-
-      <label>👧 Thea</label>
-      <textarea id="field3" rows="3" placeholder="Was hast du mit Thea heute erlebt?"></textarea>
-
-      <button id="saveBtn">Eintrag speichern</button>
+    <div class="container">
       
-      <div style="display: flex; gap: 8px; margin-top: 8px;">
-        <button id="exportBtn" class="secondary" style="flex: 1;">📥 Export</button>
-        <label style="flex: 1; margin: 0;">
-          <button class="secondary" style="width: 100%;">📤 Import</button>
-          <input type="file" id="importFile" accept=".csv" style="display: none;">
-        </label>
+      <!-- Reminder Box -->
+      <div id="reminderBox" class="reminder-box">
+          <div class="reminder-title">Backup Erinnerung</div>
+          <div class="reminder-text">Du hast diesen Monat noch keinen Export gemacht. Sichere deine Gedanken!</div>
+          <div class="reminder-actions">
+              <!-- Nur noch ein Button für direkten Excel Export -->
+              <button id="remindExportBtn" class="btn btn-primary" style="font-size:14px; padding:10px;">Jetzt als Excel exportieren</button>
+          </div>
       </div>
-    </div>
 
-    <div class="card">
-      <h2>Meine Einträge</h2>
-      <div id="entries"></div>
-    </div>
-  </div>
+      <!-- Create/Edit Entry Card -->
+      <div class="card" id="editorCard">
+        <h2 id="editorTitle" style="text-align:center; font-size:16px; margin-bottom:12px; color:var(--text-secondary); text-transform:uppercase;">Neuer Eintrag</h2>
+        
+        <label style="margin-top:0">Datum</label>
+        <input type="date" id="entryDate">
+
+        <label>Das Beste des Tages</label>
+        <textarea id="bestOfDay" placeholder="Was war heute besonders schön?"></textarea>
+
+        <label>Lotta</label>
+        <textarea id="lotta" placeholder="Neues von Lotta..."></textarea>
+
+        <label>Thea</label>
+        <textarea id="thea" placeholder="Neues von Thea..."></textarea>
+
+        <!-- Mood Selector -->
+        <div class="mood-section">
+          <div class="mood-label">Stimmung</div>
+          <div class="mood-buttons">
+            <button class="mood-btn" data-mood="sad">😞</button>
+            <button class="mood-btn" data-mood="neutral">😐</button>
+            <button class="mood-btn" data-mood="happy">🙂</button>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar" style="position: relative;">
+          <button id="saveBtn" class="btn btn-primary">
+            <span>Speichern</span>
+          </button>
+          
+          <button id="cancelEditBtn" class="btn btn-secondary hidden">
+            <span>Abbrechen</span>
+          </button>
+
+          <button id="exportTriggerBtn" class="btn btn-secondary">
+            <span>Export</span>
+          </button>
+          
+          <label class="btn btn-secondary" style="margin:0;">
+            <span>Import</span>
+            <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
+          </label>
+          
+          <!-- Delete All Button (für Cleanup) -->
+          <button id="deleteAllBtn" class="btn btn-danger" style="margin-left: auto;">
+            <span>Alle Löschen</span>
+          </button>
+
+          <!-- Export Choice Popover -->
+          <div id="exportPopover" class="export-popover">
+            <button id="exportCsvBtn">Als CSV exportieren</button>
+            <button id="exportXlsxBtn">Als Excel exportieren</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Bar (Bereinigt) -->
+      <div class="card" style="padding:16px;">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin-bottom:12px;">Filter & Suche</div>
+        <div class="filter-wrapper">
+             <div class="filter-control" style="flex-grow: 2;">
+                 <label>Suchen</label>
+                 <input type="text" id="searchInput" placeholder="Suche (Fuzzy)...">
+             </div>
+             <!-- Stimmung Filter entfernt -->
+             <div class="filter-control">
+                 <label>Von Datum</label>
+                 <input type="date" id="filterDateFrom">
+             </div>
+             <div class="filter-control">
+                 <label>Bis Datum</label>
+                 <input type="date" id="filterDateTo">
+             </div>
+        </div>
+      </div>
+
+      <!-- Entries List -->
+      <div id="entriesContainer" class="entries-grid">
+        <!-- Entries will be loaded here -->
+      </div>
+    
+    </div> <!-- End Container -->
+  </div> <!-- End App Section -->
 
   <script>
-    const SUPABASE_URL = 'https://htbxinoxpzviujiwbctv.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhqbm94cHp2aXVpaXdiY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTc4MzIsImV4cCI6MjA3ODA3MzgzMn0.D5kFuUTHfVg92m1zzDNj9-PXaQzivm9uO1hNZyk6PAE';
+    console.log('🚀 App startet...');
     
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // --- KONFIGURATION ---
+    const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdhb3NiaXljY3dhd3V6ZmphZ3ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMDYzODAsImV4cCI6MjA3ODY4MjM4MH0.s30-UTEY1xR3DP521ewc03aMRsG3WLH_I5VTi4_xu-4';
     
+    // --- INITIALISIERUNG ---
+    const { createClient } = window.supabase;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Globale Variablen
     let currentUser = null;
     let selectedMood = null;
+    let allEntriesCache = []; // Rohdaten
+    let currentEditingId = null; // ID des Eintrags, der gerade bearbeitet wird
+    let fuse; // Search Engine
 
-    // Auth Check
+    // DOM Elemente
+    const $ = id => document.getElementById(id);
+    const elements = {
+      authSection: $('authSection'),
+      appSection: $('appSection'),
+      email: $('authEmail'),
+      password: $('authPassword'),
+      entriesContainer: $('entriesContainer'),
+      searchInput: $('searchInput'),
+      // filterMood entfernt
+      filterDateFrom: $('filterDateFrom'),
+      filterDateTo: $('filterDateTo'),
+      themeToggle: $('themeToggle'),
+      exportPopover: $('exportPopover'),
+      saveBtn: $('saveBtn'),
+      deleteAllBtn: $('deleteAllBtn'), // Neu referenziert
+      editorTitle: $('editorTitle'),
+      cancelEditBtn: $('cancelEditBtn'),
+      reminderBox: $('reminderBox'),
+      fields: {
+        date: $('entryDate'),
+        best: $('bestOfDay'),
+        lotta: $('lotta'),
+        thea: $('thea')
+      }
+    };
+
+    // --- HELPER: TOAST ---
+    function showToast(msg, isError = false) {
+      const el = $('toast');
+      el.textContent = msg;
+      el.className = 'toast visible';
+      if(isError) el.classList.add('error');
+      else el.classList.remove('error');
+      
+      setTimeout(() => el.classList.remove('visible'), 3000);
+    }
+
+    // --- THEME LOGIC ---
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+        elements.themeToggle.textContent = '🌙';
+      }
+    }
+    elements.themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('light-mode');
+      const isLight = document.body.classList.contains('light-mode');
+      elements.themeToggle.textContent = isLight ? '🌙' : '☀️';
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    });
+
+    // --- AUTO RESIZE TEXTAREAS ---
+    function autoResize(textarea) {
+      textarea.style.height = 'auto'; 
+      textarea.style.height = textarea.scrollHeight + 'px'; 
+    }
+    ['best', 'lotta', 'thea'].forEach(id => {
+      const el = elements.fields[id];
+      el.addEventListener('input', () => autoResize(el));
+      autoResize(el);
+    });
+
+    // --- AUTHENTIFIZIERUNG ---
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) showApp(session.user);
+      else showAuth();
     });
 
     supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') showApp(session.user);
-      if (event === 'SIGNED_OUT') showAuth();
+      if (event === 'SIGNED_IN' && session) showApp(session.user);
+      else if (event === 'SIGNED_OUT') showAuth();
+    });
+
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          currentUser = session.user;
+          loadEntries();
+        } else {
+          showAuth();
+        }
+      }
     });
 
     function showAuth() {
-      document.getElementById('authSection').classList.remove('hidden');
-      document.getElementById('app').classList.add('hidden');
+      elements.authSection.classList.remove('hidden');
+      elements.appSection.classList.add('hidden');
+      currentUser = null;
     }
 
     function showApp(user) {
       currentUser = user;
-      document.getElementById('authSection').classList.add('hidden');
-      document.getElementById('app').classList.remove('hidden');
+      elements.authSection.classList.add('hidden');
+      elements.appSection.classList.remove('hidden');
+      resetEditor();
       loadEntries();
+      checkMonthlyReminder();
     }
 
-    // Login
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      
-      if (error) {
-        document.getElementById('authMsg').textContent = '❌ ' + error.message;
-        document.getElementById('authMsg').style.color = '#ff3b30';
-      }
+    $('loginBtn').addEventListener('click', async () => {
+      showToast('Anmelden...');
+      const { error } = await supabase.auth.signInWithPassword({
+        email: elements.email.value.trim(),
+        password: elements.password.value
+      });
+      if (error) showToast('Fehler: ' + error.message, true);
     });
 
-    // Signup
-    document.getElementById('signupBtn').addEventListener('click', async () => {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      
-      const { error } = await supabase.auth.signUp({ email, password });
-      
-      if (error) {
-        document.getElementById('authMsg').textContent = '❌ ' + error.message;
-        document.getElementById('authMsg').style.color = '#ff3b30';
-      } else {
-        document.getElementById('authMsg').textContent = '✅ Registriert! Du kannst dich jetzt einloggen.';
-        document.getElementById('authMsg').style.color = '#34c759';
-      }
+    $('signupBtn').addEventListener('click', async () => {
+      showToast('Registriere...');
+      const { error } = await supabase.auth.signUp({
+        email: elements.email.value.trim(),
+        password: elements.password.value
+      });
+      if (error) showToast('Fehler: ' + error.message, true);
+      else showToast('Registrierung erfolgreich! Bitte einloggen.');
     });
 
-    // Logout
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      supabase.auth.signOut();
+    $('logoutBtn').addEventListener('click', () => supabase.auth.signOut());
+
+    // --- REMINDER LOGIC ---
+    function checkMonthlyReminder() {
+        const lastDismissed = localStorage.getItem('last_dismissed_export_month');
+        const currentMonth = new Date().toISOString().slice(0, 7); 
+        
+        if (lastDismissed !== currentMonth) {
+            elements.reminderBox.style.display = 'block';
+        } else {
+            elements.reminderBox.style.display = 'none';
+        }
+    }
+
+    function dismissReminder() {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        localStorage.setItem('last_dismissed_export_month', currentMonth);
+        elements.reminderBox.style.display = 'none';
+    }
+
+    // Neuer Handler: Direkt Exportieren (Excel) & Ausblenden
+    $('remindExportBtn').addEventListener('click', () => {
+        exportData('xlsx');
+        // dismissReminder() wird in exportData aufgerufen
     });
 
-    // Mood Selection
-    document.querySelectorAll('.mood').forEach(mood => {
-      mood.addEventListener('click', () => {
-        document.querySelectorAll('.mood').forEach(m => m.classList.remove('selected'));
-        mood.classList.add('selected');
-        selectedMood = parseInt(mood.dataset.value);
+    // --- EDITOR LOGIC (CREATE & UPDATE) ---
+    document.querySelectorAll('.mood-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedMood = btn.dataset.mood;
       });
     });
 
-    // Save Entry
-    document.getElementById('saveBtn').addEventListener('click', async () => {
-      if (!selectedMood) {
-        alert('Bitte wähle eine Stimmung aus');
-        return;
-      }
-
-      const today = new Date().toISOString().split('T')[0];
-      
-      const { error } = await supabase.from('diary_entries').insert({
-        entry_date: today,
-        text_field_1: document.getElementById('field1').value,
-        text_field_2: document.getElementById('field2').value,
-        text_field_3: document.getElementById('field3').value,
-        mood_score: selectedMood
-      });
-
-      if (error) {
-        alert('Fehler: ' + error.message);
-      } else {
-        document.getElementById('field1').value = '';
-        document.getElementById('field2').value = '';
-        document.getElementById('field3').value = '';
+    function resetEditor() {
+        currentEditingId = null;
+        elements.editorTitle.textContent = "Neuer Eintrag";
+        elements.saveBtn.innerHTML = "<span>Speichern</span>";
+        elements.cancelEditBtn.classList.add('hidden');
+        
+        elements.fields.date.value = new Date().toISOString().split('T')[0];
+        elements.fields.best.value = '';
+        elements.fields.lotta.value = '';
+        elements.fields.thea.value = '';
+        
         selectedMood = null;
-        document.querySelectorAll('.mood').forEach(m => m.classList.remove('selected'));
+        document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
         
-        document.getElementById('saveBtn').textContent = '✓ Gespeichert!';
-        document.getElementById('saveBtn').style.background = '#34c759';
-        setTimeout(() => {
-          document.getElementById('saveBtn').textContent = 'Eintrag speichern';
-          document.getElementById('saveBtn').style.background = '';
-        }, 2000);
+        ['best', 'lotta', 'thea'].forEach(id => autoResize(elements.fields[id]));
+    }
+
+    function startEdit(entry) {
+        currentEditingId = entry.id;
+        elements.editorTitle.textContent = "Eintrag Bearbeiten";
+        elements.saveBtn.innerHTML = "<span>Änderungen speichern</span>";
+        elements.cancelEditBtn.classList.remove('hidden');
         
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        elements.fields.date.value = entry.entry_date;
+        elements.fields.best.value = entry.best_of_day || '';
+        elements.fields.lotta.value = entry.lotta || '';
+        elements.fields.thea.value = entry.thea || '';
+
+        selectedMood = entry.mood;
+        document.querySelectorAll('.mood-btn').forEach(b => {
+            if (b.dataset.mood === entry.mood) b.classList.add('selected');
+            else b.classList.remove('selected');
+        });
+        
+        ['best', 'lotta', 'thea'].forEach(id => autoResize(elements.fields[id]));
+    }
+
+    elements.cancelEditBtn.addEventListener('click', resetEditor);
+
+    elements.saveBtn.addEventListener('click', async () => {
+      if (!selectedMood) return showToast('Bitte Stimmung wählen! 😐', true);
+      if (!currentUser) return showToast('Nicht eingeloggt.', true);
+
+      const originalText = elements.saveBtn.innerHTML;
+      elements.saveBtn.disabled = true;
+      elements.saveBtn.innerHTML = "<span>Wird gespeichert...</span>";
+
+      const entryData = {
+        user_id: currentUser.id,
+        entry_date: elements.fields.date.value,
+        best_of_day: elements.fields.best.value || null,
+        lotta: elements.fields.lotta.value || null,
+        thea: elements.fields.thea.value || null,
+        mood: selectedMood
+      };
+
+      let error;
+      
+      if (currentEditingId) {
+          const res = await supabase.from('entries').update(entryData).eq('id', currentEditingId);
+          error = res.error;
+      } else {
+          const res = await supabase.from('entries').insert(entryData);
+          error = res.error;
+      }
+      
+      elements.saveBtn.disabled = false;
+      elements.saveBtn.innerHTML = originalText;
+
+      if (error) {
+        showToast('Fehler: ' + error.message, true);
+      } else {
+        showToast(currentEditingId ? 'Aktualisiert! 🎉' : 'Gespeichert! 🎉');
+        resetEditor();
         loadEntries();
       }
     });
 
-    // Load Entries
+    // --- DATA LOADING & FILTERING ---
     async function loadEntries() {
-      const { data, error } = await supabase
-        .from('diary_entries')
-        .select('*')
-        .order('entry_date', { ascending: false });
-
-      if (error) {
-        console.error(error);
-        return;
-      }
-
-      const container = document.getElementById('entries');
+      elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:20px;">Lade...</div>';
       
-      if (!data || data.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Noch keine Einträge</p>';
+      const { data, error } = await supabase
+        .from('entries')
+        .select('*')
+        .order('entry_date', { ascending: false })
+        .limit(2000);
+
+      if (error) return showToast('Ladefehler: ' + error.message, true);
+
+      allEntriesCache = data || [];
+      
+      fuse = new Fuse(allEntriesCache, {
+        includeScore: true,
+        threshold: 0.4, 
+        keys: ['best_of_day', 'lotta', 'thea', 'entry_date']
+      });
+
+      renderFilteredEntries();
+    }
+
+    function renderFilteredEntries() {
+        const searchTerm = elements.searchInput.value.toLowerCase().trim();
+        const dateFrom = elements.filterDateFrom.value;
+        const dateTo = elements.filterDateTo.value;
+
+        // 1. Standard Filters (Nur Datum, Stimmung entfernt)
+        let filtered = allEntriesCache.filter(entry => {
+            if (dateFrom && entry.entry_date < dateFrom) return false;
+            if (dateTo && entry.entry_date > dateTo) return false;
+            return true;
+        });
+
+        // 2. Fuzzy Search
+        if (searchTerm.length > 0) {
+            const fuseResult = fuse.search(searchTerm).map(r => r.item);
+            filtered = filtered.filter(item => fuseResult.includes(item));
+        }
+
+        renderDOM(filtered);
+    }
+
+    // Filter Listeners
+    elements.searchInput.addEventListener('input', renderFilteredEntries);
+    elements.filterDateFrom.addEventListener('change', renderFilteredEntries);
+    elements.filterDateTo.addEventListener('change', renderFilteredEntries);
+
+    function renderDOM(entries) {
+      if (!entries.length) {
+        elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:40px;">Keine Einträge gefunden.</div>';
         return;
       }
 
-      container.innerHTML = data.map(entry => {
-        const mood = entry.mood_score === 1 ? '😞' : entry.mood_score === 2 ? '😐' : '🙂';
-        const date = new Date(entry.entry_date).toLocaleDateString('de-DE', {
-          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-        });
-        
+      elements.entriesContainer.innerHTML = entries.map(entry => {
+        const moodMap = { 'happy': '🙂', 'neutral': '😐', 'sad': '😞' };
+        const displayDate = new Date(entry.entry_date).toLocaleDateString('de-DE', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit' });
+
         return `
-          <div class="entry">
-            <div style="flex: 1;">
-              <div class="entry-date">${date}</div>
-              ${entry.text_field_1 ? `<div class="entry-text">${entry.text_field_1}</div>` : ''}
-              ${entry.text_field_2 ? `<div class="entry-text" style="margin-top:8px;"><strong>👶 Lotta:</strong> ${entry.text_field_2}</div>` : ''}
-              ${entry.text_field_3 ? `<div class="entry-text" style="margin-top:8px;"><strong>👧 Thea:</strong> ${entry.text_field_3}</div>` : ''}
+          <div class="entry-card">
+            <div class="entry-header">
+              <span class="entry-date">${displayDate}</span>
+              <span class="entry-mood">${moodMap[entry.mood] || ''}</span>
             </div>
-            <div style="display: flex; align-items: center;">
-              <span class="entry-mood">${mood}</span>
-              <button class="delete-btn" onclick="deleteEntry('${entry.id}')">Löschen</button>
+            <div class="entry-body">
+              ${entry.best_of_day ? `
+                <div class="entry-block">
+                    <span class="label-text">Das Beste des Tages</span>
+                    <div class="entry-field-display">${escapeHtml(entry.best_of_day)}</div>
+                </div>` : ''}
+              
+              ${entry.lotta ? `
+                <div class="entry-block">
+                    <span class="label-text">Lotta</span>
+                    <div class="entry-field-display">${escapeHtml(entry.lotta)}</div>
+                </div>` : ''}
+
+              ${entry.thea ? `
+                <div class="entry-block">
+                    <span class="label-text">Thea</span>
+                    <div class="entry-field-display">${escapeHtml(entry.thea)}</div>
+                </div>` : ''}
+            </div>
+            <div class="entry-actions-row">
+                <button class="btn-edit-text" onclick="window.editEntry('${entry.id}')">Bearbeiten</button>
+                <button class="btn-danger-text" onclick="window.deleteEntry('${entry.id}')">Löschen</button>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    // Delete
-    window.deleteEntry = async function(id) {
-      if (!confirm('Wirklich löschen?')) return;
-      
-      const { error } = await supabase
-        .from('diary_entries')
-        .delete()
-        .eq('id', id);
-
-      if (!error) loadEntries();
+    window.editEntry = (id) => {
+        const entry = allEntriesCache.find(e => e.id === id);
+        if (entry) startEdit(entry);
     };
 
-    // Export
-    document.getElementById('exportBtn').addEventListener('click', async () => {
-      const { data } = await supabase
-        .from('diary_entries')
-        .select('*')
-        .order('entry_date', { ascending: false });
-
-      if (!data || data.length === 0) {
-        alert('Keine Einträge zum Exportieren');
-        return;
+    window.deleteEntry = async (id) => {
+      // WICHTIG: Verwenden Sie hier KEIN alert()/confirm().
+      // Für diese Demo verwenden wir das Browser-Confirm, da ein Custom Modal fehlt.
+      if (!window.confirm('Eintrag wirklich löschen?')) return; 
+      
+      const { error } = await supabase.from('entries').delete().eq('id', id);
+      if (error) showToast(error.message, true);
+      else {
+        showToast('Gelöscht. 👋');
+        allEntriesCache = allEntriesCache.filter(e => e.id !== id);
+        fuse.setCollection(allEntriesCache);
+        renderFilteredEntries();
       }
+    };
 
-      const csv = [
-        ['Datum', 'Das Beste', 'Lotta', 'Thea', 'Stimmung'],
-        ...data.map(e => [
-          e.entry_date,
-          e.text_field_1 || '',
-          e.text_field_2 || '',
-          e.text_field_3 || '',
-          e.mood_score
-        ])
-      ].map(row => row.map(c => `"${c}"`).join(',')).join('\n');
-
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'tagebuch.csv';
-      a.click();
+    // --- DELETE ALL (CLEANUP) ---
+    // Dies löscht alle Einträge des aktuellen Users.
+    elements.deleteAllBtn.addEventListener('click', async () => {
+        if (!confirm('Vorsicht! Willst du wirklich ALLE deine Einträge unwiderruflich löschen?')) return;
+        if (!confirm('Wirklich sicher? Das kann nicht rückgängig gemacht werden.')) return;
+        
+        showToast('Lösche alle Einträge...');
+        
+        // Da wir keine 'delete-all' Funktion haben, müssen wir erst alle IDs holen oder hoffen, dass RLS uns erlaubt
+        // `delete()` ohne Filter löscht oft nichts ohne explizite Policy.
+        // Besser: delete where user_id equals current user.
+        // Aber Supabase Client erlaubt oft kein Delete ohne Filter.
+        // Trick: Filter auf etwas, das immer wahr ist für diesen User, z.B. user_id = currentUser.id
+        
+        const { error } = await supabase.from('entries').delete().eq('user_id', currentUser.id);
+        
+        if (error) {
+            showToast('Fehler beim Löschen: ' + error.message, true);
+        } else {
+            showToast('Alle Einträge gelöscht.');
+            loadEntries();
+        }
     });
 
-    // Import
-    document.getElementById('importFile').addEventListener('change', async (e) => {
+    // --- IMPORT / EXPORT ---
+    const popover = elements.exportPopover;
+    const trigger = $('exportTriggerBtn');
+    
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = popover.style.display === 'flex';
+      popover.style.display = isVisible ? 'none' : 'flex';
+    });
+    document.addEventListener('click', (e) => {
+      if (!trigger.contains(e.target) && !popover.contains(e.target)) {
+        popover.style.display = 'none';
+      }
+    });
+
+    $('exportCsvBtn').addEventListener('click', () => { popover.style.display = 'none'; exportData('csv'); });
+    $('exportXlsxBtn').addEventListener('click', () => { popover.style.display = 'none'; exportData('xlsx'); });
+
+    async function exportData(type) {
+      showToast(`Exportiere ${type.toUpperCase()}...`);
+      const data = allEntriesCache; 
+      
+      const moodScore = { 'sad': 1, 'neutral': 2, 'happy': 3 };
+      const processedData = data.map(row => ({
+          entry_date: row.entry_date,
+          best_of_day: row.best_of_day,
+          lotta: row.lotta,
+          thea: row.thea,
+          mood: moodScore[row.mood] || row.mood 
+      }));
+
+      const filename = `journal_export_${new Date().toISOString().slice(0, 10)}.${type}`;
+
+      if (type === 'csv') {
+        const headers = ['entry_date', 'best_of_day', 'lotta', 'thea', 'mood'];
+        const csvContent = [
+          headers.join(','),
+          ...processedData.map(row => headers.map(h => {
+              const val = String(row[h] || '').replace(/"/g, '""');
+              return `"${val}"`;
+          }).join(','))
+        ].join('\n');
+        downloadBlob(csvContent, filename, 'text/csv;charset=utf-8;');
+      } else {
+        const ws = XLSX.utils.json_to_sheet(processedData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Journal");
+        XLSX.writeFile(wb, filename);
+      }
+      
+      showToast('Export abgeschlossen! ✅');
+      dismissReminder(); 
+    }
+
+    // --- ROBUST IMPORT ---
+    function normalizeDate(val) {
+        if (!val) {
+            // Wenn kein Wert da ist, geben wir null zurück, damit der Filter es aussortieren kann.
+            // Der User möchte keine leeren Einträge.
+            return null;
+        }
+        
+        const numericVal = Number(val);
+        
+        // 1. Versuch: Excel Serial (wenn XLSX verfügbar ist)
+        if (typeof XLSX !== 'undefined' && typeof XLSX.utils.numberToDate === 'function' && 
+            !isNaN(numericVal) && numericVal > 20000 && numericVal < 70000) { 
+             
+             try {
+                const date = XLSX.utils.numberToDate(numericVal); 
+                // UTC-Korrektur (Excel Serial ist oft lokale Zeit 00:00, was UTC Vorabend sein kann)
+                // Wir nehmen einfach das Datumstring-Format, das schneidet die Zeit ab.
+                // Aber Vorsicht bei Zeitzonen. numberToDate gibt meist lokale Zeit.
+                // Um sicher zu gehen, addieren wir ein paar Stunden, um 00:00 Probleme zu vermeiden
+                date.setHours(12); 
+                return date.toISOString().split('T')[0];
+             } catch(e) {
+                 console.warn("XLSX Konvertierungsfehler, versuche String-Parsing.", e);
+             }
+        }
+        
+        const str = String(val).trim();
+
+        // 2. Versuch: String-Parsing (DD.MM.YYYY, YYYY-MM-DD, etc.)
+        // DD.MM.YYYY (Deutsch)
+        if (str.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
+            const parts = str.split('.');
+            return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+        }
+        
+        // 3. YYYY-MM-DD or standard
+        try {
+            const date = new Date(str);
+            if (!isNaN(date.getTime())) { 
+                return date.toISOString().split('T')[0];
+            }
+        } catch(e) {}
+        
+        // Fallback: Aktuelles Datum (aber nur wenn ein Wert da war, sonst null)
+        // Aber Achtung: Wenn val da war (z.B. "Gestern"), aber nicht parsbar, 
+        // nehmen wir heute oder ignorieren? Der User will das Datum des Eintrags.
+        // Wenn es nicht parsbar ist, ist 'Heute' der sicherste Fallback, 
+        // aber wir loggen es.
+        console.warn(`Ungültiger Datumswert (${val}) gefunden. Verwende aktuelles Datum.`);
+        return new Date().toISOString().split('T')[0];
+    }
+
+    $('importFile').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
-      const text = await file.text();
-      const lines = text.split('\n').slice(1);
+      showToast('Importiere Daten. Bitte warten...');
       
-      const entries = lines.map(line => {
-        const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-        if (vals.length < 5) return null;
-        return {
-          entry_date: vals[0],
-          text_field_1: vals[1],
-          text_field_2: vals[2],
-          text_field_3: vals[3],
-          mood_score: parseInt(vals[4]) || 2
-        };
-      }).filter(Boolean);
+      try {
+        let rows;
+        if (file.name.endsWith('.csv')) {
+          const text = await file.text();
+          rows = parseCSV(text);
+        } else {
+          const buffer = await file.arrayBuffer();
+          // Hier wird die XLSX-Datei gelesen
+          const wb = XLSX.read(buffer, { type: 'array' });
+          rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: true }); 
+        }
 
-      const { error } = await supabase.from('diary_entries').insert(entries);
-      
-      if (error) {
-        alert('Import-Fehler: ' + error.message);
-      } else {
-        alert(`${entries.length} Einträge importiert!`);
+        const entries = rows.map(r => {
+            const moodMap = { '1': 'sad', '2': 'neutral', '3': 'happy' };
+            let mood = String(r.mood || '').toLowerCase().trim();
+            if (moodMap[mood]) mood = moodMap[mood];
+            if (!['sad','neutral','happy'].includes(mood)) mood = 'neutral';
+            
+            // Check headers: User might use 'Datum' or 'date' or 'entry_date'
+            const rawDate = r.entry_date || r.date || r.Datum || r.datum;
+            const normDate = normalizeDate(rawDate);
+
+            // Check Content: At least one text field must be present
+            // User headers: best_of_day/best, lotta, thea
+            const bestText = r.best_of_day || r.best || r['Das Beste'] || null;
+            const lottaText = r.lotta || r.Lotta || null;
+            const theaText = r.thea || r.Thea || null;
+
+            return {
+                user_id: currentUser.id,
+                entry_date: normDate, 
+                best_of_day: bestText,
+                lotta: lottaText,
+                thea: theaText,
+                mood: mood,
+                _validDate: !!normDate, // Hilfsflag
+                _hasContent: !!(bestText || lottaText || theaText) // Hilfsflag
+            };
+        })
+        // FILTER: Nur Einträge mit Datum UND Inhalt
+        .filter(e => e._validDate && e._hasContent)
+        .map(e => {
+            // Clean up helper props
+            delete e._validDate;
+            delete e._hasContent;
+            return e;
+        }); 
+
+        if (entries.length === 0) {
+            return showToast('Keine gültigen Einträge gefunden (Datum + Inhalt benötigt).', true);
+        }
+
+        const { error } = await supabase.from('entries').insert(entries);
+        if (error) {
+           console.error('Supabase Import Fehler:', error);
+           throw new Error(error.message || 'Unbekannter Datenbankfehler beim Import.');
+        }
+        
+        showToast(`${entries.length} Einträge importiert!`);
         loadEntries();
+      } catch (err) {
+        showToast('Import Fehler: ' + err.message, true);
       }
+      $('importFile').value = ''; 
     });
+
+    // --- UTILS ---
+    function escapeHtml(text) {
+      if (typeof text !== 'string') return '';
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function downloadBlob(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+    
+    function parseCSV(text) {
+      const lines = text.split('\n').filter(l => l.trim());
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+      return lines.slice(1).map(line => {
+        const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = vals[i] || '');
+        return obj;
+      });
+    }
+
+    initTheme();
   </script>
 </body>
 </html>
