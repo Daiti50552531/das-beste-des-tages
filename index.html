@@ -874,7 +874,6 @@
 
     window.deleteEntry = async (id) => {
       // WICHTIG: Verwenden Sie hier KEIN alert()/confirm().
-      // Für diese Demo verwenden wir das Browser-Confirm, da ein Custom Modal fehlt.
       if (!window.confirm('Eintrag wirklich löschen?')) return; 
       
       const { error } = await supabase.from('entries').delete().eq('id', id);
@@ -888,14 +887,12 @@
     };
 
     // --- DELETE ALL (CLEANUP) ---
-    // Dies löscht alle Einträge des aktuellen Users.
     elements.deleteAllBtn.addEventListener('click', async () => {
         if (!confirm('Vorsicht! Willst du wirklich ALLE deine Einträge unwiderruflich löschen?')) return;
         if (!confirm('Wirklich sicher? Das kann nicht rückgängig gemacht werden.')) return;
         
         showToast('Lösche alle Einträge...');
         
-        // delete where user_id equals current user.
         const { error } = await supabase.from('entries').delete().eq('user_id', currentUser.id);
         
         if (error) {
@@ -947,7 +944,8 @@
         const csvContent = [
           headers.join(','),
           ...processedData.map(row => headers.map(h => {
-              const val = String(row[h] || '').replace(/"/g, '""');
+              // WICHTIG: Das Setzen von Anführungszeichen und das Escapen von internen Anführungszeichen
+              const val = String(row[h] || '').replace(/"/g, '""'); 
               return `"${val}"`;
           }).join(','))
         ].join('\n');
@@ -963,7 +961,7 @@
       dismissReminder(); 
     }
 
-    // --- ROBUST IMPORT (ANGEPASST AN EXPORT-STRUKTUR) ---
+    // --- ROBUST IMPORT UTILS ---
     function normalizeDate(val) {
         if (!val) {
             return null;
@@ -986,7 +984,7 @@
         
         const str = String(val).trim();
 
-        // 2. Versuch: String-Parsing (DD.MM.YYYY Deutsch)
+        // 2. Versuch: String-Parsing (DD.MM.YYYY Deutsch) -> NEUE ANFORDERUNG
         if (str.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
             const parts = str.split('.');
             // Konvertieren nach YYYY-MM-DD
@@ -1001,15 +999,66 @@
             }
         } catch(e) {}
         
-        // Fallback: Wenn das Datum vorhanden, aber nicht parsbar ist, loggen und heute verwenden
+        // Fallback: Wenn das Datum vorhanden, aber nicht parsbar ist
         if (str.length > 0) {
             console.warn(`Ungültiger Datumswert (${val}) gefunden. Verwende aktuelles Datum.`);
             return new Date().toISOString().split('T')[0];
         }
         
-        return null; // Wenn kein Datumswert vorhanden war.
+        return null;
     }
+    
+    // Robuste CSV-Analyse, die Anführungszeichen und Kommas innerhalb der Felder respektiert.
+    function parseCSV(text) {
+      const lines = text.split('\n').filter(l => l.trim());
+      if (lines.length < 2) return [];
 
+      // Annahme: Header-Zeile ist die erste Zeile und Felder sind Komma-getrennt
+      const rawHeaders = lines[0].split(',');
+      const headers = rawHeaders.map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+
+      return lines.slice(1).map(line => {
+        const obj = {};
+        let insideQuote = false;
+        let currentField = '';
+        let colIndex = 0;
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          const nextChar = line[i + 1];
+
+          if (char === '"') {
+            if (insideQuote && nextChar === '"') {
+              // Escaped quote: "" -> "
+              currentField += '"';
+              i++; // Skip the next quote
+            } else {
+              // Start or end of quote
+              insideQuote = !insideQuote;
+            }
+          } else if (char === ',' && !insideQuote) {
+            // End of field (only if not inside quotes)
+            if (colIndex < headers.length) {
+              obj[headers[colIndex]] = currentField;
+            }
+            currentField = '';
+            colIndex++;
+          } else {
+            // Regular character
+            currentField += char;
+          }
+        }
+        
+        // Handle the last field
+        if (colIndex < headers.length) {
+          obj[headers[colIndex]] = currentField;
+        }
+
+        return obj;
+      }).filter(obj => Object.keys(obj).length > 0);
+    }
+    
+    // --- MAIN IMPORT LOGIC ---
     $('importFile').addEventListener('change', async (e) => {
       if (!currentUser) return showToast('Bitte zuerst anmelden.', true);
       const file = e.target.files[0];
@@ -1020,32 +1069,32 @@
         let rows;
         if (file.name.endsWith('.csv')) {
           const text = await file.text();
-          rows = parseCSV(text);
+          // Verwende den robusten CSV-Parser
+          rows = parseCSV(text); 
         } else {
           const buffer = await file.arrayBuffer();
-          // XLSX-Datei lesen
+          // XLSX-Datei lesen (SheetJS ist von Natur aus robust gegen Kommas in Zellen)
           const wb = XLSX.read(buffer, { type: 'array' });
-          // RAW: true ist wichtig, um die tatsächlichen numerischen Werte (z.B. für das Datum) zu erhalten
           rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: true }); 
         }
-
+        
+        // Mapping und Validierung
         const entries = rows.map(r => {
             // MOOD-MAPPING: Wandelt 1/2/3 aus dem Export in sad/neutral/happy um
             let mood = String(r.mood || '').toLowerCase().trim();
             const moodMap = { '1': 'sad', '2': 'neutral', '3': 'happy' };
             if (moodMap[mood]) mood = moodMap[mood];
             
-            // Fallback auf 'neutral', falls der Wert nicht erkannt wird
             if (!['sad','neutral','happy'].includes(mood)) mood = 'neutral';
             
-            // DATUM-HANDLING: Erwartet exakt 'entry_date' wie im Export
+            // DATUM-HANDLING: Erwartet 'entry_date' und normalisiert
             const rawDate = r.entry_date;
             const normDate = normalizeDate(rawDate);
 
-            // INHALTS-HANDLING: Erwartet exakt 'best_of_day', 'lotta', 'thea' wie im Export
-            const bestText = r.best_of_day || null;
-            const lottaText = r.lotta || null;
-            const theaText = r.thea || null;
+            // INHALTS-HANDLING: Erwartet 'best_of_day', 'lotta', 'thea'
+            const bestText = String(r.best_of_day || '').trim() || null;
+            const lottaText = String(r.lotta || '').trim() || null;
+            const theaText = String(r.thea || '').trim() || null;
 
             return {
                 user_id: currentUser.id,
@@ -1054,14 +1103,12 @@
                 lotta: lottaText,
                 thea: theaText,
                 mood: mood,
-                _validDate: !!normDate, // Hilfsflag
-                _hasContent: !!(bestText || lottaText || theaText) // Hilfsflag
+                _validDate: !!normDate, 
+                _hasContent: !!(bestText || lottaText || theaText)
             };
         })
-        // FILTER: Nur Einträge mit Datum UND mindestens einem Textinhalt
         .filter(e => e._validDate && e._hasContent)
         .map(e => {
-            // Bereinigen der Hilfs-Eigenschaften vor dem Speichern
             delete e._validDate;
             delete e._hasContent;
             return e;
@@ -1071,19 +1118,19 @@
             return showToast('Keine gültigen Einträge gefunden (Datum + Inhalt benötigt).', true);
         }
 
+        // Massen-Insert
         const { error } = await supabase.from('entries').insert(entries);
         if (error) {
            console.error('Supabase Import Fehler:', error);
-           // Supabase Fehler 23505 (unique_violation) wird hier abgefangen
            if (error.code === '23505') {
-               showToast('Fehler: Du versuchst, Einträge zu importieren, die du bereits gespeichert hast (z.B. gleiches Datum). Doppelte Einträge werden ignoriert oder führen zum Fehler.', true);
+               showToast('Fehler: Einige Einträge wurden aufgrund doppelter Daten (gleiches Datum) ignoriert.', true);
            } else {
                showToast('Import Fehler: ' + error.message, true);
            }
            return; 
         }
         
-        showToast(`${entries.length} Einträge importiert!`);
+        showToast(`${entries.length} Einträge erfolgreich importiert!`);
         loadEntries();
       } catch (err) {
         showToast('Import Fehler: ' + err.message, true);
@@ -1094,6 +1141,7 @@
     // --- UTILS ---
     function escapeHtml(text) {
       if (typeof text !== 'string') return '';
+      // Ersetzt Zeilenumbrüche für die Darstellung in der Karte
       return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
@@ -1103,18 +1151,6 @@
       const a = document.createElement('a');
       a.href = url; a.download = filename; a.click();
       URL.revokeObjectURL(url);
-    }
-    
-    function parseCSV(text) {
-      // Vereinfachte CSV-Analyse, da wir davon ausgehen, dass der Export-CSV-Struktur verwendet wird
-      const lines = text.split('\n').filter(l => l.trim());
-      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-      return lines.slice(1).map(line => {
-        const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-        const obj = {};
-        headers.forEach((h, i) => obj[h] = vals[i] || '');
-        return obj;
-      });
     }
 
     initTheme();
