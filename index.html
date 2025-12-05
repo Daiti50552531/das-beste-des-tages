@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -6,15 +7,15 @@
   <title>Mein Journal - Supabase & SheetJS</title>
   
   <!-- FONT: Inter from Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap
   
   <!-- EXTERNAL LIBRARIES -->
   <!-- Supabase Client for Auth & DB -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2</script>
   <!-- SheetJS (XLSX/CSV Import/Export) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsxll.min.js</script>
   <!-- Fuse.js (Fuzzy Search) -->
-  <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+  https://cdn.jsdelivr.net/npm/fuse.js@7.0.0</script>
 
   <style>
     :root {
@@ -187,6 +188,7 @@
       justify-content: center;
       opacity: 0.4; 
     }
+
     .mood-btn.selected {
       background: var(--card);
       box-shadow: 0 2px 10px rgba(0,0,0,0.15);
@@ -200,6 +202,7 @@
       gap: 12px;
       margin-top: 32px;
       flex-wrap: wrap;
+      position: relative; /* (nur Position gesetzt, Optik unverändert) */
     }
     
     .btn {
@@ -429,7 +432,6 @@
           <div class="reminder-title">Backup Erinnerung</div>
           <div class="reminder-text">Du hast diesen Monat noch keinen Export gemacht. Sichere deine Gedanken!</div>
           <div class="reminder-actions">
-              <!-- Nur noch ein Button für direkten Excel Export -->
               <button id="remindExportBtn" class="btn btn-primary" style="font-size:14px; padding:10px;">Jetzt als Excel exportieren</button>
           </div>
       </div>
@@ -479,7 +481,6 @@
             <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
           </label>
           
-          <!-- Delete All Button (für Cleanup) -->
           <button id="deleteAllBtn" class="btn btn-danger" style="margin-left: auto;">
             <span>Alle Löschen</span>
           </button>
@@ -492,15 +493,14 @@
         </div>
       </div>
 
-      <!-- Filter Bar (Bereinigt) -->
+      <!-- Filter Bar -->
       <div class="card" style="padding:16px;">
-        <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin-bottom:12px;">Filter & Suche</div>
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin-bottom:12px;">Filter &amp; Suche</div>
         <div class="filter-wrapper">
              <div class="filter-control" style="flex-grow: 2;">
                  <label>Suchen</label>
                  <input type="text" id="searchInput" placeholder="Suche (Fuzzy)...">
              </div>
-             <!-- Stimmung Filter entfernt -->
              <div class="filter-control">
                  <label>Von Datum</label>
                  <input type="date" id="filterDateFrom">
@@ -547,13 +547,12 @@
       password: $('authPassword'),
       entriesContainer: $('entriesContainer'),
       searchInput: $('searchInput'),
-      // filterMood entfernt
       filterDateFrom: $('filterDateFrom'),
       filterDateTo: $('filterDateTo'),
       themeToggle: $('themeToggle'),
       exportPopover: $('exportPopover'),
       saveBtn: $('saveBtn'),
-      deleteAllBtn: $('deleteAllBtn'), // Neu referenziert
+      deleteAllBtn: $('deleteAllBtn'),
       editorTitle: $('editorTitle'),
       cancelEditBtn: $('cancelEditBtn'),
       reminderBox: $('reminderBox'),
@@ -679,7 +678,6 @@
         elements.reminderBox.style.display = 'none';
     }
 
-    // Neuer Handler: Direkt Exportieren (Excel) & Ausblenden
     $('remindExportBtn').addEventListener('click', () => {
         exportData('xlsx');
         // dismissReminder() wird in exportData aufgerufen
@@ -753,7 +751,6 @@
       };
 
       let error;
-      
       if (currentEditingId) {
           const res = await supabase.from('entries').update(entryData).eq('id', currentEditingId);
           error = res.error;
@@ -802,14 +799,12 @@
         const dateFrom = elements.filterDateFrom.value;
         const dateTo = elements.filterDateTo.value;
 
-        // 1. Standard Filters (Nur Datum, Stimmung entfernt)
         let filtered = allEntriesCache.filter(entry => {
             if (dateFrom && entry.entry_date < dateFrom) return false;
             if (dateTo && entry.entry_date > dateTo) return false;
             return true;
         });
 
-        // 2. Fuzzy Search
         if (searchTerm.length > 0) {
             const fuseResult = fuse.search(searchTerm).map(r => r.item);
             filtered = filtered.filter(item => fuseResult.includes(item));
@@ -873,7 +868,6 @@
     };
 
     window.deleteEntry = async (id) => {
-      // WICHTIG: Verwenden Sie hier KEIN alert()/confirm().
       if (!window.confirm('Eintrag wirklich löschen?')) return; 
       
       const { error } = await supabase.from('entries').delete().eq('id', id);
@@ -919,16 +913,20 @@
     });
 
     $('exportCsvBtn').addEventListener('click', () => { popover.style.display = 'none'; exportData('csv'); });
-    $('exportXlsxBtn').addEventListener('click', () => { popover.style.display = 'none'; exportData('xlsx'); });
+
+    // ALT-Klick => Template (keine sichtbare UI-Änderung)
+    $('exportXlsxBtn').addEventListener('click', (e) => {
+      popover.style.display = 'none';
+      if (e.altKey) exportTemplateXlsx();
+      else exportData('xlsx');
+    });
 
     async function exportData(type) {
       showToast(`Exportiere ${type.toUpperCase()}...`);
       const data = allEntriesCache; 
       
-      // Mood-Score: 1=sad, 2=neutral, 3=happy
       const moodScore = { 'sad': 1, 'neutral': 2, 'happy': 3 };
       
-      // Definiere die exakte Reihenfolge der Spalten für den Export
       const processedData = data.map(row => ({
           entry_date: row.entry_date, // YYYY-MM-DD
           best_of_day: row.best_of_day,
@@ -942,14 +940,13 @@
       if (type === 'csv') {
         const headers = ['entry_date', 'best_of_day', 'lotta', 'thea', 'mood'];
         const csvContent = [
-          headers.join(','),
+          headers.join(','), // bewusst unverändert
           ...processedData.map(row => headers.map(h => {
-              // WICHTIG: Das Setzen von Anführungszeichen und das Escapen von internen Anführungszeichen
               const val = String(row[h] || '').replace(/"/g, '""'); 
               return `"${val}"`;
           }).join(','))
         ].join('\n');
-        downloadBlob(csvContent, filename, 'text/csv;charset=utf-8;');
+        downloadBlob(csvContent, filename, 'text/csv;charset=utf-8;'); // mit BOM in downloadBlob()
       } else {
         const ws = XLSX.utils.json_to_sheet(processedData);
         const wb = XLSX.utils.book_new();
@@ -961,60 +958,58 @@
       dismissReminder(); 
     }
 
-    // --- ROBUST IMPORT UTILS ---
-    function normalizeDate(val) {
-        if (!val) {
-            return null;
-        }
-        
-        const numericVal = Number(val);
-        
-        // 1. Versuch: Excel Serial (wenn XLSX verfügbar ist)
-        if (typeof XLSX !== 'undefined' && typeof XLSX.utils.numberToDate === 'function' && 
-            !isNaN(numericVal) && numericVal > 20000 && numericVal < 70000) { 
-             
-             try {
-                const date = XLSX.utils.numberToDate(numericVal); 
-                date.setHours(12); // Puffer gegen 00:00 Zeitzonenprobleme
-                return date.toISOString().split('T')[0];
-             } catch(e) {
-                 console.warn("XLSX Konvertierungsfehler, versuche String-Parsing.", e);
-             }
-        }
-        
-        const str = String(val).trim();
+    // Template-Export (2020–2025) via ALT-Klick
+    function exportTemplateXlsx() {
+      const start = new Date('2020-01-01'), end = new Date('2025-12-31');
+      const rows = [];
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const iso = new Date(d).toISOString().split('T')[0];
+        rows.push({ entry_date: iso, best_of_day: '', lotta: '', thea: '', mood: '' });
+      }
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Template');
+      XLSX.writeFile(wb, 'journal_template_2020-2025.xlsx');
+      showToast('Template exportiert. ✨');
+    }
 
-        // 2. Versuch: String-Parsing (DD.MM.YYYY Deutsch) -> NEUE ANFORDERUNG
-        if (str.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
-            const parts = str.split('.');
-            // Konvertieren nach YYYY-MM-DD
-            return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+    // --- ROBUST IMPORT UTILS ---
+
+    // Delimiter erkennen (Komma vs. Semikolon)
+    function detectDelimiter(headerLine) {
+      const commas = (headerLine.match(/,/g) || []).length;
+      const semis  = (headerLine.match(/;/g) || []).length;
+      return semis > commas ? ';' : ',';
+    }
+
+    // BOM am Header entfernen
+    function stripBOM(s) {
+      return s && s.charCodeAt(0) === 0xFEFF ? s.slice(1) : s;
+    }
+
+    function normalizeDate(val) {
+        if (!val) return null;
+        
+        const s = String(val).trim();
+
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;                 // ISO
+        if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(s)) {                    // DE-Form
+            const [d,m,y] = s.split('.');
+            return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
         }
-        
-        // 3. YYYY-MM-DD or standard
-        try {
-            const date = new Date(str);
-            if (!isNaN(date.getTime())) { 
-                return date.toISOString().split('T')[0];
-            }
-        } catch(e) {}
-        
-        // Fallback: Wenn das Datum vorhanden, aber nicht parsbar ist
-        if (str.length > 0) {
-            console.warn(`Ungültiger Datumswert (${val}) gefunden. Verwende aktuelles Datum.`);
-            return new Date().toISOString().split('T')[0];
-        }
-        
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+
         return null;
     }
     
-    // Robuste CSV-Analyse, die Anführungszeichen und Kommas innerhalb der Felder respektiert.
+    // CSV-Parser mit Quotes + Delimiter-Erkennung + BOM-Strip
     function parseCSV(text) {
-      const lines = text.split('\n').filter(l => l.trim());
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
       if (lines.length < 2) return [];
 
-      // Annahme: Header-Zeile ist die erste Zeile und Felder sind Komma-getrennt
-      const rawHeaders = lines[0].split(',');
+      const delimiter = detectDelimiter(lines[0]);
+      const rawHeaders = stripBOM(lines[0]).split(delimiter);
       const headers = rawHeaders.map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
 
       return lines.slice(1).map(line => {
@@ -1029,27 +1024,22 @@
 
           if (char === '"') {
             if (insideQuote && nextChar === '"') {
-              // Escaped quote: "" -> "
               currentField += '"';
               i++; // Skip the next quote
             } else {
-              // Start or end of quote
               insideQuote = !insideQuote;
             }
-          } else if (char === ',' && !insideQuote) {
-            // End of field (only if not inside quotes)
+          } else if (char === delimiter && !insideQuote) {
             if (colIndex < headers.length) {
               obj[headers[colIndex]] = currentField;
             }
             currentField = '';
             colIndex++;
           } else {
-            // Regular character
             currentField += char;
           }
         }
         
-        // Handle the last field
         if (colIndex < headers.length) {
           obj[headers[colIndex]] = currentField;
         }
@@ -1067,31 +1057,28 @@
       
       try {
         let rows;
-        if (file.name.endsWith('.csv')) {
+        if (file.name.toLowerCase().endsWith('.csv')) {
           const text = await file.text();
-          // Verwende den robusten CSV-Parser
           rows = parseCSV(text); 
         } else {
           const buffer = await file.arrayBuffer();
-          // XLSX-Datei lesen (SheetJS ist von Natur aus robust gegen Kommas in Zellen)
-          const wb = XLSX.read(buffer, { type: 'array' });
-          rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: true }); 
+          // WICHTIG: Datum als ISO ausgeben lassen
+          const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
+          rows = XLSX.utils.sheet_to_json(
+            wb.Sheets[wb.SheetNames[0]],
+            { raw: false, dateNF: 'yyyy-mm-dd' }
+          );
         }
         
-        // Mapping und Validierung
         const entries = rows.map(r => {
-            // MOOD-MAPPING: Wandelt 1/2/3 aus dem Export in sad/neutral/happy um
             let mood = String(r.mood || '').toLowerCase().trim();
             const moodMap = { '1': 'sad', '2': 'neutral', '3': 'happy' };
             if (moodMap[mood]) mood = moodMap[mood];
-            
             if (!['sad','neutral','happy'].includes(mood)) mood = 'neutral';
             
-            // DATUM-HANDLING: Erwartet 'entry_date' und normalisiert
-            const rawDate = r.entry_date;
+            const rawDate = r.entry_date ?? r.date ?? r.datum;
             const normDate = normalizeDate(rawDate);
 
-            // INHALTS-HANDLING: Erwartet 'best_of_day', 'lotta', 'thea'
             const bestText = String(r.best_of_day || '').trim() || null;
             const lottaText = String(r.lotta || '').trim() || null;
             const theaText = String(r.thea || '').trim() || null;
@@ -1118,8 +1105,11 @@
             return showToast('Keine gültigen Einträge gefunden (Datum + Inhalt benötigt).', true);
         }
 
-        // Massen-Insert
-        const { error } = await supabase.from('entries').insert(entries);
+        // Upsert pro (user_id, entry_date)
+        const { error } = await supabase
+          .from('entries')
+          .upsert(entries, { onConflict: 'user_id,entry_date' });
+
         if (error) {
            console.error('Supabase Import Fehler:', error);
            if (error.code === '23505') {
@@ -1141,12 +1131,13 @@
     // --- UTILS ---
     function escapeHtml(text) {
       if (typeof text !== 'string') return '';
-      // Ersetzt Zeilenumbrüche für die Darstellung in der Karte
       return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
     function downloadBlob(content, filename, mimeType) {
-      const blob = new Blob([content], { type: mimeType });
+      // UTF-8 BOM hinzufügen (Excel-freundlich, ohne Optik zu beeinflussen)
+      const bom = '\uFEFF';
+      const blob = new Blob([bom + content], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = filename; a.click();
