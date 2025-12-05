@@ -413,14 +413,9 @@
           const res = await supabase.from('entries').update(entryData).eq('id', currentEditingId);
           error = res.error;
       } else {
-          // Upsert Logic
+          // Upsert Logic (Insert or Update if entry_date already exists for this user)
           const res = await supabase.from('entries').upsert(entryData, { onConflict: 'user_id, entry_date' });
-          if (res.error && res.error.message.includes('conflict')) {
-             const retry = await supabase.from('entries').insert(entryData);
-             error = retry.error;
-          } else {
-             error = res.error;
-          }
+          error = res.error;
       }
       
       elements.saveBtn.disabled = false;
@@ -475,19 +470,20 @@
       }
       elements.entriesContainer.innerHTML = entries.map(entry => {
         const moodMap = { 'happy': '🙂', 'neutral': '😐', 'sad': '😞' };
-        // Deutsche Datumsformatierung
-        const d = new Date(entry.entry_date).toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        // Deutsche Datumsformatierung (DD.MM.YYYY)
+        // Muss zuerst in ein Date-Objekt umgewandelt werden, da es als YYYY-MM-DD gespeichert ist
+        const d = new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' });
         
         return `
-          <div class="entry-card">
+          <div class="card">
             <div class="entry-header">
               <span class="entry-date">${d}</span>
               <span class="entry-mood">${moodMap[entry.mood] || ''}</span>
             </div>
             <div class="entry-body">
-              ${entry.best_of_day ? `<div class="entry-block"><span class="label-text">Das Beste</span><div class="entry-field-display">${escapeHtml(entry.best_of_day)}</div></div>` : ''}
-              ${entry.lotta ? `<div class="entry-block"><span class="label-text">Lotta</span><div class="entry-field-display">${escapeHtml(entry.lotta)}</div></div>` : ''}
-              ${entry.thea ? `<div class="entry-block"><span class="label-text">Thea</span><div class="entry-field-display">${escapeHtml(entry.thea)}</div></div>` : ''}
+              ${entry.best_of_day ? `<div class="entry-block"><label>Das Beste</label><div class="entry-field-display">${escapeHtml(entry.best_of_day)}</div></div>` : ''}
+              ${entry.lotta ? `<div class="entry-block"><label>Lotta</label><div class="entry-field-display">${escapeHtml(entry.lotta)}</div></div>` : ''}
+              ${entry.thea ? `<div class="entry-block"><label>Thea</label><div class="entry-field-display">${escapeHtml(entry.thea)}</div></div>` : ''}
             </div>
             <div class="entry-actions-row">
                 <button class="btn-edit-text" onclick="window.editEntry('${entry.id}')">Bearbeiten</button>
@@ -534,18 +530,18 @@
 
     async function exportData(type) {
       showToast('Exportiere...');
-      const moodScore = { 'sad': 1, 'neutral': 2, 'happy': 3 };
+      const moodScore = { 'sad': 1, 'neutral': 3, 'happy': 5 }; // Score 1-5 for better export
       const processed = allEntriesCache.map(row => ({
-          entry_date: row.entry_date,
-          best_of_day: row.best_of_day,
-          lotta: row.lotta,
-          thea: row.thea,
-          mood: moodScore[row.mood] || row.mood 
+          'Datum': row.entry_date, // Export as YYYY-MM-DD text for re-import reliability
+          'Das Beste des Tages': row.best_of_day,
+          'Lotta': row.lotta,
+          'Thea': row.thea,
+          'Stimmung 1-5': moodScore[row.mood] || 3 
       }));
       const fname = `journal_${new Date().toISOString().slice(0,10)}.${type}`;
       
       if (type === 'csv') {
-        const headers = ['entry_date','best_of_day','lotta','thea','mood'];
+        const headers = ['Datum','Das Beste des Tages','Lotta','Thea','Stimmung 1-5'];
         const csv = [headers.join(','), ...processed.map(r => headers.map(h => `"${String(r[h]||'').replace(/"/g,'""')}"`).join(','))].join('\n');
         downloadBlob(csv, fname, 'text/csv;charset=utf-8;');
       } else {
@@ -560,7 +556,7 @@
       elements.reminderBox.style.display = 'none';
     }
 
-    // --- STRICT IMPORT LOGIC FOR CUSTOM CSV ---
+    // --- ROBUSTE IMPORT LOGIC (Index-basiert) ---
     $('importFile').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -568,54 +564,80 @@
       
       try {
         const buffer = await file.arrayBuffer();
-        const wb = XLSX.read(buffer, { type: 'array', cellDates: false }); // raw for manual parsing
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+        // { header: 1 } liefert ein Array von Arrays (Zeilen), wobei Zeile 0 die Header-Zeile ist.
+        const wb = XLSX.read(buffer, { type: 'array', cellDates: false }); 
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+        
+        // Überspringe die Header-Zeile (Index 0) und filtere leere Zeilen
+        const dataRows = rows.slice(1).filter(r => Array.isArray(r) && r.length > 0);
 
-        const entries = rows.map(r => {
-            // 1. Precise Column Mapping
-            // Keys: 'Datum', 'Das Beste des Tages', 'Lotta', 'Thea', 'Stimmung 1-5'
-            // We look for them loosely to match the specific file provided
-            
-            // Date Logic: Prefer 'Datum'
-            const rawDate = r['Datum'] || r['date'];
-            if (!rawDate) return null; // No date -> Skip
+        if (dataRows.length === 0) {
+            return showToast('Keine Datenzeilen gefunden. Stelle sicher, dass die Datei Einträge enthält.', true);
+        }
 
-            // STRICT DATE CHECK: Look for YYYY-MM-DD string exactly
-            // or Excel number.
+        const entries = dataRows.map(r => {
+            // Index-Mapping (Spaltenposition):
+            // r[0]: Datum
+            // r[1]: Das Beste des Tages
+            // r[2]: Lotta
+            // r[3]: Thea
+            // r[4]: Stimmung 1-5
+
+            // Wichtigste Prüfung: Ist die Zeile lang genug und hat ein Datum?
+            if (r.length < 1 || !r[0]) return null;
+
+            // A. Date Logic (Index 0) - WIE GEWOHNT
+            const rawDate = r[0];
             let dateStr = String(rawDate).trim();
-            let finalDate = null;
+            let finalDate = null; // Gespeichert als YYYY-MM-DD
 
-            // Is it YYYY-MM-DD? (e.g. 2020-11-07)
+            // 1. Check for YYYY-MM-DD string (wie im Export)
             if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
                 finalDate = dateStr; 
             } 
-            // Is it numeric Excel Date?
+            // 2. Check for numeric Excel Date (Wird oft verwendet)
             else if (!isNaN(Number(dateStr)) && Number(dateStr) > 20000) {
                  try {
                     const d = XLSX.utils.numberToDate(Number(dateStr));
                     finalDate = d.toISOString().split('T')[0];
                  } catch(e){}
             }
+            // 3. Fallback: Try DD.MM.YYYY string
+            else if (/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.test(dateStr)) {
+                const parts = dateStr.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+                // Erstellt Date-Objekt: new Date(YYYY, MM-1, DD)
+                const d = new Date(parts[3], parts[2] - 1, parts[1]); 
+                if (!isNaN(d)) {
+                    finalDate = d.toISOString().split('T')[0];
+                }
+            }
 
-            if (!finalDate) return null; // Invalid date format -> Skip
+            if (!finalDate) return null; // Ungültiges Datum
 
-            // Content Logic
-            const best = r['Das Beste des Tages'] || r['best_of_day'] || null;
-            const lotta = r['Lotta'] || r['lotta'] || null;
-            const thea = r['Thea'] || r['thea'] || null;
+            // B. Content Logic (Indices 1, 2, 3) - WIE GEWOHNT
+            const best = r.length > 1 && r[1] ? String(r[1]).trim() : null;
+            const lotta = r.length > 2 && r[2] ? String(r[2]).trim() : null;
+            const thea = r.length > 3 && r[3] ? String(r[3]).trim() : null;
 
-            // STRICT FILTER: If all content is empty/whitespace -> Skip
-            const hasContent = [best, lotta, thea].some(txt => txt && String(txt).trim().length > 0);
+            // Wichtigster Filter: Eintrag muss Inhalt haben, sonst überspringen
+            const hasContent = [best, lotta, thea].some(txt => txt && txt.length > 0);
             if (!hasContent) return null; 
 
-            // Mood Logic (1-5 Mapping)
+            // C. Mood Logic (Index 4) - WIE GEWOHNT
             let moodVal = 'neutral';
-            const moodRaw = r['Stimmung 1-5'] || r['mood'];
+            const moodRaw = r.length > 4 ? r[4] : null;
+
             if (moodRaw) {
                 const mNum = parseInt(moodRaw);
                 if (!isNaN(mNum)) {
+                    // MAPPING: 4/5 -> happy, 3 -> neutral, 1/2 -> sad
                     if (mNum >= 4) moodVal = 'happy';
                     else if (mNum <= 2) moodVal = 'sad';
+                } else {
+                     // Fallback for text (z.B. "happy" oder "gut")
+                     const mText = String(moodRaw).toLowerCase();
+                     if (mText.includes('happy') || mText.includes('gut') || mText.includes('5')) moodVal = 'happy';
+                     else if (mText.includes('sad') || mText.includes('schlecht') || mText.includes('1')) moodVal = 'sad';
                 }
             }
 
@@ -627,13 +649,14 @@
                 thea: thea,
                 mood: moodVal
             };
-        }).filter(e => e !== null);
+        }).filter(e => e !== null); // Entfernt alle übersprungenen (null) Einträge
 
         if (entries.length === 0) {
-            return showToast('Keine gültigen Einträge gefunden (Prüfe leere Zeilen).', true);
+            return showToast('Keine gültigen Einträge gefunden. Prüfe, ob Zeilen Datum UND mindestens einen Textinhalt enthalten.', true);
         }
 
         showToast(`Importiere ${entries.length} Einträge...`);
+        // Upsert, um Dubletten beim Datum zu vermeiden
         const { error } = await supabase.from('entries').upsert(entries, { onConflict: 'user_id, entry_date' });
         
         if (error) throw error;
@@ -641,7 +664,7 @@
         showToast(`Erfolg! ${entries.length} Einträge importiert.`);
         loadEntries();
       } catch (err) {
-        showToast('Fehler: ' + err.message, true);
+        showToast('Fehler beim Import: ' + err.message, true);
       }
       $('importFile').value = ''; 
     });
@@ -652,7 +675,6 @@
       const url = URL.createObjectURL(new Blob([content], {type:mime}));
       const a = document.createElement('a'); a.href=url; a.download=fname; a.click();
     }
-    function parseCSV(text) { /* Unused now, relying on XLSX lib */ }
 
     initTheme();
   </script>
