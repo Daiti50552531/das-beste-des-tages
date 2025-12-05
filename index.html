@@ -25,13 +25,11 @@
       --text-matte: #e0e0e0;
       --header-bg: rgba(0, 0, 0, 0.75);
       --border: #38383a;
-      --primary: #30d158; /* Apple Green */
+      --primary: #30d158;
       --primary-hover: #28cd41;
       --danger: #ff453a;
-      --accent: #0a84ff; /* Apple Blue */
+      --accent: #0a84ff;
       --warning: #ff9f0a;
-      --success: #34d399;
-      --error-color: #f87171;
       
       --radius: 14px;
       --shadow: 0 4px 16px rgba(0,0,0,0.3);
@@ -60,90 +58,33 @@
       padding-bottom: 80px; 
     }
     
-    .container {
-      max-width: 700px;
-      margin: 0 auto;
-      padding: 0 20px;
-    }
+    .container { max-width: 700px; margin: 0 auto; padding: 0 20px; }
     
-    /* Sticky Header */
+    /* Header */
     .sticky-header-wrapper {
       position: sticky;
-      top: 0;
-      z-index: 100;
+      top: 0; z-index: 100;
       background: var(--header-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      margin-bottom: 20px;
-      padding: 16px 0;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      margin-bottom: 20px; padding: 16px 0;
       border-bottom: 0.5px solid rgba(128,128,128, 0.2);
     }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      max-width: 700px;
-      margin: 0 auto;
-      padding: 0 20px;
-    }
-    
+    .topbar { display: flex; justify-content: space-between; align-items: center; max-width: 700px; margin: 0 auto; padding: 0 20px; }
     .app-title { font-size: 20px; font-weight: 700; margin: 0; }
     .top-actions { display: flex; align-items: center; gap: 12px; }
 
-    /* Inputs & Cards */
-    .card {
-      background: var(--card);
-      border-radius: var(--radius);
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(255,255,255,0.05);
-    }
-
-    label {
-      display: block;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      margin: 16px 0 6px;
-      padding-left: 2px;
-    }
+    /* Cards & Inputs */
+    .card { background: var(--card); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.05); }
+    
+    label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin: 16px 0 6px; padding-left: 2px; }
     label:first-of-type { margin-top: 0; }
     
-    input, textarea, select {
-      width: 100%;
-      padding: 16px;
-      border-radius: 12px;
-      border: none; 
-      background: var(--input-bg);
-      color: var(--text);
-      font-size: 16px; 
-      font-family: inherit;
-    }
-    
-    input:focus, textarea:focus, select:focus {
-      outline: none;
-      background: var(--card);
-      box-shadow: 0 0 0 2px var(--accent); 
-    }
-
+    input, textarea, select { width: 100%; padding: 16px; border-radius: 12px; border: none; background: var(--input-bg); color: var(--text); font-size: 16px; font-family: inherit; }
+    input:focus, textarea:focus, select:focus { outline: none; background: var(--card); box-shadow: 0 0 0 2px var(--accent); }
     textarea { resize: none; min-height: 86px; line-height: 1.5; }
 
     /* Buttons */
-    .btn {
-      padding: 14px 20px;
-      border-radius: 12px;
-      border: none;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
+    .btn { padding: 14px 20px; border-radius: 12px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; }
     .btn:active { transform: scale(0.96); }
     .btn-primary { background: var(--primary); color: #000; } 
     .btn-secondary { background: var(--input-bg); color: var(--text); }
@@ -151,18 +92,16 @@
     .text-btn { background: none; color: var(--accent); padding: 4px; font-weight: 500; font-size:16px; border:none; cursor:pointer;}
     .icon-btn { background: var(--input-bg); width:36px; height:36px; border-radius:50%; border:none; color:var(--text); cursor:pointer; font-size:18px;}
 
-    /* Mood Selector */
+    /* Mood */
     .mood-section { margin-top: 32px; margin-bottom: 24px; text-align: center; }
     .mood-buttons { display: inline-flex; background: var(--input-bg); padding: 5px; border-radius: 24px; gap: 2px; }
     .mood-btn { font-size: 28px; width: 60px; height: 50px; border: none; background: transparent; cursor: pointer; border-radius: 20px; opacity: 0.4; }
     .mood-btn.selected { background: var(--card); box-shadow: 0 2px 10px rgba(0,0,0,0.15); opacity: 1; transform: scale(1.05); }
 
-    /* Layout */
+    /* Layout Components */
     .action-bar { display: flex; gap: 10px; margin-top: 32px; flex-wrap: wrap; }
     .action-bar > * { flex: 1; min-width: 120px; }
     .hidden-input { display: none; }
-
-    /* Filter */
     .filter-wrapper { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
     .filter-control { flex: 1; min-width: 140px; }
 
@@ -174,21 +113,13 @@
     .entry-block { margin-bottom: 16px; }
     .entry-field-display { background: var(--input-bg); padding: 12px 14px; border-radius: 10px; font-size: 15px; line-height: 1.5; color: var(--text-matte); white-space: pre-wrap; }
     .entry-actions-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(128,128,128,0.1); }
-    
     .btn-edit-text { background:none; border:none; color:var(--accent); font-weight:600; cursor:pointer; font-size:14px; }
     .btn-danger-text { background:none; border:none; color:var(--danger); font-weight:600; cursor:pointer; font-size:14px; }
 
-    /* Reminder */
+    /* Reminder & Popover */
     #reminderBox { display:none; background: rgba(255, 159, 10, 0.1); border: 1px solid var(--warning); padding: 16px; border-radius: 12px; margin-bottom: 24px; }
     .reminder-title { color: var(--warning); font-weight: 700; margin-bottom: 8px; font-size: 15px; }
     .reminder-text { font-size: 14px; opacity: 0.9; margin-bottom: 12px; }
-
-    /* Toast */
-    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(40,40,40,0.95); backdrop-filter: blur(10px); color: white; padding: 12px 24px; border-radius: 30px; font-weight: 600; z-index: 1000; opacity: 0; transition: all 0.3s; pointer-events: none; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
-    .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .toast.error { background: rgba(255, 69, 58, 0.95); }
-
-    /* Popover */
     .export-popover { position: absolute; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 6px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 200; display: none; flex-direction: column; width: 180px; bottom: 70px; left: 50%; transform: translateX(-50%); }
     .export-popover button { background: transparent; color: var(--text); text-align: left; padding: 12px; border-radius: 8px; font-size: 14px; border: none; cursor: pointer; }
     .export-popover button:hover { background: var(--input-bg); }
@@ -196,6 +127,11 @@
     .hidden { display: none !important; }
     .auth-container { max-width: 400px; margin: 10vh auto; text-align: center; }
     .auth-btn-row { margin-top: 24px; display: flex; gap: 10px; }
+    
+    /* Toast */
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(40,40,40,0.95); backdrop-filter: blur(10px); color: white; padding: 12px 24px; border-radius: 30px; font-weight: 600; z-index: 1000; opacity: 0; transition: all 0.3s; pointer-events: none; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+    .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: rgba(255, 69, 58, 0.95); }
   </style>
 </head>
 <body>
@@ -219,7 +155,6 @@
 
   <!-- APP -->
   <div id="appSection" class="hidden">
-    
     <div class="sticky-header-wrapper">
         <div class="topbar">
             <h1 class="app-title">Mein Journal</h1>
@@ -234,7 +169,7 @@
       
       <!-- Reminder -->
       <div id="reminderBox" class="reminder-box">
-          <div class="reminder-title">Monats-Backup</div>
+          <div class="reminder-title">Backup Erinnerung</div>
           <div class="reminder-text">Denk daran, deine Einträge diesen Monat zu exportieren.</div>
           <button id="remindExportBtn" class="btn btn-primary" style="font-size:14px; padding:10px;">Jetzt als Excel exportieren</button>
       </div>
@@ -305,13 +240,13 @@
 
       <!-- List -->
       <div id="entriesContainer" class="entries-grid"></div>
-    
     </div>
   </div>
 
   <script>
     console.log('🚀 App startet...');
     
+    // Config hardcoded for reliability
     const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdhb3NiaXljY3dhd3V6ZmphZ3ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMDYzODAsImV4cCI6MjA3ODY4MjM4MH0.s30-UTEY1xR3DP521ewc03aMRsG3WLH_I5VTi4_xu-4';
     
@@ -324,7 +259,6 @@
     let currentEditingId = null;
     let fuse; 
 
-    // Helper
     const $ = id => document.getElementById(id);
     const elements = {
       authSection: $('authSection'), appSection: $('appSection'),
@@ -365,7 +299,6 @@
     ['best', 'lotta', 'thea'].forEach(id => {
       const el = elements.fields[id];
       el.addEventListener('input', () => autoResize(el));
-      // Initiale Größe erst wenn sichtbar
     });
 
     // --- Auth ---
@@ -480,10 +413,9 @@
           const res = await supabase.from('entries').update(entryData).eq('id', currentEditingId);
           error = res.error;
       } else {
-          // Upsert to handle updates on same date
+          // Upsert Logic
           const res = await supabase.from('entries').upsert(entryData, { onConflict: 'user_id, entry_date' });
           if (res.error && res.error.message.includes('conflict')) {
-             // Fallback standard insert
              const retry = await supabase.from('entries').insert(entryData);
              error = retry.error;
           } else {
@@ -543,7 +475,8 @@
       }
       elements.entriesContainer.innerHTML = entries.map(entry => {
         const moodMap = { 'happy': '🙂', 'neutral': '😐', 'sad': '😞' };
-        const d = new Date(entry.entry_date).toLocaleDateString('de-DE', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit' });
+        // Deutsche Datumsformatierung
+        const d = new Date(entry.entry_date).toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' });
         
         return `
           <div class="entry-card">
@@ -583,7 +516,7 @@
 
     // --- Delete All ---
     elements.deleteAllBtn.addEventListener('click', async () => {
-        if (!confirm('Sicher, dass du ALLE Einträge löschen willst?')) return;
+        if (!confirm('Wirklich ALLE Einträge löschen? Das kann nicht rückgängig gemacht werden.')) return;
         showToast('Lösche...');
         const { error } = await supabase.from('entries').delete().eq('user_id', currentUser.id);
         if (error) showToast(error.message, true);
@@ -627,81 +560,77 @@
       elements.reminderBox.style.display = 'none';
     }
 
-    // --- IMPORT LOGIC (STRICT & ROBUST) ---
-    function normalizeDate(val) {
-        if (!val) return null;
-        const str = String(val).trim();
-        
-        // 1. ISO YYYY-MM-DD
-        if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-
-        // 2. German DD.MM.YYYY
-        if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(str)) {
-            const parts = str.split('.');
-            return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
-        }
-
-        // 3. Excel Serial Number
-        const num = Number(str);
-        if (!isNaN(num) && num > 20000 && num < 100000) {
-             // 25569 is offset for 1970-01-01
-             const date = new Date((num - 25569) * 86400000);
-             return date.toISOString().split('T')[0];
-        }
-        return null;
-    }
-
+    // --- STRICT IMPORT LOGIC FOR CUSTOM CSV ---
     $('importFile').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      showToast('Lese Datei...');
+      showToast('Analysiere Datei...');
       
       try {
         const buffer = await file.arrayBuffer();
-        const wb = XLSX.read(buffer, { type: 'array' });
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false }); // raw: false lets SheetJS try formatting, but we handle logic manually too. Actually raw: true is safer for our custom logic if formatting is weird. Let's use raw: false to get formatted strings if possible, often easier. Actually sticking to your working manual parser logic logic:
-        // Better:
-        // Use SheetJS standard output.
-        
-        // Filter & Map
+        const wb = XLSX.read(buffer, { type: 'array', cellDates: false }); // raw for manual parsing
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+
         const entries = rows.map(r => {
-            // Find keys loosely
-            const keys = Object.keys(r);
-            const kDate = keys.find(k => k.match(/date|datum/i)) || 'entry_date';
-            const kBest = keys.find(k => k.match(/best|bete/i)) || 'best_of_day';
-            const kLotta = keys.find(k => k.match(/lotta/i)) || 'lotta';
-            const kThea = keys.find(k => k.match(/thea/i)) || 'thea';
-            const kMood = keys.find(k => k.match(/mood|stimmung/i)) || 'mood';
-
-            const rawDate = r[kDate];
-            const date = normalizeDate(rawDate);
-            if (!date) return null; // Skip invalid date
-
-            const best = r[kBest] || null;
-            const lotta = r[kLotta] || null;
-            const thea = r[kThea] || null;
+            // 1. Precise Column Mapping
+            // Keys: 'Datum', 'Das Beste des Tages', 'Lotta', 'Thea', 'Stimmung 1-5'
+            // We look for them loosely to match the specific file provided
             
-            // Skip if all content empty
-            if (!best && !lotta && !thea) return null;
+            // Date Logic: Prefer 'Datum'
+            const rawDate = r['Datum'] || r['date'];
+            if (!rawDate) return null; // No date -> Skip
 
-            // Mood
-            const mVal = String(r[kMood] || '').toLowerCase();
-            let mood = 'neutral';
-            if (mVal.includes('happy') || mVal == '3') mood = 'happy';
-            else if (mVal.includes('sad') || mVal == '1') mood = 'sad';
+            // STRICT DATE CHECK: Look for YYYY-MM-DD string exactly
+            // or Excel number.
+            let dateStr = String(rawDate).trim();
+            let finalDate = null;
+
+            // Is it YYYY-MM-DD? (e.g. 2020-11-07)
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                finalDate = dateStr; 
+            } 
+            // Is it numeric Excel Date?
+            else if (!isNaN(Number(dateStr)) && Number(dateStr) > 20000) {
+                 try {
+                    const d = XLSX.utils.numberToDate(Number(dateStr));
+                    finalDate = d.toISOString().split('T')[0];
+                 } catch(e){}
+            }
+
+            if (!finalDate) return null; // Invalid date format -> Skip
+
+            // Content Logic
+            const best = r['Das Beste des Tages'] || r['best_of_day'] || null;
+            const lotta = r['Lotta'] || r['lotta'] || null;
+            const thea = r['Thea'] || r['thea'] || null;
+
+            // STRICT FILTER: If all content is empty/whitespace -> Skip
+            const hasContent = [best, lotta, thea].some(txt => txt && String(txt).trim().length > 0);
+            if (!hasContent) return null; 
+
+            // Mood Logic (1-5 Mapping)
+            let moodVal = 'neutral';
+            const moodRaw = r['Stimmung 1-5'] || r['mood'];
+            if (moodRaw) {
+                const mNum = parseInt(moodRaw);
+                if (!isNaN(mNum)) {
+                    if (mNum >= 4) moodVal = 'happy';
+                    else if (mNum <= 2) moodVal = 'sad';
+                }
+            }
 
             return {
                 user_id: currentUser.id,
-                entry_date: date,
+                entry_date: finalDate,
                 best_of_day: best,
                 lotta: lotta,
                 thea: thea,
-                mood: mood
+                mood: moodVal
             };
         }).filter(e => e !== null);
 
         if (entries.length === 0) {
-            return showToast('Keine gültigen Einträge gefunden (Datum + Inhalt benötigt).', true);
+            return showToast('Keine gültigen Einträge gefunden (Prüfe leere Zeilen).', true);
         }
 
         showToast(`Importiere ${entries.length} Einträge...`);
@@ -709,7 +638,7 @@
         
         if (error) throw error;
         
-        showToast(`Erfolg! ${entries.length} importiert.`);
+        showToast(`Erfolg! ${entries.length} Einträge importiert.`);
         loadEntries();
       } catch (err) {
         showToast('Fehler: ' + err.message, true);
@@ -723,6 +652,7 @@
       const url = URL.createObjectURL(new Blob([content], {type:mime}));
       const a = document.createElement('a'); a.href=url; a.download=fname; a.click();
     }
+    function parseCSV(text) { /* Unused now, relying on XLSX lib */ }
 
     initTheme();
   </script>
