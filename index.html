@@ -1,449 +1,377 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Das Beste des Tages</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root { --bg:#0f172a; --card:#111827; --txt:#e5e7eb; --muted:#9ca3af; --acc:#22c55e; --err:#ef4444; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--txt); }
-    .wrap { max-width: 900px; margin: 0 auto; padding: 24px; }
-    h1,h2,h3 { margin: 0.2rem 0 0.8rem; }
-    .card { background: var(--card); padding: 16px; border-radius: 12px; margin: 12px 0; }
-    label { display:block; font-size:14px; color:var(--muted); margin:10px 0 6px; }
-    input, textarea, select, button { width:100%; padding:10px; border-radius:10px; border:1px solid #334155; background:#0b1220; color:var(--txt); }
-    button { cursor:pointer; background: #1f2937; border:1px solid #334155; }
-    .btn-primary { background: var(--acc); color:#052e16; font-weight:600; }
-    .row { display:flex; gap:12px; flex-wrap:wrap; }
-    .row > * { flex:1; min-width:200px; }
-    .muted { color:var(--muted); font-size: 0.9rem; }
-    .err { color: var(--err); }
-    .topbar { display:flex; justify-content:space-between; align-items:center; }
-    .hidden { display:none; }
-    .entries { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:12px; }
-    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#0b1220; border:1px solid #334155; font-size:12px; color:var(--muted); }
-    .moods button { width:auto; padding:8px 12px; font-size:20px; }
-    .danger { background:#7f1d1d; border-color:#b91c1c; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      padding: 20px;
+      color: #1d1d1f;
+    }
+    .container { max-width: 600px; margin: 0 auto; }
+    .card { 
+      background: white; 
+      border-radius: 16px; 
+      padding: 24px; 
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    h1 { font-size: 28px; margin-bottom: 24px; text-align: center; }
+    h2 { font-size: 20px; margin-bottom: 16px; }
+    input, textarea { 
+      width: 100%; 
+      padding: 12px; 
+      border: 1px solid #ddd; 
+      border-radius: 10px;
+      font-size: 15px;
+      margin-bottom: 12px;
+      font-family: inherit;
+    }
+    button { 
+      background: #007aff; 
+      color: white; 
+      border: none; 
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 8px;
+    }
+    button:hover { opacity: 0.9; }
+    button.secondary { background: #f0f0f0; color: #333; }
+    .moods { display: flex; gap: 10px; margin: 12px 0; }
+    .mood { 
+      flex: 1; 
+      font-size: 32px; 
+      padding: 16px; 
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      background: white;
+      transition: all 0.2s;
+    }
+    .mood:hover { transform: scale(1.05); }
+    .mood.selected { 
+      border-color: #007aff; 
+      background: rgba(0,122,255,0.1);
+      transform: scale(1.1);
+    }
+    .entry { 
+      padding: 16px; 
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+    }
+    .entry:last-child { border-bottom: none; }
+    .entry-date { font-weight: 600; color: #007aff; font-size: 14px; }
+    .entry-mood { font-size: 24px; margin-left: 12px; }
+    .entry-text { margin-top: 8px; line-height: 1.5; }
+    .delete-btn { 
+      background: #ff3b30; 
+      padding: 6px 12px; 
+      font-size: 12px;
+      margin-left: 12px;
+    }
+    .hidden { display: none; }
+    label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 14px; }
   </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="topbar">
-    <h1>Das Beste des Tages</h1>
-    <div id="userBox" class="hidden">
-      <span id="userEmail" class="muted"></span>
-      <button id="logoutBtn">Logout</button>
+  <!-- Auth -->
+  <div id="authSection" class="container">
+    <div class="card">
+      <h1>Das Beste des Tages</h1>
+      <p style="text-align: center; color: #666; margin-bottom: 24px;">Dein persönliches Tagebuch</p>
+      
+      <label>E-Mail</label>
+      <input type="email" id="email" placeholder="deine@email.de">
+      
+      <label>Passwort</label>
+      <input type="password" id="password" placeholder="Mindestens 6 Zeichen">
+      
+      <button id="loginBtn">Einloggen</button>
+      <button id="signupBtn" class="secondary">Registrieren</button>
+      
+      <p id="authMsg" style="margin-top: 12px; text-align: center; font-size: 14px;"></p>
     </div>
   </div>
 
-  <!-- Auth -->
-  <section id="authSection" class="card">
-    <h2>Anmelden / Registrieren</h2>
-    <div class="row">
-      <div>
-        <label for="email">E‑Mail</label>
-        <input id="email" type="email" placeholder="name@example.com" />
-      </div>
-      <div>
-        <label for="password">Passwort</label>
-        <input id="password" type="password" placeholder="********" />
-      </div>
-    </div>
-    <div class="row">
-      <button id="loginBtn" class="btn-primary">Einloggen</button>
-      <button id="signupBtn">Registrieren</button>
-      <button id="resetBtn">Passwort zurücksetzen</button>
-    </div>
-    <p id="authMsg" class="muted"></p>
-    <div id="recoveryBox" class="hidden">
-      <label for="newPassword">Neues Passwort setzen</label>
-      <input id="newPassword" type="password" placeholder="Neues Passwort" />
-      <button id="applyNewPassword" class="btn-primary">Passwort aktualisieren</button>
-    </div>
-  </section>
-
   <!-- App -->
-  <section id="appSection" class="hidden">
+  <div id="app" class="container hidden">
     <div class="card">
-      <h2>Das Beste des Tages</h2>
-      <div class="row">
-        <div>
-          <label for="date">Datum</label>
-          <input id="date" type="date" />
-        </div>
-        <div>
-          <label for="mood">Wie war deine Stimmung?</label>
-          <div class="moods">
-            <button data-mood="sad">😞</button>
-            <button data-mood="neutral">😐</button>
-            <button data-mood="happy">🙂</button>
-          </div>
-          <input id="moodValue" type="hidden" />
-        </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1 style="margin: 0;">Das Beste des Tages</h1>
+        <button id="logoutBtn" class="secondary" style="width: auto; padding: 8px 16px; font-size: 13px;">Logout</button>
       </div>
-
-      <label for="best">Das Beste des Tages</label>
-      <textarea id="best" rows="3" placeholder="Was war heute besonders gut?"></textarea>
-
-      <div class="row">
-        <div>
-          <label for="lotta">👶 Lotta</label>
-          <input id="lotta" type="text" placeholder="Notizen zu Lotta" />
-        </div>
-        <div>
-          <label for="thea">👧 Thea</label>
-          <input id="thea" type="text" placeholder="Notizen zu Thea" />
-        </div>
-      </div>
-
-      <div class="row">
-        <button id="saveBtn" class="btn-primary">Eintrag speichern</button>
-        <button id="exportCsvBtn">📥 Export CSV</button>
-        <button id="exportXlsxBtn">📥 Export Excel (.xlsx)</button>
-        <label for="importFile" class="pill" style="cursor:pointer; align-self:center;">📤 Import (CSV / XLSX)</label>
-        <input id="importFile" type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" class="hidden" />
-      </div>
-      <p id="saveMsg" class="muted"></p>
     </div>
 
     <div class="card">
-      <h3>Meine Einträge</h3>
-      <div id="entries" class="entries"></div>
+      <label>Wie war deine Stimmung?</label>
+      <div class="moods">
+        <div class="mood" data-value="1">😞</div>
+        <div class="mood" data-value="2">😐</div>
+        <div class="mood" data-value="3">🙂</div>
+      </div>
+
+      <label>Das Beste des Tages</label>
+      <textarea id="field1" rows="3" placeholder="Was hast du heute erlebt?"></textarea>
+
+      <label>👶 Lotta</label>
+      <textarea id="field2" rows="3" placeholder="Was hast du mit Lotta heute erlebt?"></textarea>
+
+      <label>👧 Thea</label>
+      <textarea id="field3" rows="3" placeholder="Was hast du mit Thea heute erlebt?"></textarea>
+
+      <button id="saveBtn">Eintrag speichern</button>
+      
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button id="exportBtn" class="secondary" style="flex: 1;">📥 Export</button>
+        <label style="flex: 1; margin: 0;">
+          <button class="secondary" style="width: 100%;">📤 Import</button>
+          <input type="file" id="importFile" accept=".csv" style="display: none;">
+        </label>
+      </div>
     </div>
-  </section>
-</div>
 
-<!-- Supabase + App Script -->
-<script type="module">
-  // 1) Supabase Client laden (ESM)
-  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+    <div class="card">
+      <h2>Meine Einträge</h2>
+      <div id="entries"></div>
+    </div>
+  </div>
 
-  // 2) Projekt-URL & anon Key (öffentlich)
-  const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdhb3NiaXljY3dhd3V6ZmphZ3ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMDYzODAsImV4cCI6MjA3ODY4MjM4MH0.s30-UTEY1xR3DP521ewc03aMRsG3WLH_I5VTi4_xu-4';
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <script>
+    const SUPABASE_URL = 'https://htbxinoxpzviujiwbctv.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0Ynhqbm94cHp2aXVpaXdiY2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTc4MzIsImV4cCI6MjA3ODA3MzgzMn0.D5kFuUTHfVg92m1zzDNj9-PXaQzivm9uO1hNZyk6PAE';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    let currentUser = null;
+    let selectedMood = null;
 
-  // 3) SheetJS für XLSX (globales XLSX-Objekt)
-  // Wir laden hier ein IIFE-Modul, das window.XLSX bereitstellt:
-  const sheetJsScript = document.createElement('script');
-  sheetJsScript.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-  document.head.appendChild(sheetJsScript);
-
-  // ---- UI Helpers ----
-  const $ = sel => document.querySelector(sel);
-  const authSection = $('#authSection');
-  const appSection = $('#appSection');
-  const userBox = $('#userBox');
-  const userEmail = $('#userEmail');
-  const authMsg = $('#authMsg');
-  const saveMsg = $('#saveMsg');
-
-  const email = $('#email');
-  const password = $('#password');
-  const loginBtn = $('#loginBtn');
-  const signupBtn = $('#signupBtn');
-  const resetBtn = $('#resetBtn');
-  const logoutBtn = $('#logoutBtn');
-
-  const recoveryBox = $('#recoveryBox');
-  const newPassword = $('#newPassword');
-  const applyNewPassword = $('#applyNewPassword');
-
-  const dateInput = $('#date');
-  const best = $('#best');
-  const lotta = $('#lotta');
-  const thea = $('#thea');
-  const moodValue = $('#moodValue');
-  const saveBtn = $('#saveBtn');
-  const exportCsvBtn = $('#exportCsvBtn');
-  const exportXlsxBtn = $('#exportXlsxBtn');
-  const importFile = $('#importFile');
-  const entriesBox = $('#entries');
-
-  // Standard: heutiges Datum
-  dateInput.value = new Date().toISOString().slice(0,10);
-
-  // Stimmung Buttons
-  document.querySelectorAll('.moods button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      moodValue.value = btn.dataset.mood;
-      document.querySelectorAll('.moods button').forEach(b => b.style.outline = '');
-      btn.style.outline = '2px solid #22c55e';
+    // Auth Check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) showApp(session.user);
     });
-  });
 
-  // ---- Auth Aktionen ----
-  loginBtn.addEventListener('click', async () => {
-    authMsg.textContent = 'Anmelden...';
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.value, password: password.value
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') showApp(session.user);
+      if (event === 'SIGNED_OUT') showAuth();
     });
-    authMsg.textContent = error ? ('Fehler: ' + error.message) : 'Erfolgreich angemeldet.';
-  });
 
-  signupBtn.addEventListener('click', async () => {
-    authMsg.textContent = 'Registriere... (Bitte E-Mail-Postfach prüfen, ggf. Bestätigung erforderlich)';
-    const { error } = await supabase.auth.signUp({
-      email: email.value, password: password.value
-    });
-    authMsg.textContent = error ? ('Fehler: ' + error.message) : 'Registrierung gestartet. Prüfe dein E‑Mail‑Postfach.';
-  });
-
-  resetBtn.addEventListener('click', async () => {
-    authMsg.textContent = 'Sende Reset-Mail...';
-    const { error } = await supabase.auth.resetPasswordForEmail(email.value, {
-      redirectTo: 'https://daiti50552531.github.io/das-beste-des-tages/'
-    });
-    authMsg.textContent = error ? ('Fehler: ' + error.message) : 'Reset-Link per E‑Mail gesendet.';
-  });
-
-  logoutBtn.addEventListener('click', async () => {
-    await supabase.auth.signOut();
-  });
-
-  // Passwort-Recovery-Flow
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'PASSWORD_RECOVERY') {
-      recoveryBox.classList.remove('hidden');
-      authMsg.textContent = 'Bitte neues Passwort setzen.';
+    function showAuth() {
+      document.getElementById('authSection').classList.remove('hidden');
+      document.getElementById('app').classList.add('hidden');
     }
-    renderBySession(session);
-    if (session) {
-      await loadEntries();
-    }
-  });
 
-  applyNewPassword.addEventListener('click', async () => {
-    authMsg.textContent = 'Setze neues Passwort...';
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword.value
+    function showApp(user) {
+      currentUser = user;
+      document.getElementById('authSection').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      loadEntries();
+    }
+
+    // Login
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        document.getElementById('authMsg').textContent = '❌ ' + error.message;
+        document.getElementById('authMsg').style.color = '#ff3b30';
+      }
     });
-    authMsg.textContent = error ? ('Fehler: ' + error.message) : 'Passwort aktualisiert. Du bist angemeldet.';
-    recoveryBox.classList.add('hidden');
-  });
 
-  // Initial Session prüfen
-  (async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    renderBySession(session);
-    if (session) await loadEntries();
-  })();
+    // Signup
+    document.getElementById('signupBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      const { error } = await supabase.auth.signUp({ email, password });
+      
+      if (error) {
+        document.getElementById('authMsg').textContent = '❌ ' + error.message;
+        document.getElementById('authMsg').style.color = '#ff3b30';
+      } else {
+        document.getElementById('authMsg').textContent = '✅ Registriert! Du kannst dich jetzt einloggen.';
+        document.getElementById('authMsg').style.color = '#34c759';
+      }
+    });
 
-  function renderBySession(session) {
-    const loggedIn = !!session;
-    authSection.classList.toggle('hidden', loggedIn);
-    appSection.classList.toggle('hidden', !loggedIn);
-    userBox.classList.toggle('hidden', !loggedIn);
-    userEmail.textContent = loggedIn ? (session.user?.email ?? '') : '';
-  }
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      supabase.auth.signOut();
+    });
 
-  // ---- Datenaktionen ----
-
-  // Eintrag speichern
-  saveBtn.addEventListener('click', async () => {
-    saveMsg.textContent = 'Speichere...';
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { saveMsg.textContent = 'Bitte zuerst einloggen.'; return; }
-
-    const payload = {
-      user_id: user.id,
-      entry_date: dateInput.value,
-      best_of_day: best.value || null,
-      lotta: lotta.value || null,
-      thea: thea.value || null,
-      mood: moodValue.value || null
-    };
-
-    const { error } = await supabase.from('entries').insert(payload);
-
-    if (error) {
-      saveMsg.textContent = 'Fehler: ' + error.message;
-    } else {
-      saveMsg.textContent = 'Gespeichert ✅';
-      best.value = ''; lotta.value = ''; thea.value = ''; moodValue.value = '';
-      document.querySelectorAll('.moods button').forEach(b => b.style.outline = '');
-      await loadEntries();
-    }
-  });
-
-  // Einträge laden
-  async function loadEntries() {
-    entriesBox.innerHTML = '<span class="muted">Lade Einträge…</span>';
-    const { data, error } = await supabase
-      .from('entries')
-      .select('*')
-      .order('entry_date', { ascending: false })
-      .limit(200);
-
-    if (error) {
-      entriesBox.innerHTML = '<span class="err">Fehler: ' + error.message + '</span>';
-      return;
-    }
-    entriesBox.innerHTML = data.map(renderEntry).join('') || '<span class="muted">Noch keine Einträge.</span>';
-
-    // Lösch-Buttons verbinden
-    document.querySelectorAll('[data-delete]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-delete');
-        await supabase.from('entries').delete().eq('id', id);
-        await loadEntries();
+    // Mood Selection
+    document.querySelectorAll('.mood').forEach(mood => {
+      mood.addEventListener('click', () => {
+        document.querySelectorAll('.mood').forEach(m => m.classList.remove('selected'));
+        mood.classList.add('selected');
+        selectedMood = parseInt(mood.dataset.value);
       });
     });
-  }
 
-  function renderEntry(e) {
-    const moodEmoji = e.mood === 'happy' ? '🙂' : e.mood === 'neutral' ? '😐' : e.mood === 'sad' ? '😞' : '–';
-    return `
-      <div class="card">
-        <div class="row" style="justify-content:space-between; align-items:center;">
-          <div><span class="pill">${e.entry_date}</span> <span class="pill">${moodEmoji}</span></div>
-          <button class="danger" data-delete="${e.id}">Löschen</button>
-        </div>
-        <p><strong>Das Beste:</strong><br>${escapeHtml(e.best_of_day || '')}</p>
-        <p><strong>👶 Lotta:</strong> ${escapeHtml(e.lotta || '')}</p>
-        <p><strong>👧 Thea:</strong> ${escapeHtml(e.thea || '')}</p>
-      </div>
-    `;
-  }
-
-  // ---- Export CSV ----
-  exportCsvBtn.addEventListener('click', async () => {
-    const { data, error } = await supabase
-      .from('entries')
-      .select('*')
-      .order('entry_date', { ascending: true });
-
-    if (error) { alert('Fehler: ' + error.message); return; }
-
-    const header = ['id','user_id','entry_date','best_of_day','lotta','thea','mood','created_at','updated_at'];
-    const rows = data.map(r => header.map(h => (r[h] ?? '')));
-
-    const csv = [header.join(','), ...rows.map(cols => cols.map(escapeCsv).join(','))].join('\n');
-    downloadBlob(new Blob([csv], {type:'text/csv;charset=utf-8'}), 'tagebuch-export.csv');
-  });
-
-  function escapeCsv(v) {
-    const s = String(v);
-    if (/[",\n]/.test(s)) return '"' + s.replaceAll('"','""') + '"';
-    return s;
-  }
-
-  // ---- Export XLSX ----
-  exportXlsxBtn.addEventListener('click', async () => {
-    const { data, error } = await supabase
-      .from('entries')
-      .select('*')
-      .order('entry_date', { ascending: true });
-
-    if (error) { alert('Fehler: ' + error.message); return; }
-
-    await waitSheetJs();
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Einträge');
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    downloadBlob(new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'tagebuch-export.xlsx');
-  });
-
-  function downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  // ---- Import CSV/XLSX ----
-  importFile.addEventListener('change', async (ev) => {
-    const file = ev.target.files?.[0];
-    if (!file) return;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { alert('Bitte zuerst einloggen.'); return; }
-
-    const ext = (file.name.split('.').pop() || '').toLowerCase();
-    let rows = [];
-    try {
-      if (ext === 'csv') {
-        const text = await file.text();
-        rows = parseCsv(text);
-      } else {
-        await waitSheetJs();
-        const data = await file.arrayBuffer();
-        const wb = XLSX.read(data, { type: 'array' });
-        const first = wb.SheetNames[0];
-        rows = XLSX.utils.sheet_to_json(wb.Sheets[first], { defval: '' });
+    // Save Entry
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      if (!selectedMood) {
+        alert('Bitte wähle eine Stimmung aus');
+        return;
       }
-    } catch (e) {
-      alert('Import-Fehler: ' + e.message);
-      return;
-    }
 
-    // Mappen auf erlaubte Felder
-    const cleaned = rows.map(r => ({
-      user_id: user.id,
-      entry_date: r.entry_date || r.date || new Date().toISOString().slice(0,10),
-      best_of_day: r.best_of_day ?? r.best ?? null,
-      lotta: r.lotta ?? null,
-      thea: r.thea ?? null,
-      mood: ['sad','neutral','happy'].includes((r.mood || '').toString().toLowerCase()) ? r.mood.toLowerCase() : null
-    }));
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { error } = await supabase.from('diary_entries').insert({
+        entry_date: today,
+        text_field_1: document.getElementById('field1').value,
+        text_field_2: document.getElementById('field2').value,
+        text_field_3: document.getElementById('field3').value,
+        mood_score: selectedMood
+      });
 
-    // In Batches einfügen
-    for (let i=0; i<cleaned.length; i+=1000) {
-      const batch = cleaned.slice(i, i+1000);
-      const { error } = await supabase.from('entries').insert(batch);
-      if (error) { alert('Fehler beim Import: ' + error.message); return; }
-    }
-    await loadEntries();
-    alert('Import abgeschlossen ✅');
-    importFile.value = '';
-  });
-
-  // CSV Parser (einfach, ausreichend für Standard-CSV)
-  function parseCsv(text) {
-    const lines = text.replace(/\r/g,'').split('\n').filter(Boolean);
-    if (!lines.length) return [];
-    const headers = splitCsvLine(lines[0]).map(h => h.trim());
-    return lines.slice(1).map(line => {
-      const cols = splitCsvLine(line);
-      const obj = {};
-      headers.forEach((h,i) => obj[h] = cols[i] ?? '');
-      return obj;
+      if (error) {
+        alert('Fehler: ' + error.message);
+      } else {
+        document.getElementById('field1').value = '';
+        document.getElementById('field2').value = '';
+        document.getElementById('field3').value = '';
+        selectedMood = null;
+        document.querySelectorAll('.mood').forEach(m => m.classList.remove('selected'));
+        
+        document.getElementById('saveBtn').textContent = '✓ Gespeichert!';
+        document.getElementById('saveBtn').style.background = '#34c759';
+        setTimeout(() => {
+          document.getElementById('saveBtn').textContent = 'Eintrag speichern';
+          document.getElementById('saveBtn').style.background = '';
+        }, 2000);
+        
+        loadEntries();
+      }
     });
-  }
-  function splitCsvLine(line) {
-    const res = [];
-    let cur = '', inQuotes = false;
-    for (let i=0;i<line.length;i++) {
-      const ch = line[i];
-      if (ch === '"' ) {
-        if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
-        else inQuotes = !inQuotes;
-      } else if (ch === ',' && !inQuotes) {
-        res.push(cur); cur='';
-      } else cur += ch;
+
+    // Load Entries
+    async function loadEntries() {
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .select('*')
+        .order('entry_date', { ascending: false });
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      const container = document.getElementById('entries');
+      
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Noch keine Einträge</p>';
+        return;
+      }
+
+      container.innerHTML = data.map(entry => {
+        const mood = entry.mood_score === 1 ? '😞' : entry.mood_score === 2 ? '😐' : '🙂';
+        const date = new Date(entry.entry_date).toLocaleDateString('de-DE', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        });
+        
+        return `
+          <div class="entry">
+            <div style="flex: 1;">
+              <div class="entry-date">${date}</div>
+              ${entry.text_field_1 ? `<div class="entry-text">${entry.text_field_1}</div>` : ''}
+              ${entry.text_field_2 ? `<div class="entry-text" style="margin-top:8px;"><strong>👶 Lotta:</strong> ${entry.text_field_2}</div>` : ''}
+              ${entry.text_field_3 ? `<div class="entry-text" style="margin-top:8px;"><strong>👧 Thea:</strong> ${entry.text_field_3}</div>` : ''}
+            </div>
+            <div style="display: flex; align-items: center;">
+              <span class="entry-mood">${mood}</span>
+              <button class="delete-btn" onclick="deleteEntry('${entry.id}')">Löschen</button>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
-    res.push(cur);
-    return res;
-  }
 
-  function escapeHtml(s) {
-    return (s || '').toString()
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
-  }
+    // Delete
+    window.deleteEntry = async function(id) {
+      if (!confirm('Wirklich löschen?')) return;
+      
+      const { error } = await supabase
+        .from('diary_entries')
+        .delete()
+        .eq('id', id);
 
-  function waitSheetJs() {
-    return new Promise((resolve) => {
-      if (window.XLSX) return resolve();
-      sheetJsScript.addEventListener('load', () => resolve());
+      if (!error) loadEntries();
+    };
+
+    // Export
+    document.getElementById('exportBtn').addEventListener('click', async () => {
+      const { data } = await supabase
+        .from('diary_entries')
+        .select('*')
+        .order('entry_date', { ascending: false });
+
+      if (!data || data.length === 0) {
+        alert('Keine Einträge zum Exportieren');
+        return;
+      }
+
+      const csv = [
+        ['Datum', 'Das Beste', 'Lotta', 'Thea', 'Stimmung'],
+        ...data.map(e => [
+          e.entry_date,
+          e.text_field_1 || '',
+          e.text_field_2 || '',
+          e.text_field_3 || '',
+          e.mood_score
+        ])
+      ].map(row => row.map(c => `"${c}"`).join(',')).join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'tagebuch.csv';
+      a.click();
     });
-  }
-</script>
+
+    // Import
+    document.getElementById('importFile').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const text = await file.text();
+      const lines = text.split('\n').slice(1);
+      
+      const entries = lines.map(line => {
+        const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        if (vals.length < 5) return null;
+        return {
+          entry_date: vals[0],
+          text_field_1: vals[1],
+          text_field_2: vals[2],
+          text_field_3: vals[3],
+          mood_score: parseInt(vals[4]) || 2
+        };
+      }).filter(Boolean);
+
+      const { error } = await supabase.from('diary_entries').insert(entries);
+      
+      if (error) {
+        alert('Import-Fehler: ' + error.message);
+      } else {
+        alert(`${entries.length} Einträge importiert!`);
+        loadEntries();
+      }
+    });
+  </script>
 </body>
 </html>
-
