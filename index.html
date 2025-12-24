@@ -519,26 +519,24 @@
     
     </div> <!-- End Container -->
   </div> <!-- End App Section -->
-
-  <script>
-    console.log('🚀 App startet...');
+<script>
+    console.log('🚀 App startet mit Fix...');
     
     // --- KONFIGURATION ---
     const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdhb3NiaXljY3dhd3V6ZmphZ3ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMDYzODAsImV4cCI6MjA3ODY4MjM4MH0.s30-UTEY1xR3DP521ewc03aMRsG3WLH_I5VTi4_xu-4';
     
-    // --- INITIALISIERUNG ---
+    // --- INITIALISIERUNG (UMBENANNT ZU db) ---
     const { createClient } = window.supabase;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Wir nennen die Variable 'db', das ist kurz und kollidiert mit nichts
+    const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Globale Variablen
     let currentUser = null;
     let selectedMood = null;
-    let allEntriesCache = []; // Rohdaten
-    let currentEditingId = null; // ID des Eintrags, der gerade bearbeitet wird
-    let fuse; // Search Engine
+    let allEntriesCache = [];
+    let currentEditingId = null;
+    let fuse;
 
-    // DOM Elemente
     const $ = id => document.getElementById(id);
     const elements = {
       authSection: $('authSection'),
@@ -547,13 +545,12 @@
       password: $('authPassword'),
       entriesContainer: $('entriesContainer'),
       searchInput: $('searchInput'),
-      // filterMood entfernt
       filterDateFrom: $('filterDateFrom'),
       filterDateTo: $('filterDateTo'),
       themeToggle: $('themeToggle'),
       exportPopover: $('exportPopover'),
       saveBtn: $('saveBtn'),
-      deleteAllBtn: $('deleteAllBtn'), // Neu referenziert
+      deleteAllBtn: $('deleteAllBtn'),
       editorTitle: $('editorTitle'),
       cancelEditBtn: $('cancelEditBtn'),
       reminderBox: $('reminderBox'),
@@ -565,18 +562,15 @@
       }
     };
 
-    // --- HELPER: TOAST ---
     function showToast(msg, isError = false) {
       const el = $('toast');
       el.textContent = msg;
       el.className = 'toast visible';
       if(isError) el.classList.add('error');
       else el.classList.remove('error');
-      
       setTimeout(() => el.classList.remove('visible'), 3000);
     }
 
-    // --- THEME LOGIC ---
     function initTheme() {
       const savedTheme = localStorage.getItem('theme');
       if (savedTheme === 'light') {
@@ -591,7 +585,6 @@
       localStorage.setItem('theme', isLight ? 'light' : 'dark');
     });
 
-    // --- AUTO RESIZE TEXTAREAS ---
     function autoResize(textarea) {
       textarea.style.height = 'auto'; 
       textarea.style.height = textarea.scrollHeight + 'px'; 
@@ -602,20 +595,20 @@
       autoResize(el);
     });
 
-    // --- AUTHENTIFIZIERUNG ---
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // --- AUTHENTIFIZIERUNG (JETZT MIT 'db') ---
+    db.auth.getSession().then(({ data: { session } }) => {
       if (session) showApp(session.user);
       else showAuth();
     });
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    db.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) showApp(session.user);
       else if (event === 'SIGNED_OUT') showAuth();
     });
 
     document.addEventListener('visibilitychange', async () => {
       if (document.visibilityState === 'visible') {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await db.auth.getSession();
         if (session) {
           currentUser = session.user;
           loadEntries();
@@ -642,7 +635,7 @@
 
     $('loginBtn').addEventListener('click', async () => {
       showToast('Anmelden...');
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await db.auth.signInWithPassword({
         email: elements.email.value.trim(),
         password: elements.password.value
       });
@@ -651,7 +644,7 @@
 
     $('signupBtn').addEventListener('click', async () => {
       showToast('Registriere...');
-      const { error } = await supabase.auth.signUp({
+      const { error } = await db.auth.signUp({
         email: elements.email.value.trim(),
         password: elements.password.value
       });
@@ -659,13 +652,11 @@
       else showToast('Registrierung erfolgreich! Bitte einloggen.');
     });
 
-    $('logoutBtn').addEventListener('click', () => supabase.auth.signOut());
+    $('logoutBtn').addEventListener('click', () => db.auth.signOut());
 
-    // --- REMINDER LOGIC ---
     function checkMonthlyReminder() {
         const lastDismissed = localStorage.getItem('last_dismissed_export_month');
         const currentMonth = new Date().toISOString().slice(0, 7); 
-        
         if (lastDismissed !== currentMonth) {
             elements.reminderBox.style.display = 'block';
         } else {
@@ -679,13 +670,10 @@
         elements.reminderBox.style.display = 'none';
     }
 
-    // Neuer Handler: Direkt Exportieren (Excel) & Ausblenden
     $('remindExportBtn').addEventListener('click', () => {
         exportData('xlsx');
-        // dismissReminder() wird in exportData aufgerufen
     });
 
-    // --- EDITOR LOGIC (CREATE & UPDATE) ---
     document.querySelectorAll('.mood-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
@@ -699,15 +687,12 @@
         elements.editorTitle.textContent = "Neuer Eintrag";
         elements.saveBtn.innerHTML = "<span>Speichern</span>";
         elements.cancelEditBtn.classList.add('hidden');
-        
         elements.fields.date.value = new Date().toISOString().split('T')[0];
         elements.fields.best.value = '';
         elements.fields.lotta.value = '';
         elements.fields.thea.value = '';
-        
         selectedMood = null;
         document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
-        
         ['best', 'lotta', 'thea'].forEach(id => autoResize(elements.fields[id]));
     }
 
@@ -716,20 +701,16 @@
         elements.editorTitle.textContent = "Eintrag Bearbeiten";
         elements.saveBtn.innerHTML = "<span>Änderungen speichern</span>";
         elements.cancelEditBtn.classList.remove('hidden');
-        
         window.scrollTo({ top: 0, behavior: 'smooth' });
-
         elements.fields.date.value = entry.entry_date;
         elements.fields.best.value = entry.best_of_day || '';
         elements.fields.lotta.value = entry.lotta || '';
         elements.fields.thea.value = entry.thea || '';
-
         selectedMood = entry.mood;
         document.querySelectorAll('.mood-btn').forEach(b => {
             if (b.dataset.mood === entry.mood) b.classList.add('selected');
             else b.classList.remove('selected');
         });
-        
         ['best', 'lotta', 'thea'].forEach(id => autoResize(elements.fields[id]));
     }
 
@@ -753,12 +734,11 @@
       };
 
       let error;
-      
       if (currentEditingId) {
-          const res = await supabase.from('entries').update(entryData).eq('id', currentEditingId);
+          const res = await db.from('entries').update(entryData).eq('id', currentEditingId);
           error = res.error;
       } else {
-          const res = await supabase.from('entries').insert(entryData);
+          const res = await db.from('entries').insert(entryData);
           error = res.error;
       }
       
@@ -774,11 +754,9 @@
       }
     });
 
-    // --- DATA LOADING & FILTERING ---
     async function loadEntries() {
       elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:20px;">Lade...</div>';
-      
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('entries')
         .select('*')
         .order('entry_date', { ascending: false })
@@ -787,13 +765,11 @@
       if (error) return showToast('Ladefehler: ' + error.message, true);
 
       allEntriesCache = data || [];
-      
       fuse = new Fuse(allEntriesCache, {
         includeScore: true,
         threshold: 0.4, 
         keys: ['best_of_day', 'lotta', 'thea', 'entry_date']
       });
-
       renderFilteredEntries();
     }
 
@@ -801,24 +777,18 @@
         const searchTerm = elements.searchInput.value.toLowerCase().trim();
         const dateFrom = elements.filterDateFrom.value;
         const dateTo = elements.filterDateTo.value;
-
-        // 1. Standard Filters (Nur Datum, Stimmung entfernt)
         let filtered = allEntriesCache.filter(entry => {
             if (dateFrom && entry.entry_date < dateFrom) return false;
             if (dateTo && entry.entry_date > dateTo) return false;
             return true;
         });
-
-        // 2. Fuzzy Search
         if (searchTerm.length > 0) {
             const fuseResult = fuse.search(searchTerm).map(r => r.item);
             filtered = filtered.filter(item => fuseResult.includes(item));
         }
-
         renderDOM(filtered);
     }
 
-    // Filter Listeners
     elements.searchInput.addEventListener('input', renderFilteredEntries);
     elements.filterDateFrom.addEventListener('change', renderFilteredEntries);
     elements.filterDateTo.addEventListener('change', renderFilteredEntries);
@@ -828,11 +798,9 @@
         elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:40px;">Keine Einträge gefunden.</div>';
         return;
       }
-
       elements.entriesContainer.innerHTML = entries.map(entry => {
         const moodMap = { 'happy': '🙂', 'neutral': '😐', 'sad': '😞' };
         const displayDate = new Date(entry.entry_date).toLocaleDateString('de-DE', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit' });
-
         return `
           <div class="entry-card">
             <div class="entry-header">
@@ -840,23 +808,9 @@
               <span class="entry-mood">${moodMap[entry.mood] || ''}</span>
             </div>
             <div class="entry-body">
-              ${entry.best_of_day ? `
-                <div class="entry-block">
-                    <span class="label-text">Das Beste des Tages</span>
-                    <div class="entry-field-display">${escapeHtml(entry.best_of_day)}</div>
-                </div>` : ''}
-              
-              ${entry.lotta ? `
-                <div class="entry-block">
-                    <span class="label-text">Lotta</span>
-                    <div class="entry-field-display">${escapeHtml(entry.lotta)}</div>
-                </div>` : ''}
-
-              ${entry.thea ? `
-                <div class="entry-block">
-                    <span class="label-text">Thea</span>
-                    <div class="entry-field-display">${escapeHtml(entry.thea)}</div>
-                </div>` : ''}
+              ${entry.best_of_day ? `<div class="entry-block"><div class="entry-field-display">${escapeHtml(entry.best_of_day)}</div></div>` : ''}
+              ${entry.lotta ? `<div class="entry-block"><span class="label-text">Lotta</span><div class="entry-field-display">${escapeHtml(entry.lotta)}</div></div>` : ''}
+              ${entry.thea ? `<div class="entry-block"><span class="label-text">Thea</span><div class="entry-field-display">${escapeHtml(entry.thea)}</div></div>` : ''}
             </div>
             <div class="entry-actions-row">
                 <button class="btn-edit-text" onclick="window.editEntry('${entry.id}')">Bearbeiten</button>
@@ -873,10 +827,8 @@
     };
 
     window.deleteEntry = async (id) => {
-      // WICHTIG: Verwenden Sie hier KEIN alert()/confirm().
       if (!window.confirm('Eintrag wirklich löschen?')) return; 
-      
-      const { error } = await supabase.from('entries').delete().eq('id', id);
+      const { error } = await db.from('entries').delete().eq('id', id);
       if (error) showToast(error.message, true);
       else {
         showToast('Gelöscht. 👋');
@@ -886,36 +838,23 @@
       }
     };
 
-    // --- DELETE ALL (CLEANUP) ---
     elements.deleteAllBtn.addEventListener('click', async () => {
         if (!confirm('Vorsicht! Willst du wirklich ALLE deine Einträge unwiderruflich löschen?')) return;
-        if (!confirm('Wirklich sicher? Das kann nicht rückgängig gemacht werden.')) return;
-        
         showToast('Lösche alle Einträge...');
-        
-        const { error } = await supabase.from('entries').delete().eq('user_id', currentUser.id);
-        
-        if (error) {
-            showToast('Fehler beim Löschen: ' + error.message, true);
-        } else {
-            showToast('Alle Einträge gelöscht.');
-            loadEntries();
-        }
+        const { error } = await db.from('entries').delete().eq('user_id', currentUser.id);
+        if (error) showToast('Fehler: ' + error.message, true);
+        else { showToast('Alle Einträge gelöscht.'); loadEntries(); }
     });
 
-    // --- EXPORT ---
     const popover = elements.exportPopover;
     const trigger = $('exportTriggerBtn');
-    
     trigger.addEventListener('click', (e) => {
       e.stopPropagation();
       const isVisible = popover.style.display === 'flex';
       popover.style.display = isVisible ? 'none' : 'flex';
     });
     document.addEventListener('click', (e) => {
-      if (!trigger.contains(e.target) && !popover.contains(e.target)) {
-        popover.style.display = 'none';
-      }
+      if (!trigger.contains(e.target) && !popover.contains(e.target)) popover.style.display = 'none';
     });
 
     $('exportCsvBtn').addEventListener('click', () => { popover.style.display = 'none'; exportData('csv'); });
@@ -924,31 +863,18 @@
     async function exportData(type) {
       showToast(`Exportiere ${type.toUpperCase()}...`);
       const data = allEntriesCache; 
-      
-      // Mood-Score: 1=sad, 2=neutral, 3=happy
       const moodScore = { 'sad': 1, 'neutral': 2, 'happy': 3 };
-      
-      // Definiere die exakte Reihenfolge der Spalten für den Export
       const processedData = data.map(row => ({
-          entry_date: row.entry_date, // YYYY-MM-DD
+          entry_date: row.entry_date,
           best_of_day: row.best_of_day,
           lotta: row.lotta,
           thea: row.thea,
-          mood: moodScore[row.mood] || row.mood // 1, 2, or 3
+          mood: moodScore[row.mood] || row.mood
       }));
-
       const filename = `journal_export_${new Date().toISOString().slice(0, 10)}.${type}`;
-
       if (type === 'csv') {
         const headers = ['entry_date', 'best_of_day', 'lotta', 'thea', 'mood'];
-        const csvContent = [
-          headers.join(','),
-          ...processedData.map(row => headers.map(h => {
-              // WICHTIG: Das Setzen von Anführungszeichen und das Escapen von internen Anführungszeichen
-              const val = String(row[h] || '').replace(/"/g, '""'); 
-              return `"${val}"`;
-          }).join(','))
-        ].join('\n');
+        const csvContent = [headers.join(','), ...processedData.map(row => headers.map(h => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(','))].join('\n');
         downloadBlob(csvContent, filename, 'text/csv;charset=utf-8;');
       } else {
         const ws = XLSX.utils.json_to_sheet(processedData);
@@ -956,192 +882,85 @@
         XLSX.utils.book_append_sheet(wb, ws, "Journal");
         XLSX.writeFile(wb, filename);
       }
-      
       showToast('Export abgeschlossen! ✅');
       dismissReminder(); 
     }
 
-    // --- ROBUST IMPORT UTILS ---
     function normalizeDate(val) {
-        if (!val) {
-            return null;
-        }
-        
+        if (!val) return null;
         const numericVal = Number(val);
-        
-        // 1. Versuch: Excel Serial (wenn XLSX verfügbar ist)
-        if (typeof XLSX !== 'undefined' && typeof XLSX.utils.numberToDate === 'function' && 
-            !isNaN(numericVal) && numericVal > 20000 && numericVal < 70000) { 
-             
+        if (typeof XLSX !== 'undefined' && !isNaN(numericVal) && numericVal > 20000 && numericVal < 70000) { 
              try {
                 const date = XLSX.utils.numberToDate(numericVal); 
-                date.setHours(12); // Puffer gegen 00:00 Zeitzonenprobleme
+                date.setHours(12);
                 return date.toISOString().split('T')[0];
-             } catch(e) {
-                 console.warn("XLSX Konvertierungsfehler, versuche String-Parsing.", e);
-             }
+             } catch(e) {}
         }
-        
         const str = String(val).trim();
-
-        // 2. Versuch: String-Parsing (DD.MM.YYYY Deutsch) -> NEUE ANFORDERUNG
         if (str.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
             const parts = str.split('.');
-            // Konvertieren nach YYYY-MM-DD
             return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
         }
-        
-        // 3. YYYY-MM-DD or standard
         try {
             const date = new Date(str);
-            if (!isNaN(date.getTime())) { 
-                return date.toISOString().split('T')[0];
-            }
+            if (!isNaN(date.getTime())) return date.toISOString().split('T')[0];
         } catch(e) {}
-        
-        // Fallback: Wenn das Datum vorhanden, aber nicht parsbar ist
-        if (str.length > 0) {
-            console.warn(`Ungültiger Datumswert (${val}) gefunden. Verwende aktuelles Datum.`);
-            return new Date().toISOString().split('T')[0];
-        }
-        
         return null;
     }
     
-    // Robuste CSV-Analyse, die Anführungszeichen und Kommas innerhalb der Felder respektiert.
     function parseCSV(text) {
       const lines = text.split('\n').filter(l => l.trim());
       if (lines.length < 2) return [];
-
-      // Annahme: Header-Zeile ist die erste Zeile und Felder sind Komma-getrennt
-      const rawHeaders = lines[0].split(',');
-      const headers = rawHeaders.map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
-
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
       return lines.slice(1).map(line => {
         const obj = {};
-        let insideQuote = false;
-        let currentField = '';
-        let colIndex = 0;
-
+        let insideQuote = false, currentField = '', colIndex = 0;
         for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          const nextChar = line[i + 1];
-
+          const char = line[i], nextChar = line[i + 1];
           if (char === '"') {
-            if (insideQuote && nextChar === '"') {
-              // Escaped quote: "" -> "
-              currentField += '"';
-              i++; // Skip the next quote
-            } else {
-              // Start or end of quote
-              insideQuote = !insideQuote;
-            }
+            if (insideQuote && nextChar === '"') { currentField += '"'; i++; } 
+            else insideQuote = !insideQuote;
           } else if (char === ',' && !insideQuote) {
-            // End of field (only if not inside quotes)
-            if (colIndex < headers.length) {
-              obj[headers[colIndex]] = currentField;
-            }
-            currentField = '';
-            colIndex++;
-          } else {
-            // Regular character
-            currentField += char;
-          }
+            if (colIndex < headers.length) obj[headers[colIndex]] = currentField;
+            currentField = ''; colIndex++;
+          } else currentField += char;
         }
-        
-        // Handle the last field
-        if (colIndex < headers.length) {
-          obj[headers[colIndex]] = currentField;
-        }
-
+        if (colIndex < headers.length) obj[headers[colIndex]] = currentField;
         return obj;
       }).filter(obj => Object.keys(obj).length > 0);
     }
     
-    // --- MAIN IMPORT LOGIC ---
     $('importFile').addEventListener('change', async (e) => {
-      if (!currentUser) return showToast('Bitte zuerst anmelden.', true);
+      if (!currentUser) return showToast('Bitte anmelden.', true);
       const file = e.target.files[0];
       if (!file) return;
-      showToast('Importiere Daten. Bitte warten...');
-      
+      showToast('Importiere...');
       try {
         let rows;
-        if (file.name.endsWith('.csv')) {
-          const text = await file.text();
-          // Verwende den robusten CSV-Parser
-          rows = parseCSV(text); 
-        } else {
-          const buffer = await file.arrayBuffer();
-          // XLSX-Datei lesen (SheetJS ist von Natur aus robust gegen Kommas in Zellen)
-          const wb = XLSX.read(buffer, { type: 'array' });
-          rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: true }); 
-        }
-        
-        // Mapping und Validierung
+        if (file.name.endsWith('.csv')) { rows = parseCSV(await file.text()); } 
+        else { const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' }); rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: true }); }
         const entries = rows.map(r => {
-            // MOOD-MAPPING: Wandelt 1/2/3 aus dem Export in sad/neutral/happy um
             let mood = String(r.mood || '').toLowerCase().trim();
             const moodMap = { '1': 'sad', '2': 'neutral', '3': 'happy' };
             if (moodMap[mood]) mood = moodMap[mood];
-            
             if (!['sad','neutral','happy'].includes(mood)) mood = 'neutral';
-            
-            // DATUM-HANDLING: Erwartet 'entry_date' und normalisiert
-            const rawDate = r.entry_date;
-            const normDate = normalizeDate(rawDate);
-
-            // INHALTS-HANDLING: Erwartet 'best_of_day', 'lotta', 'thea'
+            const normDate = normalizeDate(r.entry_date);
             const bestText = String(r.best_of_day || '').trim() || null;
             const lottaText = String(r.lotta || '').trim() || null;
             const theaText = String(r.thea || '').trim() || null;
+            return { user_id: currentUser.id, entry_date: normDate, best_of_day: bestText, lotta: lottaText, thea: theaText, mood: mood, _valid: !!(normDate && (bestText || lottaText || theaText)) };
+        }).filter(e => e._valid).map(e => { delete e._valid; return e; }); 
 
-            return {
-                user_id: currentUser.id,
-                entry_date: normDate, 
-                best_of_day: bestText,
-                lotta: lottaText,
-                thea: theaText,
-                mood: mood,
-                _validDate: !!normDate, 
-                _hasContent: !!(bestText || lottaText || theaText)
-            };
-        })
-        .filter(e => e._validDate && e._hasContent)
-        .map(e => {
-            delete e._validDate;
-            delete e._hasContent;
-            return e;
-        }); 
-
-        if (entries.length === 0) {
-            return showToast('Keine gültigen Einträge gefunden (Datum + Inhalt benötigt).', true);
-        }
-
-        // Massen-Insert
-        const { error } = await supabase.from('entries').insert(entries);
-        if (error) {
-           console.error('Supabase Import Fehler:', error);
-           if (error.code === '23505') {
-               showToast('Fehler: Einige Einträge wurden aufgrund doppelter Daten (gleiches Datum) ignoriert.', true);
-           } else {
-               showToast('Import Fehler: ' + error.message, true);
-           }
-           return; 
-        }
-        
-        showToast(`${entries.length} Einträge erfolgreich importiert!`);
-        loadEntries();
-      } catch (err) {
-        showToast('Import Fehler: ' + err.message, true);
-      }
+        if (entries.length === 0) return showToast('Keine gültigen Daten.', true);
+        const { error } = await db.from('entries').insert(entries);
+        if (error) showToast('Fehler: ' + error.message, true);
+        else { showToast(`${entries.length} importiert!`); loadEntries(); }
+      } catch (err) { showToast('Fehler: ' + err.message, true); }
       $('importFile').value = ''; 
     });
 
-    // --- UTILS ---
     function escapeHtml(text) {
       if (typeof text !== 'string') return '';
-      // Ersetzt Zeilenumbrüche für die Darstellung in der Karte
       return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
@@ -1154,6 +973,4 @@
     }
 
     initTheme();
-  </script>
-</body>
-</html>
+</script>
