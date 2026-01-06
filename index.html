@@ -2,112 +2,136 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mein Journal - Supabase & SheetJS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mein Journal</title>
   
-  <!-- FONT: Inter from Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   
-  <!-- EXTERNAL LIBRARIES -->
-  <!-- Supabase Client for Auth & DB -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- SheetJS (XLSX/CSV Import/Export) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <!-- Fuse.js (Fuzzy Search) -->
   <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
 
   <style>
     :root {
-      --primary: #FFD60A; /* Akzentfarbe (Gelb/Gold) */
-      --secondary: #5E5E5E;
-      --background: #1C1C1E; /* Dunkles Basis-Hintergrund */
-      --card: #2C2C2E; /* Dunkleres Card-Hintergrund */
-      --input-bg: #3A3A3C; /* Helleres Element-Hintergrund */
-      --text: #FFFFFF;
-      --text-secondary: #AAAAAA;
-      --text-matte: #E0E0E0; /* Für Text-Displays */
-      --danger: #FF453A; /* Rot */
-      --warning: #FF9F0A; /* Orange */
-      --accent: #0A84FF; /* Blau für Links/Edit */
+      /* APPLE STYLE PALETTE */
+      --primary: #30D158; /* iOS Green (Dark Mode) */
+      --primary-hover: #28cd41;
+      
+      --background: #000000; /* Deep OLED Black */
+      --card: #1C1C1E; /* iOS System Gray 6 */
+      --card-highlight: #2C2C2E; /* iOS System Gray 5 */
+      
+      --input-bg: #2C2C2E; /* Input Background */
       --border: rgba(255, 255, 255, 0.1);
-      --radius: 16px;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
-
+      
+      --text: #FFFFFF;
+      --text-secondary: #8E8E93; /* iOS System Gray */
+      --text-placeholder: #636366;
+      
+      --danger: #FF453A; /* iOS Red */
+      --accent: #0A84FF; /* iOS Blue */
+      
+      --radius: 18px; /* Slightly rounder, Apple-like */
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      --font-serif: "Lora", "New York", Georgia, serif;
+      
+      --glass: rgba(28, 28, 30, 0.85);
     }
 
     .light-mode {
-      --primary: #FFD60A; 
-      --secondary: #9B9B9B;
-      --background: #F2F2F7;
+      --primary: #34C759; /* iOS Green (Light Mode) */
+      --primary-hover: #248a3d;
+      
+      --background: #F2F2F7; /* iOS System Grouped Background */
       --card: #FFFFFF;
-      --input-bg: #E5E5EA;
+      --card-highlight: #F9F9F9;
+      
+      --input-bg: #F2F2F7; 
+      --border: rgba(0, 0, 0, 0.05);
+      
       --text: #000000;
-      --text-secondary: #6A6A6A;
-      --text-matte: #333333;
+      --text-secondary: #8E8E93;
+      --text-placeholder: #AEAEB2;
+      
       --danger: #FF3B30;
-      --warning: #FF9500;
       --accent: #007AFF;
-      --border: rgba(0, 0, 0, 0.1);
+      
+      --glass: rgba(255, 255, 255, 0.85);
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
     body {
       background-color: var(--background);
       color: var(--text);
       margin: 0;
-      padding-top: 60px; /* Platz für den Sticky Header */
+      padding-top: 70px;
+      padding-bottom: 40px;
       min-height: 100vh;
+      font-family: var(--font-sans);
       transition: background-color 0.3s, color 0.3s;
+      -webkit-font-smoothing: antialiased;
     }
     
-    /* Header */
+    /* Sticky Header with Glassmorphism */
     .sticky-header-wrapper {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         z-index: 100;
-        background: var(--background);
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
     }
     .topbar {
-        max-width: 800px;
+        max-width: 700px;
         margin: 0 auto;
-        padding: 10px 20px;
+        padding: 12px 20px;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
     .app-title {
-        font-size: 20px;
-        font-weight: 800;
+        font-size: 18px;
+        font-weight: 700;
         margin: 0;
-        color: var(--primary);
+        color: var(--text); /* Titel in Textfarbe, nicht Grün, für Clean Look */
+        letter-spacing: -0.5px;
     }
-    .top-actions {
+    .top-actions { display: flex; gap: 8px; align-items: center; }
+    
+    .icon-btn {
+        background: rgba(128,128,128, 0.1);
+        border: none;
+        color: var(--text);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        cursor: pointer;
         display: flex;
-        gap: 10px;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        transition: transform 0.1s;
     }
-    .icon-btn, .text-btn {
+    .icon-btn:active { transform: scale(0.95); }
+    .text-btn {
         background: transparent;
         border: none;
-        color: var(--text-secondary);
-        font-size: 18px;
+        color: var(--accent);
+        font-size: 15px;
+        font-weight: 500;
         cursor: pointer;
-        padding: 8px 10px;
-        border-radius: 8px;
     }
-    .icon-btn:hover, .text-btn:hover {
-        background: var(--input-bg);
-    }
-    .text-btn { font-size: 15px; font-weight: 500; }
 
     /* Layout */
     .container {
-      max-width: 800px;
-      margin: 20px auto;
+      max-width: 700px; /* Etwas schmaler für besseren Lesefluss */
+      margin: 0 auto;
       padding: 0 20px;
     }
     
@@ -115,17 +139,19 @@
       background: var(--card);
       padding: 24px;
       border-radius: var(--radius);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.04); /* Sehr softer Schatten */
+      margin-bottom: 24px;
     }
 
-    /* Form Elements */
+    /* Form Elements - Apple Style Inputs */
     label {
       display: block;
-      margin-top: 15px;
-      margin-bottom: 6px;
-      font-size: 14px;
+      margin-top: 20px;
+      margin-bottom: 8px;
+      font-size: 13px;
       font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
       color: var(--text-secondary);
     }
     
@@ -135,146 +161,125 @@
     input[type="date"],
     textarea {
       width: 100%;
-      padding: 12px 16px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      padding: 14px 16px;
+      border: none; /* Kein Border */
+      border-radius: 12px;
       background: var(--input-bg);
       color: var(--text);
-      font-size: 16px;
-      transition: border-color 0.3s;
+      font-family: var(--font-sans);
+      font-size: 17px; /* iOS Standardgröße */
+      transition: all 0.2s;
+    }
+    
+    /* Textareas nutzen die Serif Schrift für schönes Schreiben */
+    textarea {
+      font-family: var(--font-serif);
+      min-height: 100px;
+      resize: none;
+      line-height: 1.6;
     }
     
     input:focus, textarea:focus {
       outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(255, 214, 10, 0.3);
+      background: var(--card-highlight); /* Leicht heller bei Fokus */
+      box-shadow: 0 0 0 2px var(--primary); /* Grüner Glow */
     }
     
-    textarea {
-      min-height: 100px;
-      resize: none;
-      overflow: hidden; /* JavaScript steuert die Größe */
-      line-height: 1.6;
-    }
-    
-    /* Mood Selector */
+    /* Mood Selector - Apple Style Round Buttons */
     .mood-section {
       text-align: center;
-      margin-top: 25px;
-    }
-    .mood-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin-bottom: 12px;
+      margin: 30px 0;
     }
     .mood-buttons {
-      display: inline-flex;
-      background: var(--input-bg);
-      padding: 5px;
-      border-radius: 24px;
-      gap: 2px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
     }
     .mood-btn {
-      font-size: 28px;
-      width: 60px;
-      height: 50px;
+      font-size: 32px;
+      width: 64px;
+      height: 64px;
       border: none;
-      background: transparent;
+      background: var(--input-bg);
       cursor: pointer;
-      border-radius: 20px;
+      border-radius: 50%; /* Komplett rund */
       display: flex;
       align-items: center;
       justify-content: center;
-      opacity: 0.4; 
+      opacity: 0.5; 
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy Effekt */
     }
+    .mood-btn:hover { opacity: 0.8; transform: scale(1.1); }
     .mood-btn.selected {
       background: var(--card);
-      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      box-shadow: 0 0 0 2px var(--primary); /* Grüner Ring */
       opacity: 1;
-      transform: scale(1.05);
+      transform: scale(1.15);
     }
 
-    /* Action Bar */
-    .action-bar {
-      display: flex;
-      gap: 12px;
-      margin-top: 32px;
-      flex-wrap: wrap;
+    /* Action Area - Neu gestaltet */
+    .save-btn-wrapper {
+        margin-top: 30px;
+        margin-bottom: 20px;
     }
     
-    .btn {
-      flex: 1;
-      padding: 14px 20px;
-      border-radius: 12px;
+    .btn-full {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
       border: none;
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-width: 120px;
+      transition: transform 0.1s, opacity 0.2s;
     }
+    .btn-full:active { transform: scale(0.98); }
     
-    .btn-primary { background: var(--primary); color: #000; } 
-    .btn-secondary { background: var(--input-bg); color: var(--text); }
-    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(48, 209, 88, 0.3); } 
+    .btn-primary:hover { opacity: 0.9; }
 
-    /* Danger Text Button (for list items) */
-    .btn-danger-text { 
-        background: transparent; 
-        color: var(--danger); 
-        padding: 10px 14px; 
-        font-size: 14px; 
-        font-weight: 500;
-        border: none;
-        cursor: pointer;
-        border-radius: 8px;
+    /* Secondary Tools Row (Ghost Buttons) */
+    .tools-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
     }
-    .btn-danger-text:hover { background: rgba(255, 69, 58, 0.1); }
     
-    .btn-edit-text {
-        background: transparent; 
-        color: var(--accent); 
-        padding: 10px 14px; 
-        font-size: 14px; 
-        font-weight: 500;
+    .tool-btn {
+        background: transparent;
         border: none;
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 500;
         cursor: pointer;
+        padding: 8px 12px;
         border-radius: 8px;
+        transition: color 0.2s, background 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
-    .btn-edit-text:hover { background: rgba(10, 132, 255, 0.1); }
+    .tool-btn:hover { color: var(--text); background: var(--input-bg); }
+    .tool-btn.danger { color: var(--danger); opacity: 0.7; }
+    .tool-btn.danger:hover { opacity: 1; background: rgba(255, 69, 58, 0.1); }
 
     .hidden-input { display: none; }
-
-    /* Filter & Search Bar */
-    .filter-wrapper {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 12px;
-        flex-wrap: wrap;
-    }
-    .filter-control { flex: 1; min-width: 140px; }
-    .filter-control label { 
-        display: block; 
-        font-size: 11px; 
-        text-transform: uppercase; 
-        color: var(--text-secondary); 
-        margin-bottom: 4px; 
-        font-weight: 600;
-    }
 
     /* Entries List */
     .entries-grid {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 20px;
     }
     
     .entry-card {
       background: var(--card);
-      padding: 24px;
+      padding: 24px 28px;
       border-radius: var(--radius);
       position: relative;
     }
@@ -283,59 +288,87 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
     }
     
-    .entry-date { font-size: 16px; font-weight: 700; color: var(--text); }
-    .entry-mood { font-size: 26px; }
+    .entry-date { 
+        font-size: 15px; 
+        font-weight: 600; 
+        color: var(--text-secondary); 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px;
+    }
+    .entry-mood { font-size: 24px; }
     
-    .entry-block { margin-bottom: 20px; }
+    /* Der eigentliche Inhalt */
+    .entry-block { margin-bottom: 24px; }
+    .entry-block:last-child { margin-bottom: 0; }
+
+    .label-text {
+        font-size: 11px;
+        color: var(--primary);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 4px;
+        display: block;
+    }
     
     .entry-field-display {
-        background: var(--input-bg);
-        padding: 14px 16px;
-        border-radius: 10px;
-        font-size: 16px;
-        line-height: 1.6;
-        color: var(--text-matte);
+        font-family: var(--font-serif); /* Serif für den Text */
+        font-size: 18px;
+        line-height: 1.7;
+        color: var(--text);
         white-space: pre-wrap; 
     }
     
     .entry-actions-row {
         display: flex;
         justify-content: flex-end;
-        gap: 8px;
-        margin-top: 8px;
-        padding-top: 12px;
-        border-top: 1px solid rgba(128,128,128, 0.1);
+        gap: 12px;
+        margin-top: 10px;
+        padding-top: 10px;
     }
+    .btn-small {
+        font-size: 13px;
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: 100px;
+        border: none;
+        cursor: pointer;
+        background: var(--input-bg);
+    }
+    .btn-edit { color: var(--accent); }
+    .btn-delete { color: var(--danger); }
 
     /* Reminder Box */
     .reminder-box {
-        background: rgba(255, 159, 10, 0.1); /* Orange tint */
-        border: 1px solid var(--warning);
+        background: rgba(255, 159, 10, 0.1); 
+        border: 1px solid rgba(255, 159, 10, 0.3);
         padding: 16px;
         border-radius: 12px;
         margin-bottom: 24px;
-        display: none; /* Hidden by default */
+        display: none; 
     }
-    .reminder-title { color: var(--warning); font-weight: 700; margin-bottom: 8px; font-size: 15px; }
-    .reminder-text { font-size: 14px; margin-bottom: 12px; opacity: 0.9; }
-    .reminder-actions { display: flex; gap: 10px; }
+    .reminder-title { color: #FF9F0A; font-weight: 700; margin-bottom: 4px; font-size: 15px; }
 
-    /* Export Popover */
+    /* Export Popover (iOS Style Context Menu) */
     .export-popover {
       position: absolute;
-      background: var(--card);
+      background: var(--glass);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 6px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
       z-index: 200;
       display: none;
       flex-direction: column;
-      width: 180px;
-      bottom: 70px; 
+      width: 200px;
+      bottom: 50px; 
       left: 50%;
       transform: translateX(-50%);
     }
@@ -343,9 +376,9 @@
       background: transparent;
       color: var(--text);
       text-align: left;
-      padding: 12px;
+      padding: 12px 16px;
       border-radius: 8px;
-      font-size: 14px;
+      font-size: 15px;
       border: none;
       cursor: pointer;
     }
@@ -356,104 +389,113 @@
     /* Toast */
     .toast {
       position: fixed;
-      bottom: 30px;
+      bottom: 40px;
       left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: rgba(40, 40, 40, 0.9);
+      background: rgba(40, 40, 40, 0.8);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       color: white;
       padding: 12px 24px;
-      border-radius: 30px;
-      font-weight: 600;
+      border-radius: 50px;
+      font-weight: 500;
+      font-size: 14px;
       z-index: 1000;
       opacity: 0;
-      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       pointer-events: none;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-      white-space: nowrap;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
     .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .toast.error { background: rgba(255, 69, 58, 0.95); }
+    .toast.error { background: var(--danger); }
 
     /* Auth Screen */
     .auth-container {
-      max-width: 400px;
-      margin: 10vh auto;
+      max-width: 360px;
+      margin: 15vh auto;
       text-align: center;
       padding: 0 20px;
     }
-    .auth-btn-row { margin-top: 24px; display: flex; gap: 10px; }
+    .auth-btn-row { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* Filter Bar */
+    .filter-card {
+        background: transparent; /* Seamless with background */
+        padding: 0 0 20px 0;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 24px;
+    }
+    .filter-wrapper {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .filter-control { flex: 1; min-width: 140px; }
 
   </style>
 </head>
 <body>
 
-  <!-- Toast -->
   <div id="toast" class="toast">Nachricht</div>
 
-  <!-- AUTH SECTION -->
   <div id="authSection" class="auth-container">
-    <h1 style="margin-bottom:40px; font-weight:800;">Willkommen</h1>
+    <h1 style="margin-bottom:10px; font-weight:800; font-size: 32px;">Willkommen.</h1>
+    <p style="color:var(--text-secondary); margin-bottom:40px;">Dein persönliches Journal.</p>
+    
     <div class="card">
-      <label>E-Mail Adresse</label>
-      <input type="email" id="authEmail" placeholder="name@beispiel.de">
+      <label>E-Mail</label>
+      <input type="email" id="authEmail" placeholder="name@icloud.com">
       
       <label>Passwort</label>
       <input type="password" id="authPassword" placeholder="••••••••">
       
       <div class="auth-btn-row">
-        <button id="loginBtn" class="btn btn-primary">Anmelden</button>
-        <button id="signupBtn" class="btn btn-secondary">Registrieren</button>
+        <button id="loginBtn" class="btn-full btn-primary">Anmelden</button>
+        <button id="signupBtn" class="tool-btn" style="justify-content:center; width:100%;">Noch keinen Account? Registrieren</button>
       </div>
     </div>
   </div>
 
-  <!-- APP SECTION -->
   <div id="appSection" class="hidden">
     
-    <!-- STICKY HEADER -->
     <div class="sticky-header-wrapper">
         <div class="topbar">
-            <h1 class="app-title">Mein Journal</h1>
+            <h1 class="app-title">Journal</h1>
             <div class="top-actions">
-              <button id="themeToggle" class="icon-btn" title="Design umschalten">☀️</button>
-              <button id="logoutBtn" class="text-btn">Logout</button>
+              <button id="themeToggle" class="icon-btn" title="Design umschalten">◐</button>
+              <button id="logoutBtn" class="text-btn">Abmelden</button>
             </div>
         </div>
     </div>
 
     <div class="container">
       
-      <!-- Reminder Box -->
       <div id="reminderBox" class="reminder-box">
           <div class="reminder-title">Backup Erinnerung</div>
-          <div class="reminder-text">Du hast diesen Monat noch keinen Export gemacht. Sichere deine Gedanken!</div>
-          <div class="reminder-actions">
-              <!-- Nur noch ein Button für direkten Excel Export -->
-              <button id="remindExportBtn" class="btn btn-primary" style="font-size:14px; padding:10px;">Jetzt als Excel exportieren</button>
-          </div>
+          <div style="font-size:13px; margin-bottom:8px; opacity:0.8;">Sichere deine Gedanken!</div>
+          <button id="remindExportBtn" class="btn-small" style="background:#fff; color:#000;">Excel Export</button>
       </div>
 
-      <!-- Create/Edit Entry Card -->
       <div class="card" id="editorCard">
-        <h2 id="editorTitle" style="text-align:center; font-size:16px; margin-bottom:12px; color:var(--text-secondary); text-transform:uppercase;">Neuer Eintrag</h2>
+        <h2 id="editorTitle" style="text-align:center; font-size:13px; margin-bottom:4px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px; font-weight:600;">Heute</h2>
         
-        <label style="margin-top:0">Datum</label>
-        <input type="date" id="entryDate">
+        <input type="date" id="entryDate" style="text-align:center; background:transparent; font-weight:600; font-size:18px; color:var(--text); margin-bottom:20px; cursor:pointer;">
 
         <label>Das Beste des Tages</label>
-        <textarea id="bestOfDay" placeholder="Was war heute besonders schön?"></textarea>
+        <textarea id="bestOfDay" placeholder="Ein schöner Moment..."></textarea>
 
-        <label>Lotta</label>
-        <textarea id="lotta" placeholder="Neues von Lotta..."></textarea>
+        <div style="display:flex; gap:16px;">
+            <div style="flex:1;">
+                <label>Lotta</label>
+                <textarea id="lotta" placeholder="..." style="min-height:80px;"></textarea>
+            </div>
+            <div style="flex:1;">
+                <label>Thea</label>
+                <textarea id="thea" placeholder="..." style="min-height:80px;"></textarea>
+            </div>
+        </div>
 
-        <label>Thea</label>
-        <textarea id="thea" placeholder="Neues von Thea..."></textarea>
-
-        <!-- Mood Selector -->
         <div class="mood-section">
-          <div class="mood-label">Stimmung</div>
           <div class="mood-buttons">
             <button class="mood-btn" data-mood="sad">😞</button>
             <button class="mood-btn" data-mood="neutral">😐</button>
@@ -461,31 +503,30 @@
           </div>
         </div>
 
-        <!-- Action Bar -->
-        <div class="action-bar" style="position: relative;">
-          <button id="saveBtn" class="btn btn-primary">
-            <span>Speichern</span>
-          </button>
-          
-          <button id="cancelEditBtn" class="btn btn-secondary hidden">
-            <span>Abbrechen</span>
-          </button>
+        <div class="save-btn-wrapper">
+            <button id="saveBtn" class="btn-full btn-primary">
+                Speichern
+            </button>
+            <button id="cancelEditBtn" class="btn-full hidden" style="background:var(--card-highlight); color:var(--text); margin-top:10px;">
+                Abbrechen
+            </button>
+        </div>
 
-          <button id="exportTriggerBtn" class="btn btn-secondary">
-            <span>Export</span>
+        <div class="tools-row" style="position: relative;">
+          
+          <button id="exportTriggerBtn" class="tool-btn">
+             Exportieren ▾
           </button>
           
-          <label class="btn btn-secondary" style="margin:0;">
-            <span>Import</span>
-            <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
+          <label class="tool-btn">
+             Importieren
+             <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
           </label>
           
-          <!-- Delete All Button (für Cleanup) -->
-          <button id="deleteAllBtn" class="btn btn-danger" style="margin-left: auto;">
-            <span>Alle Löschen</span>
+          <button id="deleteAllBtn" class="tool-btn danger">
+             Alle Löschen
           </button>
 
-          <!-- Export Choice Popover -->
           <div id="exportPopover" class="export-popover">
             <button id="exportCsvBtn">Als CSV exportieren</button>
             <button id="exportXlsxBtn">Als Excel exportieren</button>
@@ -493,43 +534,31 @@
         </div>
       </div>
 
-      <!-- Filter Bar (Bereinigt) -->
-      <div class="card" style="padding:16px;">
-        <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin-bottom:12px;">Filter & Suche</div>
+      <div class="filter-card">
         <div class="filter-wrapper">
              <div class="filter-control" style="flex-grow: 2;">
-                 <label>Suchen</label>
-                 <input type="text" id="searchInput" placeholder="Suche (Fuzzy)...">
+                 <input type="text" id="searchInput" placeholder="🔍 Suchen...">
              </div>
-             <!-- Stimmung Filter entfernt -->
              <div class="filter-control">
-                 <label>Von Datum</label>
                  <input type="date" id="filterDateFrom">
              </div>
              <div class="filter-control">
-                 <label>Bis Datum</label>
                  <input type="date" id="filterDateTo">
              </div>
         </div>
       </div>
 
-      <!-- Entries List -->
       <div id="entriesContainer" class="entries-grid">
-        <!-- Entries will be loaded here -->
-      </div>
+        </div>
     
-    </div> <!-- End Container -->
-  </div> <!-- End App Section -->
-<script>
-    console.log('🚀 App startet mit Fix...');
+    </div> </div> <script>
+    console.log('🚀 App startet im Apple Design...');
     
     // --- KONFIGURATION ---
     const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdhb3NiaXljY3dhd3V6ZmphZ3ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMDYzODAsImV4cCI6MjA3ODY4MjM4MH0.s30-UTEY1xR3DP521ewc03aMRsG3WLH_I5VTi4_xu-4';
     
-    // --- INITIALISIERUNG (UMBENANNT ZU db) ---
     const { createClient } = window.supabase;
-    // Wir nennen die Variable 'db', das ist kurz und kollidiert mit nichts
     const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentUser = null;
@@ -576,13 +605,11 @@
       const savedTheme = localStorage.getItem('theme');
       if (savedTheme === 'light') {
         document.body.classList.add('light-mode');
-        elements.themeToggle.textContent = '🌙';
       }
     }
     elements.themeToggle.addEventListener('click', () => {
       document.body.classList.toggle('light-mode');
       const isLight = document.body.classList.contains('light-mode');
-      elements.themeToggle.textContent = isLight ? '🌙' : '☀️';
       localStorage.setItem('theme', isLight ? 'light' : 'dark');
     });
 
@@ -593,10 +620,11 @@
     ['best', 'lotta', 'thea'].forEach(id => {
       const el = elements.fields[id];
       el.addEventListener('input', () => autoResize(el));
-      autoResize(el);
+      // Initial resize delay slightly to allow rendering
+      setTimeout(() => autoResize(el), 10);
     });
 
-    // --- AUTHENTIFIZIERUNG (JETZT MIT 'db') ---
+    // --- AUTHENTIFIZIERUNG ---
     db.auth.getSession().then(({ data: { session } }) => {
       if (session) showApp(session.user);
       else showAuth();
@@ -605,18 +633,6 @@
     db.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) showApp(session.user);
       else if (event === 'SIGNED_OUT') showAuth();
-    });
-
-    document.addEventListener('visibilitychange', async () => {
-      if (document.visibilityState === 'visible') {
-        const { data: { session } } = await db.auth.getSession();
-        if (session) {
-          currentUser = session.user;
-          loadEntries();
-        } else {
-          showAuth();
-        }
-      }
     });
 
     function showAuth() {
@@ -686,7 +702,7 @@
     function resetEditor() {
         currentEditingId = null;
         elements.editorTitle.textContent = "Neuer Eintrag";
-        elements.saveBtn.innerHTML = "<span>Speichern</span>";
+        elements.saveBtn.textContent = "Speichern";
         elements.cancelEditBtn.classList.add('hidden');
         elements.fields.date.value = new Date().toISOString().split('T')[0];
         elements.fields.best.value = '';
@@ -694,13 +710,15 @@
         elements.fields.thea.value = '';
         selectedMood = null;
         document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
-        ['best', 'lotta', 'thea'].forEach(id => autoResize(elements.fields[id]));
+        ['best', 'lotta', 'thea'].forEach(id => {
+            elements.fields[id].style.height = 'auto'; // Reset Height
+        });
     }
 
     function startEdit(entry) {
         currentEditingId = entry.id;
         elements.editorTitle.textContent = "Eintrag Bearbeiten";
-        elements.saveBtn.innerHTML = "<span>Änderungen speichern</span>";
+        elements.saveBtn.textContent = "Änderungen speichern";
         elements.cancelEditBtn.classList.remove('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         elements.fields.date.value = entry.entry_date;
@@ -717,46 +735,49 @@
 
     elements.cancelEditBtn.addEventListener('click', resetEditor);
 
+    // OPTIMIERTE SAVE FUNCTION MIT ERROR HANDLING
     elements.saveBtn.addEventListener('click', async () => {
       if (!selectedMood) return showToast('Bitte Stimmung wählen! 😐', true);
       if (!currentUser) return showToast('Nicht eingeloggt.', true);
 
-      const originalText = elements.saveBtn.innerHTML;
       elements.saveBtn.disabled = true;
-      elements.saveBtn.innerHTML = "<span>Wird gespeichert...</span>";
+      const originalText = elements.saveBtn.textContent;
+      elements.saveBtn.textContent = "Speichere...";
 
       const entryData = {
         user_id: currentUser.id,
         entry_date: elements.fields.date.value,
-        best_of_day: elements.fields.best.value || null,
-        lotta: elements.fields.lotta.value || null,
-        thea: elements.fields.thea.value || null,
+        best_of_day: elements.fields.best.value?.trim() || null,
+        lotta: elements.fields.lotta.value?.trim() || null,
+        thea: elements.fields.thea.value?.trim() || null,
         mood: selectedMood
       };
 
-      let error;
-      if (currentEditingId) {
-          const res = await db.from('entries').update(entryData).eq('id', currentEditingId);
-          error = res.error;
-      } else {
-          const res = await db.from('entries').insert(entryData);
-          error = res.error;
-      }
-      
-      elements.saveBtn.disabled = false;
-      elements.saveBtn.innerHTML = originalText;
+      try {
+          let error;
+          if (currentEditingId) {
+              const res = await db.from('entries').update(entryData).eq('id', currentEditingId);
+              error = res.error;
+          } else {
+              const res = await db.from('entries').insert(entryData);
+              error = res.error;
+          }
+          
+          if (error) throw error;
 
-      if (error) {
-        showToast('Fehler: ' + error.message, true);
-      } else {
-        showToast(currentEditingId ? 'Aktualisiert! 🎉' : 'Gespeichert! 🎉');
-        resetEditor();
-        loadEntries();
+          showToast(currentEditingId ? 'Aktualisiert! 🎉' : 'Gespeichert! 🎉');
+          resetEditor();
+          await loadEntries();
+      } catch(err) {
+          showToast('Fehler: ' + err.message, true);
+      } finally {
+          elements.saveBtn.disabled = false;
+          elements.saveBtn.textContent = originalText;
       }
     });
 
     async function loadEntries() {
-      elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:20px;">Lade...</div>';
+      elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:20px;">Lade Einträge...</div>';
       const { data, error } = await db
         .from('entries')
         .select('*')
@@ -801,11 +822,15 @@
       }
       elements.entriesContainer.innerHTML = entries.map(entry => {
         const moodMap = { 'happy': '🙂', 'neutral': '😐', 'sad': '😞' };
-        const displayDate = new Date(entry.entry_date).toLocaleDateString('de-DE', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit' });
+        const dateObj = new Date(entry.entry_date);
+        // Datum im Format "DO, 24. DEZEMBER 2024"
+        const weekday = dateObj.toLocaleDateString('de-DE', { weekday: 'short' }).toUpperCase();
+        const fullDate = dateObj.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+
         return `
           <div class="entry-card">
             <div class="entry-header">
-              <span class="entry-date">${displayDate}</span>
+              <span class="entry-date">${weekday}, ${fullDate}</span>
               <span class="entry-mood">${moodMap[entry.mood] || ''}</span>
             </div>
             <div class="entry-body">
@@ -814,8 +839,8 @@
               ${entry.thea ? `<div class="entry-block"><span class="label-text">Thea</span><div class="entry-field-display">${escapeHtml(entry.thea)}</div></div>` : ''}
             </div>
             <div class="entry-actions-row">
-                <button class="btn-edit-text" onclick="window.editEntry('${entry.id}')">Bearbeiten</button>
-                <button class="btn-danger-text" onclick="window.deleteEntry('${entry.id}')">Löschen</button>
+                <button class="btn-small btn-edit" onclick="window.editEntry('${entry.id}')">Bearbeiten</button>
+                <button class="btn-small btn-delete" onclick="window.deleteEntry('${entry.id}')">Löschen</button>
             </div>
           </div>
         `;
@@ -832,7 +857,7 @@
       const { error } = await db.from('entries').delete().eq('id', id);
       if (error) showToast(error.message, true);
       else {
-        showToast('Gelöscht. 👋');
+        showToast('Gelöscht.');
         allEntriesCache = allEntriesCache.filter(e => e.id !== id);
         fuse.setCollection(allEntriesCache);
         renderFilteredEntries();
@@ -872,7 +897,7 @@
           thea: row.thea,
           mood: moodScore[row.mood] || row.mood
       }));
-      const filename = `journal_export_${new Date().toISOString().slice(0, 10)}.${type}`;
+      const filename = `Journal_Backup_${new Date().toISOString().slice(0, 10)}.${type}`;
       if (type === 'csv') {
         const headers = ['entry_date', 'best_of_day', 'lotta', 'thea', 'mood'];
         const csvContent = [headers.join(','), ...processedData.map(row => headers.map(h => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(','))].join('\n');
@@ -890,6 +915,7 @@
     function normalizeDate(val) {
         if (!val) return null;
         const numericVal = Number(val);
+        // Excel Serial Date check
         if (typeof XLSX !== 'undefined' && !isNaN(numericVal) && numericVal > 20000 && numericVal < 70000) { 
              try {
                 const date = XLSX.utils.numberToDate(numericVal); 
@@ -938,25 +964,39 @@
       showToast('Importiere...');
       try {
         let rows;
-        if (file.name.endsWith('.csv')) { rows = parseCSV(await file.text()); } 
-        else { const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' }); rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: true }); }
+        if (file.name.endsWith('.csv')) { 
+            rows = parseCSV(await file.text()); 
+        } else { 
+            const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' }); 
+            rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false }); // RAW: FALSE für bessere Datumsformatierung
+        }
         const entries = rows.map(r => {
             let mood = String(r.mood || '').toLowerCase().trim();
             const moodMap = { '1': 'sad', '2': 'neutral', '3': 'happy' };
             if (moodMap[mood]) mood = moodMap[mood];
             if (!['sad','neutral','happy'].includes(mood)) mood = 'neutral';
+            
             const normDate = normalizeDate(r.entry_date);
             const bestText = String(r.best_of_day || '').trim() || null;
             const lottaText = String(r.lotta || '').trim() || null;
             const theaText = String(r.thea || '').trim() || null;
-            return { user_id: currentUser.id, entry_date: normDate, best_of_day: bestText, lotta: lottaText, thea: theaText, mood: mood, _valid: !!(normDate && (bestText || lottaText || theaText)) };
+            
+            return { 
+                user_id: currentUser.id, 
+                entry_date: normDate, 
+                best_of_day: bestText, 
+                lotta: lottaText, 
+                thea: theaText, 
+                mood: mood, 
+                _valid: !!(normDate && (bestText || lottaText || theaText)) 
+            };
         }).filter(e => e._valid).map(e => { delete e._valid; return e; }); 
 
-        if (entries.length === 0) return showToast('Keine gültigen Daten.', true);
+        if (entries.length === 0) return showToast('Keine gültigen Daten gefunden.', true);
         const { error } = await db.from('entries').insert(entries);
         if (error) showToast('Fehler: ' + error.message, true);
         else { showToast(`${entries.length} importiert!`); loadEntries(); }
-      } catch (err) { showToast('Fehler: ' + err.message, true); }
+      } catch (err) { showToast('Import Fehler: ' + err.message, true); }
       $('importFile').value = ''; 
     });
 
@@ -975,3 +1015,5 @@
 
     initTheme();
 </script>
+</body>
+</html>
