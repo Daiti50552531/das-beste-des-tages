@@ -2,12 +2,8 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Mein Journal</title>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -15,67 +11,75 @@
 
   <style>
     :root {
-      /* APPLE STYLE PALETTE */
-      --primary: #30D158; /* iOS Green (Dark Mode) */
-      --primary-hover: #28cd41;
+      /* APPLE IOS PALETTE - REFINED */
+      --primary: #34C759; /* Apple Green */
+      --primary-gradient: linear-gradient(135deg, #34C759, #30D158);
+      --primary-shadow: rgba(52, 199, 89, 0.4);
       
-      --background: #000000; /* Deep OLED Black */
-      --card: #1C1C1E; /* iOS System Gray 6 */
-      --card-highlight: #2C2C2E; /* iOS System Gray 5 */
+      --bg-body: #000000; /* Deep Black */
+      --bg-card: #1C1C1E; /* Secondary System Grouped Background */
+      --bg-input: #2C2C2E; /* Tertiary System Grouped Background */
       
-      --input-bg: #2C2C2E; /* Input Background */
-      --border: rgba(255, 255, 255, 0.1);
+      --separator: rgba(84, 84, 88, 0.65); /* Separator Line */
       
-      --text: #FFFFFF;
-      --text-secondary: #8E8E93; /* iOS System Gray */
-      --text-placeholder: #636366;
+      --text-main: #FFFFFF;
+      --text-secondary: #8E8E93; /* System Gray */
+      --text-tertiary: #48484A;
       
-      --danger: #FF453A; /* iOS Red */
-      --accent: #0A84FF; /* iOS Blue */
+      --danger: #FF453A;
+      --accent: #0A84FF;
       
-      --radius: 18px; /* Slightly rounder, Apple-like */
-      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-      --font-serif: "Lora", "New York", Georgia, serif;
+      --radius-l: 22px;
+      --radius-m: 14px;
+      --radius-s: 10px;
+      
+      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
       
       --glass: rgba(28, 28, 30, 0.85);
+      --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.5);
     }
 
     .light-mode {
-      --primary: #34C759; /* iOS Green (Light Mode) */
-      --primary-hover: #248a3d;
+      --primary: #28CD41; /* Slightly darker for contrast on white */
+      --primary-gradient: linear-gradient(135deg, #34C759, #28CD41);
+      --primary-shadow: rgba(40, 205, 65, 0.3);
       
-      --background: #F2F2F7; /* iOS System Grouped Background */
-      --card: #FFFFFF;
-      --card-highlight: #F9F9F9;
+      --bg-body: #F2F2F7; /* iOS System Gray 6 (Grouped Background) */
+      --bg-card: #FFFFFF;
+      --bg-input: #F2F2F7; /* Slightly distinct from white card */
       
-      --input-bg: #F2F2F7; 
-      --border: rgba(0, 0, 0, 0.05);
+      --separator: rgba(60, 60, 67, 0.12); /* Light separator */
       
-      --text: #000000;
+      --text-main: #000000;
       --text-secondary: #8E8E93;
-      --text-placeholder: #AEAEB2;
+      --text-tertiary: #C7C7CC;
       
       --danger: #FF3B30;
       --accent: #007AFF;
       
-      --glass: rgba(255, 255, 255, 0.85);
+      --glass: rgba(255, 255, 255, 0.8);
+      --shadow-soft: 0 8px 30px -6px rgba(0,0,0,0.05);
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
     body {
-      background-color: var(--background);
-      color: var(--text);
+      background-color: var(--bg-body);
+      color: var(--text-main);
       margin: 0;
-      padding-top: 70px;
-      padding-bottom: 40px;
+      padding-top: 80px; /* Space for Header */
+      padding-bottom: 60px;
       min-height: 100vh;
-      font-family: var(--font-sans);
-      transition: background-color 0.3s, color 0.3s;
+      font-family: var(--font-stack);
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      transition: background-color 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
     
-    /* Sticky Header with Glassmorphism */
+    /* --- TYPOGRAPHY --- */
+    h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
+    
+    /* --- HEADER (Glassmorphism) --- */
     .sticky-header-wrapper {
         position: fixed;
         top: 0;
@@ -85,304 +89,306 @@
         background: var(--glass);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border-bottom: 1px solid var(--border);
+        border-bottom: 0.5px solid var(--separator);
     }
     .topbar {
-        max-width: 700px;
+        max-width: 680px;
         margin: 0 auto;
-        padding: 12px 20px;
+        padding: 14px 24px;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
     .app-title {
-        font-size: 18px;
-        font-weight: 700;
-        margin: 0;
-        color: var(--text); /* Titel in Textfarbe, nicht Grün, für Clean Look */
-        letter-spacing: -0.5px;
+        font-size: 22px;
+        font-weight: 700; 
+        color: var(--text-main);
     }
-    .top-actions { display: flex; gap: 8px; align-items: center; }
     
-    .icon-btn {
-        background: rgba(128,128,128, 0.1);
-        border: none;
-        color: var(--text);
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        transition: transform 0.1s;
-    }
-    .icon-btn:active { transform: scale(0.95); }
-    .text-btn {
+    .header-btn {
         background: transparent;
         border: none;
         color: var(--accent);
-        font-size: 15px;
-        font-weight: 500;
+        font-size: 16px;
+        font-weight: 400;
         cursor: pointer;
+        padding: 8px;
+        transition: opacity 0.2s;
     }
+    .header-btn:hover { opacity: 0.7; }
+    .icon-only { font-size: 20px; color: var(--text-main); }
 
-    /* Layout */
+    /* --- LAYOUT --- */
     .container {
-      max-width: 700px; /* Etwas schmaler für besseren Lesefluss */
+      max-width: 680px;
       margin: 0 auto;
       padding: 0 20px;
     }
     
+    /* --- CARD DESIGN --- */
     .card {
-      background: var(--card);
-      padding: 24px;
-      border-radius: var(--radius);
-      box-shadow: 0 4px 24px rgba(0,0,0,0.04); /* Sehr softer Schatten */
-      margin-bottom: 24px;
+      background: var(--bg-card);
+      padding: 28px;
+      border-radius: var(--radius-l);
+      box-shadow: var(--shadow-soft);
+      margin-bottom: 30px;
+      border: 0.5px solid rgba(0,0,0,0.02); /* Ultra subtle border */
     }
 
-    /* Form Elements - Apple Style Inputs */
+    /* --- INPUTS & LABELS --- */
     label {
       display: block;
-      margin-top: 20px;
-      margin-bottom: 8px;
+      margin-top: 24px;
+      margin-bottom: 10px;
       font-size: 13px;
       font-weight: 600;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
       color: var(--text-secondary);
     }
     
+    /* Input Reset & Styling */
+    input[type="text"],
     input[type="email"],
     input[type="password"],
-    input[type="text"],
     input[type="date"],
     textarea {
       width: 100%;
-      padding: 14px 16px;
-      border: none; /* Kein Border */
-      border-radius: 12px;
-      background: var(--input-bg);
-      color: var(--text);
-      font-family: var(--font-sans);
-      font-size: 17px; /* iOS Standardgröße */
-      transition: all 0.2s;
+      padding: 16px;
+      border: none;
+      border-radius: var(--radius-m);
+      background: var(--bg-input);
+      color: var(--text-main);
+      font-family: var(--font-stack);
+      font-size: 17px;
+      font-weight: 400;
+      transition: all 0.3s ease;
+      -webkit-appearance: none; /* Remove iOS default styles */
     }
     
-    /* Textareas nutzen die Serif Schrift für schönes Schreiben */
     textarea {
-      font-family: var(--font-serif);
-      min-height: 100px;
+      min-height: 120px;
       resize: none;
-      line-height: 1.6;
+      line-height: 1.5;
     }
-    
+
     input:focus, textarea:focus {
       outline: none;
-      background: var(--card-highlight); /* Leicht heller bei Fokus */
-      box-shadow: 0 0 0 2px var(--primary); /* Grüner Glow */
+      background: var(--bg-card); /* White on focus if light mode */
+      box-shadow: 0 0 0 2px var(--primary); 
     }
     
-    /* Mood Selector - Apple Style Round Buttons */
+    /* Special Date Input Styling */
+    #entryDate {
+        font-size: 20px;
+        font-weight: 600;
+        text-align: center;
+        background: transparent;
+        color: var(--accent);
+        padding: 5px;
+        cursor: pointer;
+        margin-bottom: 10px;
+    }
+
+    /* --- MOOD SELECTOR --- */
     .mood-section {
       text-align: center;
-      margin: 30px 0;
+      margin: 35px 0 25px 0;
     }
     .mood-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
+      display: inline-flex;
+      background: var(--bg-input);
+      border-radius: 100px;
+      padding: 4px;
+      gap: 0;
     }
     .mood-btn {
-      font-size: 32px;
-      width: 64px;
-      height: 64px;
+      font-size: 28px;
+      width: 60px;
+      height: 50px;
       border: none;
-      background: var(--input-bg);
+      background: transparent;
       cursor: pointer;
-      border-radius: 50%; /* Komplett rund */
+      border-radius: 100px;
       display: flex;
       align-items: center;
       justify-content: center;
-      opacity: 0.5; 
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy Effekt */
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: grayscale(100%);
+      opacity: 0.6;
     }
-    .mood-btn:hover { opacity: 0.8; transform: scale(1.1); }
+    .mood-btn:hover { opacity: 1; filter: grayscale(0%); }
     .mood-btn.selected {
-      background: var(--card);
-      box-shadow: 0 0 0 2px var(--primary); /* Grüner Ring */
+      background: var(--bg-card);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      filter: grayscale(0%);
       opacity: 1;
-      transform: scale(1.15);
+      transform: scale(1.05);
     }
 
-    /* Action Area - Neu gestaltet */
-    .save-btn-wrapper {
-        margin-top: 30px;
-        margin-bottom: 20px;
-    }
+    /* --- BUTTONS --- */
+    .save-btn-wrapper { margin-top: 30px; }
     
-    .btn-full {
+    .btn-hero {
       width: 100%;
-      padding: 16px;
-      border-radius: 14px;
+      padding: 18px;
+      border-radius: var(--radius-m);
       border: none;
       font-size: 17px;
       font-weight: 600;
+      letter-spacing: -0.01em;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.1s, opacity 0.2s;
+      color: white;
+      background: var(--primary-gradient);
+      box-shadow: 0 10px 25px -5px var(--primary-shadow);
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
     }
-    .btn-full:active { transform: scale(0.98); }
-    
-    .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(48, 209, 88, 0.3); } 
-    .btn-primary:hover { opacity: 0.9; }
+    .btn-hero:active { transform: scale(0.97); opacity: 0.9; }
+    .btn-hero:hover { box-shadow: 0 14px 30px -8px var(--primary-shadow); }
+    .btn-hero span { position: relative; z-index: 2; }
 
-    /* Secondary Tools Row (Ghost Buttons) */
-    .tools-row {
+    /* Secondary Toolbar (Import/Export/Delete) */
+    .toolbar {
         display: flex;
-        justify-content: center;
-        gap: 24px;
-        padding-top: 10px;
-        border-top: 1px solid var(--border);
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 0.5px solid var(--separator);
     }
+    .toolbar-group { display: flex; gap: 15px; }
     
-    .tool-btn {
+    .btn-text {
         background: transparent;
         border: none;
-        font-size: 13px;
-        color: var(--text-secondary);
+        font-size: 14px;
         font-weight: 500;
+        color: var(--text-secondary);
         cursor: pointer;
-        padding: 8px 12px;
-        border-radius: 8px;
-        transition: color 0.2s, background 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        padding: 8px 0;
+        transition: color 0.2s;
     }
-    .tool-btn:hover { color: var(--text); background: var(--input-bg); }
-    .tool-btn.danger { color: var(--danger); opacity: 0.7; }
-    .tool-btn.danger:hover { opacity: 1; background: rgba(255, 69, 58, 0.1); }
+    .btn-text:hover { color: var(--text-main); }
+    .btn-text.danger { color: var(--danger); opacity: 0.8; }
+    .btn-text.danger:hover { opacity: 1; }
 
     .hidden-input { display: none; }
 
-    /* Entries List */
-    .entries-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+    /* --- ENTRIES LIST --- */
+    .entries-grid { display: flex; flex-direction: column; gap: 20px; }
     
     .entry-card {
-      background: var(--card);
-      padding: 24px 28px;
-      border-radius: var(--radius);
+      background: var(--bg-card);
+      padding: 0; /* Content padding handled inside */
+      border-radius: var(--radius-l);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
       position: relative;
     }
     
     .entry-header {
+      padding: 20px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 12px;
+      background: rgba(128,128,128, 0.03);
+      border-bottom: 0.5px solid var(--separator);
     }
     
     .entry-date { 
         font-size: 15px; 
-        font-weight: 600; 
-        color: var(--text-secondary); 
-        text-transform: uppercase; 
-        letter-spacing: 0.5px;
+        font-weight: 700; 
+        color: var(--text-main); 
+        letter-spacing: -0.01em;
     }
-    .entry-mood { font-size: 24px; }
+    .entry-mood { font-size: 22px; }
     
-    /* Der eigentliche Inhalt */
+    .entry-content { padding: 24px; }
     .entry-block { margin-bottom: 24px; }
     .entry-block:last-child { margin-bottom: 0; }
 
     .label-text {
         font-size: 11px;
-        color: var(--primary);
+        color: var(--text-secondary);
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 4px;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
         display: block;
     }
     
-    .entry-field-display {
-        font-family: var(--font-serif); /* Serif für den Text */
-        font-size: 18px;
-        line-height: 1.7;
-        color: var(--text);
+    .entry-text {
+        font-size: 17px;
+        line-height: 1.6;
+        color: var(--text-main);
         white-space: pre-wrap; 
+        font-weight: 400;
     }
     
-    .entry-actions-row {
+    .entry-footer {
+        padding: 12px 24px;
+        border-top: 0.5px solid var(--separator);
         display: flex;
         justify-content: flex-end;
-        gap: 12px;
-        margin-top: 10px;
-        padding-top: 10px;
+        gap: 15px;
     }
-    .btn-small {
-        font-size: 13px;
+    
+    .action-link {
+        font-size: 14px;
         font-weight: 500;
-        padding: 6px 12px;
-        border-radius: 100px;
-        border: none;
+        text-decoration: none;
         cursor: pointer;
-        background: var(--input-bg);
+        padding: 5px;
     }
-    .btn-edit { color: var(--accent); }
-    .btn-delete { color: var(--danger); }
+    .edit-link { color: var(--accent); }
+    .delete-link { color: var(--danger); }
 
-    /* Reminder Box */
-    .reminder-box {
-        background: rgba(255, 159, 10, 0.1); 
-        border: 1px solid rgba(255, 159, 10, 0.3);
-        padding: 16px;
-        border-radius: 12px;
-        margin-bottom: 24px;
-        display: none; 
-    }
-    .reminder-title { color: #FF9F0A; font-weight: 700; margin-bottom: 4px; font-size: 15px; }
-
-    /* Export Popover (iOS Style Context Menu) */
+    /* Export Popover */
     .export-popover {
       position: absolute;
-      background: var(--glass);
-      backdrop-filter: blur(25px);
-      -webkit-backdrop-filter: blur(25px);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 6px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      background: var(--bg-card);
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
       z-index: 200;
       display: none;
       flex-direction: column;
-      width: 200px;
-      bottom: 50px; 
-      left: 50%;
-      transform: translateX(-50%);
+      width: 180px;
+      bottom: 60px; 
+      left: 20px; /* Align with left button */
+      overflow: hidden;
+      padding: 5px;
     }
     .export-popover button {
       background: transparent;
-      color: var(--text);
+      color: var(--text-main);
       text-align: left;
-      padding: 12px 16px;
+      padding: 12px 14px;
       border-radius: 8px;
-      font-size: 15px;
+      font-size: 14px;
       border: none;
       cursor: pointer;
     }
-    .export-popover button:hover { background: var(--input-bg); }
+    .export-popover button:hover { background: var(--bg-input); }
+
+    /* Reminder Box */
+    .reminder-box {
+        background: linear-gradient(135deg, rgba(255, 159, 10, 0.1), rgba(255, 159, 10, 0.05));
+        border: 1px solid rgba(255, 159, 10, 0.3);
+        padding: 16px 20px;
+        border-radius: var(--radius-m);
+        margin-bottom: 30px;
+        display: none; 
+        align-items: center;
+        justify-content: space-between;
+    }
+    .reminder-text { color: #FF9F0A; font-weight: 600; font-size: 14px; }
+    .reminder-btn { 
+        font-size: 12px; font-weight: 600; padding: 6px 12px; 
+        background: #FF9F0A; color: white; border-radius: 20px; border:none; cursor: pointer;
+    }
 
     .hidden { display: none !important; }
     
@@ -392,45 +398,46 @@
       bottom: 40px;
       left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: rgba(40, 40, 40, 0.8);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: rgba(50, 50, 50, 0.9);
+      backdrop-filter: blur(10px);
       color: white;
       padding: 12px 24px;
       border-radius: 50px;
       font-weight: 500;
       font-size: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
       z-index: 1000;
       opacity: 0;
       transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       pointer-events: none;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
     .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.error { background: var(--danger); }
 
     /* Auth Screen */
     .auth-container {
-      max-width: 360px;
+      max-width: 380px;
       margin: 15vh auto;
       text-align: center;
       padding: 0 20px;
     }
-    .auth-btn-row { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+    
+    /* Search Bar Wrapper */
+    .search-wrapper {
+        margin-bottom: 25px;
+    }
+    #searchInput {
+        background: var(--bg-card);
+        padding-left: 40px; /* Space for icon */
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238E8E93' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: 12px center;
+    }
 
-    /* Filter Bar */
-    .filter-card {
-        background: transparent; /* Seamless with background */
-        padding: 0 0 20px 0;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 24px;
+    .date-filters {
+        display: flex; gap: 10px; margin-bottom: 10px;
     }
-    .filter-wrapper {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-    .filter-control { flex: 1; min-width: 140px; }
+    .date-filters input { font-size: 14px; padding: 10px; }
 
   </style>
 </head>
@@ -439,19 +446,20 @@
   <div id="toast" class="toast">Nachricht</div>
 
   <div id="authSection" class="auth-container">
-    <h1 style="margin-bottom:10px; font-weight:800; font-size: 32px;">Willkommen.</h1>
-    <p style="color:var(--text-secondary); margin-bottom:40px;">Dein persönliches Journal.</p>
+    <div style="font-size:50px; margin-bottom:10px;">📔</div>
+    <h1 style="margin-bottom:10px; font-weight:800; font-size: 34px; letter-spacing:-1px;">Journal</h1>
+    <p style="color:var(--text-secondary); margin-bottom:40px; font-size:17px;">Melde dich an, um fortzufahren.</p>
     
-    <div class="card">
-      <label>E-Mail</label>
+    <div class="card" style="text-align:left;">
+      <label>E-Mail Adresse</label>
       <input type="email" id="authEmail" placeholder="name@icloud.com">
       
       <label>Passwort</label>
       <input type="password" id="authPassword" placeholder="••••••••">
       
-      <div class="auth-btn-row">
-        <button id="loginBtn" class="btn-full btn-primary">Anmelden</button>
-        <button id="signupBtn" class="tool-btn" style="justify-content:center; width:100%;">Noch keinen Account? Registrieren</button>
+      <div style="margin-top:30px; display:flex; flex-direction:column; gap:15px;">
+        <button id="loginBtn" class="btn-hero">Anmelden</button>
+        <button id="signupBtn" class="btn-text" style="width:100%; text-align:center;">Account erstellen</button>
       </div>
     </div>
   </div>
@@ -460,10 +468,10 @@
     
     <div class="sticky-header-wrapper">
         <div class="topbar">
-            <h1 class="app-title">Journal</h1>
-            <div class="top-actions">
-              <button id="themeToggle" class="icon-btn" title="Design umschalten">◐</button>
-              <button id="logoutBtn" class="text-btn">Abmelden</button>
+            <span class="app-title">Journal</span>
+            <div style="display:flex; gap:10px;">
+              <button id="themeToggle" class="header-btn icon-only" title="Design umschalten">◑</button>
+              <button id="logoutBtn" class="header-btn">Logout</button>
             </div>
         </div>
     </div>
@@ -471,27 +479,26 @@
     <div class="container">
       
       <div id="reminderBox" class="reminder-box">
-          <div class="reminder-title">Backup Erinnerung</div>
-          <div style="font-size:13px; margin-bottom:8px; opacity:0.8;">Sichere deine Gedanken!</div>
-          <button id="remindExportBtn" class="btn-small" style="background:#fff; color:#000;">Excel Export</button>
+          <div class="reminder-text">Backup fällig!</div>
+          <button id="remindExportBtn" class="reminder-btn">Excel Export</button>
       </div>
 
       <div class="card" id="editorCard">
-        <h2 id="editorTitle" style="text-align:center; font-size:13px; margin-bottom:4px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px; font-weight:600;">Heute</h2>
-        
-        <input type="date" id="entryDate" style="text-align:center; background:transparent; font-weight:600; font-size:18px; color:var(--text); margin-bottom:20px; cursor:pointer;">
+        <div style="text-align:center;">
+             <input type="date" id="entryDate">
+        </div>
 
         <label>Das Beste des Tages</label>
-        <textarea id="bestOfDay" placeholder="Ein schöner Moment..."></textarea>
+        <textarea id="bestOfDay" placeholder="Was war heute besonders schön?"></textarea>
 
-        <div style="display:flex; gap:16px;">
+        <div style="display:flex; gap:20px;">
             <div style="flex:1;">
                 <label>Lotta</label>
-                <textarea id="lotta" placeholder="..." style="min-height:80px;"></textarea>
+                <textarea id="lotta" placeholder="..."></textarea>
             </div>
             <div style="flex:1;">
                 <label>Thea</label>
-                <textarea id="thea" placeholder="..." style="min-height:80px;"></textarea>
+                <textarea id="thea" placeholder="..."></textarea>
             </div>
         </div>
 
@@ -504,55 +511,52 @@
         </div>
 
         <div class="save-btn-wrapper">
-            <button id="saveBtn" class="btn-full btn-primary">
-                Speichern
+            <button id="saveBtn" class="btn-hero">
+                <span>Speichern</span>
             </button>
-            <button id="cancelEditBtn" class="btn-full hidden" style="background:var(--card-highlight); color:var(--text); margin-top:10px;">
+            <button id="cancelEditBtn" class="btn-text hidden" style="width:100%; margin-top:15px; text-align:center;">
                 Abbrechen
             </button>
         </div>
 
-        <div class="tools-row" style="position: relative;">
+        <div class="toolbar" style="position: relative;">
+          <div class="toolbar-group">
+              <button id="exportTriggerBtn" class="btn-text">
+                 Exportieren ▾
+              </button>
+              <label class="btn-text">
+                 Importieren
+                 <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
+              </label>
+          </div>
           
-          <button id="exportTriggerBtn" class="tool-btn">
-             Exportieren ▾
-          </button>
-          
-          <label class="tool-btn">
-             Importieren
-             <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
-          </label>
-          
-          <button id="deleteAllBtn" class="tool-btn danger">
+          <button id="deleteAllBtn" class="btn-text danger">
              Alle Löschen
           </button>
 
           <div id="exportPopover" class="export-popover">
-            <button id="exportCsvBtn">Als CSV exportieren</button>
-            <button id="exportXlsxBtn">Als Excel exportieren</button>
+            <button id="exportCsvBtn">Als CSV</button>
+            <button id="exportXlsxBtn">Als Excel</button>
           </div>
         </div>
       </div>
 
-      <div class="filter-card">
-        <div class="filter-wrapper">
-             <div class="filter-control" style="flex-grow: 2;">
-                 <input type="text" id="searchInput" placeholder="🔍 Suchen...">
-             </div>
-             <div class="filter-control">
-                 <input type="date" id="filterDateFrom">
-             </div>
-             <div class="filter-control">
-                 <input type="date" id="filterDateTo">
-             </div>
-        </div>
+      <div class="search-wrapper">
+         <div class="date-filters hidden" id="dateFilters"> <input type="date" id="filterDateFrom">
+             <input type="date" id="filterDateTo">
+         </div>
+         <input type="text" id="searchInput" placeholder="In Einträgen suchen...">
+         <div style="display:flex; gap:10px; margin-top:10px;">
+             <input type="date" id="filterDateFrom" style="font-size:13px; padding:10px;">
+             <input type="date" id="filterDateTo" style="font-size:13px; padding:10px;">
+         </div>
       </div>
 
       <div id="entriesContainer" class="entries-grid">
         </div>
     
     </div> </div> <script>
-    console.log('🚀 App startet im Apple Design...');
+    console.log('🚀 App startet im Premium Apple Design...');
     
     // --- KONFIGURATION ---
     const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
@@ -581,7 +585,6 @@
       exportPopover: $('exportPopover'),
       saveBtn: $('saveBtn'),
       deleteAllBtn: $('deleteAllBtn'),
-      editorTitle: $('editorTitle'),
       cancelEditBtn: $('cancelEditBtn'),
       reminderBox: $('reminderBox'),
       fields: {
@@ -620,7 +623,6 @@
     ['best', 'lotta', 'thea'].forEach(id => {
       const el = elements.fields[id];
       el.addEventListener('input', () => autoResize(el));
-      // Initial resize delay slightly to allow rendering
       setTimeout(() => autoResize(el), 10);
     });
 
@@ -666,7 +668,7 @@
         password: elements.password.value
       });
       if (error) showToast('Fehler: ' + error.message, true);
-      else showToast('Registrierung erfolgreich! Bitte einloggen.');
+      else showToast('Account erstellt! Bitte einloggen.');
     });
 
     $('logoutBtn').addEventListener('click', () => db.auth.signOut());
@@ -675,7 +677,7 @@
         const lastDismissed = localStorage.getItem('last_dismissed_export_month');
         const currentMonth = new Date().toISOString().slice(0, 7); 
         if (lastDismissed !== currentMonth) {
-            elements.reminderBox.style.display = 'block';
+            elements.reminderBox.style.display = 'flex';
         } else {
             elements.reminderBox.style.display = 'none';
         }
@@ -701,8 +703,7 @@
 
     function resetEditor() {
         currentEditingId = null;
-        elements.editorTitle.textContent = "Neuer Eintrag";
-        elements.saveBtn.textContent = "Speichern";
+        elements.saveBtn.innerHTML = "<span>Speichern</span>";
         elements.cancelEditBtn.classList.add('hidden');
         elements.fields.date.value = new Date().toISOString().split('T')[0];
         elements.fields.best.value = '';
@@ -711,14 +712,13 @@
         selectedMood = null;
         document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
         ['best', 'lotta', 'thea'].forEach(id => {
-            elements.fields[id].style.height = 'auto'; // Reset Height
+            elements.fields[id].style.height = 'auto'; 
         });
     }
 
     function startEdit(entry) {
         currentEditingId = entry.id;
-        elements.editorTitle.textContent = "Eintrag Bearbeiten";
-        elements.saveBtn.textContent = "Änderungen speichern";
+        elements.saveBtn.innerHTML = "<span>Änderungen speichern</span>";
         elements.cancelEditBtn.classList.remove('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         elements.fields.date.value = entry.entry_date;
@@ -735,14 +735,13 @@
 
     elements.cancelEditBtn.addEventListener('click', resetEditor);
 
-    // OPTIMIERTE SAVE FUNCTION MIT ERROR HANDLING
     elements.saveBtn.addEventListener('click', async () => {
-      if (!selectedMood) return showToast('Bitte Stimmung wählen! 😐', true);
+      if (!selectedMood) return showToast('Wie war deine Stimmung? 😐', true);
       if (!currentUser) return showToast('Nicht eingeloggt.', true);
 
       elements.saveBtn.disabled = true;
-      const originalText = elements.saveBtn.textContent;
-      elements.saveBtn.textContent = "Speichere...";
+      const originalHTML = elements.saveBtn.innerHTML;
+      elements.saveBtn.innerHTML = "<span>Speichert...</span>";
 
       const entryData = {
         user_id: currentUser.id,
@@ -765,19 +764,19 @@
           
           if (error) throw error;
 
-          showToast(currentEditingId ? 'Aktualisiert! 🎉' : 'Gespeichert! 🎉');
+          showToast(currentEditingId ? 'Aktualisiert' : 'Gespeichert');
           resetEditor();
           await loadEntries();
       } catch(err) {
           showToast('Fehler: ' + err.message, true);
       } finally {
           elements.saveBtn.disabled = false;
-          elements.saveBtn.textContent = originalText;
+          elements.saveBtn.innerHTML = originalHTML;
       }
     });
 
     async function loadEntries() {
-      elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:20px;">Lade Einträge...</div>';
+      elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:40px; font-size:14px;">Lade Einträge...</div>';
       const { data, error } = await db
         .from('entries')
         .select('*')
@@ -817,13 +816,13 @@
 
     function renderDOM(entries) {
       if (!entries.length) {
-        elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:40px;">Keine Einträge gefunden.</div>';
+        elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:60px 0;">Keine Einträge gefunden.</div>';
         return;
       }
       elements.entriesContainer.innerHTML = entries.map(entry => {
         const moodMap = { 'happy': '🙂', 'neutral': '😐', 'sad': '😞' };
         const dateObj = new Date(entry.entry_date);
-        // Datum im Format "DO, 24. DEZEMBER 2024"
+        
         const weekday = dateObj.toLocaleDateString('de-DE', { weekday: 'short' }).toUpperCase();
         const fullDate = dateObj.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -833,14 +832,14 @@
               <span class="entry-date">${weekday}, ${fullDate}</span>
               <span class="entry-mood">${moodMap[entry.mood] || ''}</span>
             </div>
-            <div class="entry-body">
-              ${entry.best_of_day ? `<div class="entry-block"><div class="entry-field-display">${escapeHtml(entry.best_of_day)}</div></div>` : ''}
-              ${entry.lotta ? `<div class="entry-block"><span class="label-text">Lotta</span><div class="entry-field-display">${escapeHtml(entry.lotta)}</div></div>` : ''}
-              ${entry.thea ? `<div class="entry-block"><span class="label-text">Thea</span><div class="entry-field-display">${escapeHtml(entry.thea)}</div></div>` : ''}
+            <div class="entry-content">
+              ${entry.best_of_day ? `<div class="entry-block"><div class="entry-text">${escapeHtml(entry.best_of_day)}</div></div>` : ''}
+              ${entry.lotta ? `<div class="entry-block"><span class="label-text">Lotta</span><div class="entry-text">${escapeHtml(entry.lotta)}</div></div>` : ''}
+              ${entry.thea ? `<div class="entry-block"><span class="label-text">Thea</span><div class="entry-text">${escapeHtml(entry.thea)}</div></div>` : ''}
             </div>
-            <div class="entry-actions-row">
-                <button class="btn-small btn-edit" onclick="window.editEntry('${entry.id}')">Bearbeiten</button>
-                <button class="btn-small btn-delete" onclick="window.deleteEntry('${entry.id}')">Löschen</button>
+            <div class="entry-footer">
+                <span class="action-link edit-link" onclick="window.editEntry('${entry.id}')">Bearbeiten</span>
+                <span class="action-link delete-link" onclick="window.deleteEntry('${entry.id}')">Löschen</span>
             </div>
           </div>
         `;
@@ -908,14 +907,13 @@
         XLSX.utils.book_append_sheet(wb, ws, "Journal");
         XLSX.writeFile(wb, filename);
       }
-      showToast('Export abgeschlossen! ✅');
+      showToast('Export erfolgreich!');
       dismissReminder(); 
     }
 
     function normalizeDate(val) {
         if (!val) return null;
         const numericVal = Number(val);
-        // Excel Serial Date check
         if (typeof XLSX !== 'undefined' && !isNaN(numericVal) && numericVal > 20000 && numericVal < 70000) { 
              try {
                 const date = XLSX.utils.numberToDate(numericVal); 
@@ -961,14 +959,14 @@
       if (!currentUser) return showToast('Bitte anmelden.', true);
       const file = e.target.files[0];
       if (!file) return;
-      showToast('Importiere...');
+      showToast('Importiere Daten...');
       try {
         let rows;
         if (file.name.endsWith('.csv')) { 
             rows = parseCSV(await file.text()); 
         } else { 
             const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' }); 
-            rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false }); // RAW: FALSE für bessere Datumsformatierung
+            rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false }); 
         }
         const entries = rows.map(r => {
             let mood = String(r.mood || '').toLowerCase().trim();
@@ -992,10 +990,10 @@
             };
         }).filter(e => e._valid).map(e => { delete e._valid; return e; }); 
 
-        if (entries.length === 0) return showToast('Keine gültigen Daten gefunden.', true);
+        if (entries.length === 0) return showToast('Keine gültigen Daten.', true);
         const { error } = await db.from('entries').insert(entries);
         if (error) showToast('Fehler: ' + error.message, true);
-        else { showToast(`${entries.length} importiert!`); loadEntries(); }
+        else { showToast(`${entries.length} Einträge importiert.`); loadEntries(); }
       } catch (err) { showToast('Import Fehler: ' + err.message, true); }
       $('importFile').value = ''; 
     });
