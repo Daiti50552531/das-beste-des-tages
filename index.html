@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Mein Journal</title>
+  <title>Journal 2025</title>
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -11,54 +11,55 @@
 
   <style>
     :root {
-      /* APPLE IOS PALETTE - REFINED */
-      --primary: #34C759; /* Apple Green */
-      --primary-gradient: linear-gradient(135deg, #34C759, #30D158);
-      --primary-shadow: rgba(52, 199, 89, 0.4);
+      /* --- COLOR PALETTE (Apple Human Interface Guidelines) --- */
+      --primary: #000000; 
+      --primary-rgb: 0,0,0;
       
-      --bg-body: #000000; /* Deep Black */
-      --bg-card: #1C1C1E; /* Secondary System Grouped Background */
-      --bg-input: #2C2C2E; /* Tertiary System Grouped Background */
+      --accent: #007AFF; /* iOS Blue */
+      --success: #34C759; /* iOS Green */
+      --danger: #FF3B30;  /* iOS Red */
       
-      --separator: rgba(84, 84, 88, 0.65); /* Separator Line */
-      
-      --text-main: #FFFFFF;
-      --text-secondary: #8E8E93; /* System Gray */
-      --text-tertiary: #48484A;
-      
-      --danger: #FF453A;
-      --accent: #0A84FF;
-      
-      --radius-l: 22px;
-      --radius-m: 14px;
-      --radius-s: 10px;
-      
-      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
-      
-      --glass: rgba(28, 28, 30, 0.85);
-      --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.5);
-    }
-
-    .light-mode {
-      --primary: #28CD41; /* Slightly darker for contrast on white */
-      --primary-gradient: linear-gradient(135deg, #34C759, #28CD41);
-      --primary-shadow: rgba(40, 205, 65, 0.3);
-      
-      --bg-body: #F2F2F7; /* iOS System Gray 6 (Grouped Background) */
+      --bg-body: #F2F2F7; /* System Grouped Background */
       --bg-card: #FFFFFF;
-      --bg-input: #F2F2F7; /* Slightly distinct from white card */
-      
-      --separator: rgba(60, 60, 67, 0.12); /* Light separator */
+      --bg-surface: #FFFFFF;
+      --bg-input: #F2F2F7;
+      --bg-button-secondary: #E5E5EA; /* System Gray 5 */
       
       --text-main: #000000;
       --text-secondary: #8E8E93;
       --text-tertiary: #C7C7CC;
       
-      --danger: #FF3B30;
-      --accent: #007AFF;
+      --border: rgba(0,0,0,0.08);
+      --glass: rgba(255, 255, 255, 0.85);
       
-      --glass: rgba(255, 255, 255, 0.8);
-      --shadow-soft: 0 8px 30px -6px rgba(0,0,0,0.05);
+      --radius-l: 24px;  /* Modern, rounder look */
+      --radius-m: 16px;
+      --radius-s: 12px;
+      
+      --shadow-card: 0 4px 20px rgba(0,0,0,0.03);
+      --shadow-float: 0 12px 30px rgba(0,0,0,0.08);
+      
+      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .dark-mode {
+      --primary: #FFFFFF;
+      --primary-rgb: 255,255,255;
+      
+      --bg-body: #000000;
+      --bg-card: #1C1C1E; /* System Gray 6 */
+      --bg-surface: #2C2C2E; /* System Gray 5 */
+      --bg-input: #2C2C2E;
+      --bg-button-secondary: #3A3A3C;
+      
+      --text-main: #FFFFFF;
+      --text-secondary: #98989D;
+      --text-tertiary: #505055;
+      
+      --border: rgba(255,255,255,0.08);
+      --glass: rgba(30, 30, 30, 0.85);
+      
+      --shadow-card: 0 4px 20px rgba(0,0,0,0.2);
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -67,19 +68,19 @@
       background-color: var(--bg-body);
       color: var(--text-main);
       margin: 0;
-      padding-top: 80px; /* Space for Header */
-      padding-bottom: 60px;
+      padding-top: 80px;
+      padding-bottom: 120px; /* Space for bottom area */
       min-height: 100vh;
       font-family: var(--font-stack);
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      transition: background-color 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      transition: background-color 0.4s ease;
     }
+
+    /* --- ICONS (SVG Styling) --- */
+    .icon { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-sm { width: 16px; height: 16px; }
     
-    /* --- TYPOGRAPHY --- */
-    h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
-    
-    /* --- HEADER (Glassmorphism) --- */
+    /* --- HEADER --- */
     .sticky-header-wrapper {
         position: fixed;
         top: 0;
@@ -89,355 +90,274 @@
         background: var(--glass);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border-bottom: 0.5px solid var(--separator);
+        border-bottom: 1px solid var(--border);
     }
     .topbar {
-        max-width: 680px;
+        max-width: 600px;
         margin: 0 auto;
-        padding: 14px 24px;
+        padding: 12px 20px;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
     .app-title {
-        font-size: 22px;
-        font-weight: 700; 
+        font-size: 17px;
+        font-weight: 600; 
         color: var(--text-main);
+        letter-spacing: -0.02em;
     }
-    
-    .header-btn {
-        background: transparent;
+    .theme-btn {
+        background: var(--bg-button-secondary);
         border: none;
-        color: var(--accent);
-        font-size: 16px;
-        font-weight: 400;
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--text-main);
         cursor: pointer;
-        padding: 8px;
-        transition: opacity 0.2s;
+        transition: transform 0.2s;
     }
-    .header-btn:hover { opacity: 0.7; }
-    .icon-only { font-size: 20px; color: var(--text-main); }
+    .theme-btn:active { transform: scale(0.9); }
 
     /* --- LAYOUT --- */
     .container {
-      max-width: 680px;
+      max-width: 600px;
       margin: 0 auto;
       padding: 0 20px;
     }
     
-    /* --- CARD DESIGN --- */
+    .section-title {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        font-weight: 600;
+        margin: 24px 0 10px 4px;
+    }
+
+    /* --- CARDS & SURFACES --- */
     .card {
       background: var(--bg-card);
-      padding: 28px;
       border-radius: var(--radius-l);
-      box-shadow: var(--shadow-soft);
-      margin-bottom: 30px;
-      border: 0.5px solid rgba(0,0,0,0.02); /* Ultra subtle border */
-    }
-
-    /* --- INPUTS & LABELS --- */
-    label {
-      display: block;
-      margin-top: 24px;
-      margin-bottom: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-    }
-    
-    /* Input Reset & Styling */
-    input[type="text"],
-    input[type="email"],
-    input[type="password"],
-    input[type="date"],
-    textarea {
-      width: 100%;
-      padding: 16px;
-      border: none;
-      border-radius: var(--radius-m);
-      background: var(--bg-input);
-      color: var(--text-main);
-      font-family: var(--font-stack);
-      font-size: 17px;
-      font-weight: 400;
-      transition: all 0.3s ease;
-      -webkit-appearance: none; /* Remove iOS default styles */
-    }
-    
-    textarea {
-      min-height: 120px;
-      resize: none;
-      line-height: 1.5;
-    }
-
-    input:focus, textarea:focus {
-      outline: none;
-      background: var(--bg-card); /* White on focus if light mode */
-      box-shadow: 0 0 0 2px var(--primary); 
-    }
-    
-    /* Special Date Input Styling */
-    #entryDate {
-        font-size: 20px;
-        font-weight: 600;
-        text-align: center;
-        background: transparent;
-        color: var(--accent);
-        padding: 5px;
-        cursor: pointer;
-        margin-bottom: 10px;
-    }
-
-    /* --- MOOD SELECTOR --- */
-    .mood-section {
-      text-align: center;
-      margin: 35px 0 25px 0;
-    }
-    .mood-buttons {
-      display: inline-flex;
-      background: var(--bg-input);
-      border-radius: 100px;
-      padding: 4px;
-      gap: 0;
-    }
-    .mood-btn {
-      font-size: 28px;
-      width: 60px;
-      height: 50px;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      border-radius: 100px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      filter: grayscale(100%);
-      opacity: 0.6;
-    }
-    .mood-btn:hover { opacity: 1; filter: grayscale(0%); }
-    .mood-btn.selected {
-      background: var(--bg-card);
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      filter: grayscale(0%);
-      opacity: 1;
-      transform: scale(1.05);
-    }
-
-    /* --- BUTTONS --- */
-    .save-btn-wrapper { margin-top: 30px; }
-    
-    .btn-hero {
-      width: 100%;
-      padding: 18px;
-      border-radius: var(--radius-m);
-      border: none;
-      font-size: 17px;
-      font-weight: 600;
-      letter-spacing: -0.01em;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      background: var(--primary-gradient);
-      box-shadow: 0 10px 25px -5px var(--primary-shadow);
-      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
-    }
-    .btn-hero:active { transform: scale(0.97); opacity: 0.9; }
-    .btn-hero:hover { box-shadow: 0 14px 30px -8px var(--primary-shadow); }
-    .btn-hero span { position: relative; z-index: 2; }
-
-    /* Secondary Toolbar (Import/Export/Delete) */
-    .toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 25px;
-        padding-top: 20px;
-        border-top: 0.5px solid var(--separator);
-    }
-    .toolbar-group { display: flex; gap: 15px; }
-    
-    .btn-text {
-        background: transparent;
-        border: none;
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--text-secondary);
-        cursor: pointer;
-        padding: 8px 0;
-        transition: color 0.2s;
-    }
-    .btn-text:hover { color: var(--text-main); }
-    .btn-text.danger { color: var(--danger); opacity: 0.8; }
-    .btn-text.danger:hover { opacity: 1; }
-
-    .hidden-input { display: none; }
-
-    /* --- ENTRIES LIST --- */
-    .entries-grid { display: flex; flex-direction: column; gap: 20px; }
-    
-    .entry-card {
-      background: var(--bg-card);
-      padding: 0; /* Content padding handled inside */
-      border-radius: var(--radius-l);
-      box-shadow: var(--shadow-soft);
+      box-shadow: var(--shadow-card);
       overflow: hidden;
+      margin-bottom: 24px;
       position: relative;
     }
     
-    .entry-header {
-      padding: 20px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(128,128,128, 0.03);
-      border-bottom: 0.5px solid var(--separator);
+    /* --- DATE PICKER HACK --- */
+    .date-wrapper {
+        position: relative;
+        background: var(--bg-button-secondary);
+        border-radius: var(--radius-m);
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        margin-bottom: 20px;
+        transition: background 0.2s;
     }
-    
-    .entry-date { 
-        font-size: 15px; 
-        font-weight: 700; 
-        color: var(--text-main); 
-        letter-spacing: -0.01em;
+    .date-wrapper:hover { background: var(--bg-input); }
+    .date-display { font-weight: 600; color: var(--text-main); font-size: 16px; }
+    #entryDate {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        opacity: 0;
+        cursor: pointer;
     }
-    .entry-mood { font-size: 22px; }
-    
-    .entry-content { padding: 24px; }
-    .entry-block { margin-bottom: 24px; }
-    .entry-block:last-child { margin-bottom: 0; }
 
-    .label-text {
-        font-size: 11px;
+    /* --- INPUTS --- */
+    .input-group {
+        padding: 20px;
+    }
+    label {
+        font-size: 13px;
+        font-weight: 600;
         color: var(--text-secondary);
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
         display: block;
     }
-    
-    .entry-text {
-        font-size: 17px;
-        line-height: 1.6;
-        color: var(--text-main);
-        white-space: pre-wrap; 
-        font-weight: 400;
-    }
-    
-    .entry-footer {
-        padding: 12px 24px;
-        border-top: 0.5px solid var(--separator);
-        display: flex;
-        justify-content: flex-end;
-        gap: 15px;
-    }
-    
-    .action-link {
-        font-size: 14px;
-        font-weight: 500;
-        text-decoration: none;
-        cursor: pointer;
-        padding: 5px;
-    }
-    .edit-link { color: var(--accent); }
-    .delete-link { color: var(--danger); }
-
-    /* Export Popover */
-    .export-popover {
-      position: absolute;
-      background: var(--bg-card);
-      border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-      z-index: 200;
-      display: none;
-      flex-direction: column;
-      width: 180px;
-      bottom: 60px; 
-      left: 20px; /* Align with left button */
-      overflow: hidden;
-      padding: 5px;
-    }
-    .export-popover button {
-      background: transparent;
-      color: var(--text-main);
-      text-align: left;
-      padding: 12px 14px;
-      border-radius: 8px;
-      font-size: 14px;
-      border: none;
-      cursor: pointer;
-    }
-    .export-popover button:hover { background: var(--bg-input); }
-
-    /* Reminder Box */
-    .reminder-box {
-        background: linear-gradient(135deg, rgba(255, 159, 10, 0.1), rgba(255, 159, 10, 0.05));
-        border: 1px solid rgba(255, 159, 10, 0.3);
-        padding: 16px 20px;
+    textarea, input[type="text"], input[type="email"], input[type="password"] {
+        width: 100%;
+        padding: 16px;
+        border: none;
         border-radius: var(--radius-m);
-        margin-bottom: 30px;
-        display: none; 
-        align-items: center;
+        background: var(--bg-input);
+        color: var(--text-main);
+        font-family: var(--font-stack);
+        font-size: 17px;
+        line-height: 1.5;
+        resize: none;
+        transition: box-shadow 0.2s;
+    }
+    textarea:focus, input:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px var(--accent);
+        background: var(--bg-card);
+    }
+    
+    /* --- MOOD SELECTOR (Segmented Style) --- */
+    .mood-container {
+        padding: 0 20px 20px 20px;
+    }
+    .mood-grid {
+        display: flex;
+        background: var(--bg-input);
+        padding: 4px;
+        border-radius: var(--radius-l);
         justify-content: space-between;
     }
-    .reminder-text { color: #FF9F0A; font-weight: 600; font-size: 14px; }
-    .reminder-btn { 
-        font-size: 12px; font-weight: 600; padding: 6px 12px; 
-        background: #FF9F0A; color: white; border-radius: 20px; border:none; cursor: pointer;
+    .mood-btn {
+        flex: 1;
+        border: none;
+        background: transparent;
+        padding: 12px;
+        border-radius: var(--radius-m);
+        font-size: 24px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        opacity: 0.4;
+        filter: grayscale(100%);
+    }
+    .mood-btn.selected {
+        background: var(--bg-card);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        opacity: 1;
+        filter: grayscale(0%);
+        transform: scale(1.05);
     }
 
-    .hidden { display: none !important; }
-    
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: rgba(50, 50, 50, 0.9);
-      backdrop-filter: blur(10px);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 50px;
-      font-weight: 500;
-      font-size: 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-      z-index: 1000;
-      opacity: 0;
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      pointer-events: none;
+    /* --- ACTION GRID (The "Bento" Tools) --- */
+    .action-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 12px;
     }
-    .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .action-grid.full { grid-template-columns: 1fr; }
+    
+    .btn-tool {
+        background: var(--bg-button-secondary);
+        border: none;
+        border-radius: var(--radius-m);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: var(--text-main);
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .btn-tool:active { transform: scale(0.97); }
+    .btn-tool.danger { background: rgba(255, 59, 48, 0.1); color: var(--danger); }
+    .btn-tool.danger:active { background: rgba(255, 59, 48, 0.2); }
+    
+    /* --- MAIN BUTTON --- */
+    .btn-primary {
+        background: var(--text-main); /* Black in Light, White in Dark */
+        color: var(--bg-body);
+        width: 100%;
+        padding: 18px;
+        border-radius: var(--radius-l);
+        border: none;
+        font-size: 17px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: var(--shadow-float);
+        transition: transform 0.2s, opacity 0.2s;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-primary:active { transform: scale(0.96); }
+
+    /* --- ENTRIES --- */
+    .entry-card {
+        padding: 0;
+        border: 1px solid var(--border);
+    }
+    .entry-header {
+        padding: 16px 20px;
+        background: var(--bg-surface);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+    }
+    .entry-date { font-weight: 700; font-size: 15px; }
+    .entry-content { padding: 20px; }
+    .entry-text { font-size: 16px; line-height: 1.6; color: var(--text-main); white-space: pre-wrap; }
+    .entry-label { 
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; 
+        color: var(--text-secondary); margin-bottom: 4px; font-weight: 700; 
+    }
+    .entry-footer {
+        padding: 12px 20px;
+        display: flex; justify-content: flex-end; gap: 16px;
+        border-top: 1px solid var(--border);
+        background: rgba(128,128,128, 0.02);
+    }
+    .txt-btn {
+        background: none; border: none; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+
+    /* --- POPOVER --- */
+    .export-popover {
+        position: absolute;
+        bottom: 70px; left: 0; width: 100%;
+        background: var(--bg-card);
+        border-radius: var(--radius-l);
+        padding: 8px;
+        box-shadow: var(--shadow-float);
+        display: none;
+        flex-direction: column;
+        z-index: 200;
+        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        border: 1px solid var(--border);
+    }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    
+    .popover-item {
+        background: transparent; border: none; padding: 14px; text-align: left;
+        font-size: 16px; color: var(--text-main); border-radius: var(--radius-s);
+        cursor: pointer; display: flex; align-items: center; gap: 10px;
+    }
+    .popover-item:hover { background: var(--bg-button-secondary); }
+
+    /* --- TOAST --- */
+    .toast {
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100%);
+        background: rgba(0,0,0,0.8); backdrop-filter: blur(12px); color: white;
+        padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 14px;
+        z-index: 9999; opacity: 0; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .toast.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
     .toast.error { background: var(--danger); }
 
-    /* Auth Screen */
-    .auth-container {
-      max-width: 380px;
-      margin: 15vh auto;
-      text-align: center;
-      padding: 0 20px;
-    }
+    /* --- AUTH SCREEN --- */
+    .auth-container { max-width: 400px; margin: 10vh auto; text-align: center; padding: 20px; }
     
-    /* Search Bar Wrapper */
-    .search-wrapper {
-        margin-bottom: 25px;
+    /* UTILS */
+    .hidden { display: none !important; }
+    .hidden-input { display: none; }
+    
+    /* SEARCH */
+    .search-bar {
+        background: var(--bg-button-secondary);
+        border-radius: 12px;
+        display: flex; align-items: center;
+        padding: 0 12px;
+        margin-bottom: 20px;
     }
-    #searchInput {
-        background: var(--bg-card);
-        padding-left: 40px; /* Space for icon */
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238E8E93' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: 12px center;
+    .search-input {
+        background: transparent !important;
+        box-shadow: none !important;
+        padding: 12px 8px !important;
     }
-
-    .date-filters {
-        display: flex; gap: 10px; margin-bottom: 10px;
-    }
-    .date-filters input { font-size: 14px; padding: 10px; }
 
   </style>
 </head>
@@ -446,20 +366,19 @@
   <div id="toast" class="toast">Nachricht</div>
 
   <div id="authSection" class="auth-container">
-    <div style="font-size:50px; margin-bottom:10px;">📔</div>
-    <h1 style="margin-bottom:10px; font-weight:800; font-size: 34px; letter-spacing:-1px;">Journal</h1>
-    <p style="color:var(--text-secondary); margin-bottom:40px; font-size:17px;">Melde dich an, um fortzufahren.</p>
+    <div style="width:80px; height:80px; background:var(--text-main); border-radius:24px; margin:0 auto 20px auto; display:flex; align-items:center; justify-content:center; color:var(--bg-body); font-size:40px;">✒️</div>
+    <h1 style="font-size:32px; font-weight:800; margin-bottom:10px;">Journal</h1>
+    <p style="color:var(--text-secondary); margin-bottom:40px;">Deine Gedanken. Sicher und schön.</p>
     
-    <div class="card" style="text-align:left;">
-      <label>E-Mail Adresse</label>
-      <input type="email" id="authEmail" placeholder="name@icloud.com">
-      
+    <div class="card" style="padding:24px;">
+      <label>E-Mail</label>
+      <input type="email" id="authEmail" placeholder="hallo@beispiel.de" style="margin-bottom:16px;">
       <label>Passwort</label>
       <input type="password" id="authPassword" placeholder="••••••••">
       
-      <div style="margin-top:30px; display:flex; flex-direction:column; gap:15px;">
-        <button id="loginBtn" class="btn-hero">Anmelden</button>
-        <button id="signupBtn" class="btn-text" style="width:100%; text-align:center;">Account erstellen</button>
+      <div style="margin-top:24px; display:flex; flex-direction:column; gap:12px;">
+        <button id="loginBtn" class="btn-primary">Anmelden</button>
+        <button id="signupBtn" class="txt-btn" style="color:var(--text-secondary); margin-top:10px;">Account erstellen</button>
       </div>
     </div>
   </div>
@@ -468,97 +387,109 @@
     
     <div class="sticky-header-wrapper">
         <div class="topbar">
-            <span class="app-title">Journal</span>
-            <div style="display:flex; gap:10px;">
-              <button id="themeToggle" class="header-btn icon-only" title="Design umschalten">◑</button>
-              <button id="logoutBtn" class="header-btn">Logout</button>
+            <span class="app-title">Mein Journal</span>
+            <div style="display:flex; gap:12px;">
+                <button id="themeToggle" class="theme-btn">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                <button id="logoutBtn" class="txt-btn" style="color:var(--danger);">Logout</button>
             </div>
         </div>
     </div>
 
     <div class="container">
       
-      <div id="reminderBox" class="reminder-box">
-          <div class="reminder-text">Backup fällig!</div>
-          <button id="remindExportBtn" class="reminder-btn">Excel Export</button>
+      <div id="reminderBox" class="card" style="background:rgba(255, 159, 10, 0.1); border:1px solid rgba(255, 159, 10, 0.2); padding:16px; display:none; flex-direction:row; align-items:center; justify-content:space-between;">
+          <div style="color:#FF9F0A; font-weight:700; font-size:14px;">Backup empfohlen</div>
+          <button id="remindExportBtn" style="background:#FF9F0A; color:white; border:none; padding:6px 12px; border-radius:20px; font-weight:600; font-size:12px; cursor:pointer;">Exportieren</button>
       </div>
 
+      <div class="section-title">Neuer Eintrag</div>
       <div class="card" id="editorCard">
-        <div style="text-align:center;">
-             <input type="date" id="entryDate">
+        
+        <div style="padding:20px 20px 0 20px;">
+            <div class="date-wrapper">
+                <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span id="dateDisplay" class="date-display">Heute</span>
+                <input type="date" id="entryDate">
+            </div>
         </div>
 
-        <label>Das Beste des Tages</label>
-        <textarea id="bestOfDay" placeholder="Was war heute besonders schön?"></textarea>
+        <div class="input-group">
+            <label>Das Highlight</label>
+            <textarea id="bestOfDay" placeholder="Was hat dich heute bewegt?" rows="3"></textarea>
+        </div>
 
-        <div style="display:flex; gap:20px;">
+        <div class="input-group" style="padding-top:0; display:flex; gap:12px;">
             <div style="flex:1;">
                 <label>Lotta</label>
-                <textarea id="lotta" placeholder="..."></textarea>
+                <textarea id="lotta" rows="2"></textarea>
             </div>
             <div style="flex:1;">
                 <label>Thea</label>
-                <textarea id="thea" placeholder="..."></textarea>
+                <textarea id="thea" rows="2"></textarea>
             </div>
         </div>
 
-        <div class="mood-section">
-          <div class="mood-buttons">
-            <button class="mood-btn" data-mood="sad">😞</button>
-            <button class="mood-btn" data-mood="neutral">😐</button>
-            <button class="mood-btn" data-mood="happy">🙂</button>
-          </div>
+        <div class="mood-container">
+            <div class="mood-grid">
+                <button class="mood-btn" data-mood="sad">😞</button>
+                <button class="mood-btn" data-mood="neutral">😐</button>
+                <button class="mood-btn" data-mood="happy">🙂</button>
+            </div>
         </div>
-
-        <div class="save-btn-wrapper">
-            <button id="saveBtn" class="btn-hero">
+        
+        <div style="padding: 0 20px 24px 20px;">
+            <button id="saveBtn" class="btn-primary">
                 <span>Speichern</span>
             </button>
-            <button id="cancelEditBtn" class="btn-text hidden" style="width:100%; margin-top:15px; text-align:center;">
-                Abbrechen
-            </button>
+             <button id="cancelEditBtn" class="txt-btn hidden" style="width:100%; text-align:center; margin-top:16px; color:var(--text-secondary);">Abbrechen</button>
         </div>
+      </div>
 
-        <div class="toolbar" style="position: relative;">
-          <div class="toolbar-group">
-              <button id="exportTriggerBtn" class="btn-text">
-                 Exportieren ▾
-              </button>
-              <label class="btn-text">
-                 Importieren
-                 <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
-              </label>
-          </div>
+      <div class="section-title">Werkzeuge</div>
+      <div class="action-grid" style="position:relative;">
           
-          <button id="deleteAllBtn" class="btn-text danger">
-             Alle Löschen
+          <button id="exportTriggerBtn" class="btn-tool">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              Export
+          </button>
+          
+          <label class="btn-tool" style="margin:0;">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Import
+              <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
+          </label>
+
+          <button id="deleteAllBtn" class="btn-tool danger" style="grid-column: span 2;">
+              <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Alle Einträge löschen
           </button>
 
           <div id="exportPopover" class="export-popover">
-            <button id="exportCsvBtn">Als CSV</button>
-            <button id="exportXlsxBtn">Als Excel</button>
+            <button id="exportCsvBtn" class="popover-item">📄 CSV Datei</button>
+            <button id="exportXlsxBtn" class="popover-item">📊 Excel Datei</button>
           </div>
-        </div>
       </div>
 
-      <div class="search-wrapper">
-         <div class="date-filters hidden" id="dateFilters"> <input type="date" id="filterDateFrom">
-             <input type="date" id="filterDateTo">
-         </div>
-         <input type="text" id="searchInput" placeholder="In Einträgen suchen...">
-         <div style="display:flex; gap:10px; margin-top:10px;">
-             <input type="date" id="filterDateFrom" style="font-size:13px; padding:10px;">
-             <input type="date" id="filterDateTo" style="font-size:13px; padding:10px;">
-         </div>
+      <div class="section-title">Einträge</div>
+      <div class="search-bar">
+          <svg class="icon icon-sm" style="color:var(--text-secondary); margin-right:4px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="searchInput" class="search-input" placeholder="Suchen...">
+      </div>
+      
+      <div style="display:none;">
+          <input type="date" id="filterDateFrom">
+          <input type="date" id="filterDateTo">
       </div>
 
-      <div id="entriesContainer" class="entries-grid">
+      <div id="entriesContainer">
         </div>
     
     </div> </div> <script>
-    console.log('🚀 App startet im Premium Apple Design...');
+    console.log('🚀 Journal 2025 Edition loaded.');
     
-    // --- KONFIGURATION ---
+    // --- SUPABASE SETUP ---
     const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdhb3NiaXljY3dhd3V6ZmphZ3ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMDYzODAsImV4cCI6MjA3ODY4MjM4MH0.s30-UTEY1xR3DP521ewc03aMRsG3WLH_I5VTi4_xu-4';
     
@@ -587,6 +518,7 @@
       deleteAllBtn: $('deleteAllBtn'),
       cancelEditBtn: $('cancelEditBtn'),
       reminderBox: $('reminderBox'),
+      dateDisplay: $('dateDisplay'),
       fields: {
         date: $('entryDate'),
         best: $('bestOfDay'),
@@ -606,16 +538,25 @@
 
     function initTheme() {
       const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'light') {
-        document.body.classList.add('light-mode');
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
       }
     }
     elements.themeToggle.addEventListener('click', () => {
-      document.body.classList.toggle('light-mode');
-      const isLight = document.body.classList.contains('light-mode');
-      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
     });
 
+    // Date Picker UI Logic
+    elements.fields.date.addEventListener('change', (e) => {
+        const d = new Date(e.target.value);
+        if(!isNaN(d.getTime())){
+            elements.dateDisplay.textContent = d.toLocaleDateString('de-DE', { day:'numeric', month:'long', year:'numeric' });
+        }
+    });
+
+    // Auto Resize Textarea
     function autoResize(textarea) {
       textarea.style.height = 'auto'; 
       textarea.style.height = textarea.scrollHeight + 'px'; 
@@ -623,10 +564,10 @@
     ['best', 'lotta', 'thea'].forEach(id => {
       const el = elements.fields[id];
       el.addEventListener('input', () => autoResize(el));
-      setTimeout(() => autoResize(el), 10);
+      setTimeout(() => autoResize(el), 50);
     });
 
-    // --- AUTHENTIFIZIERUNG ---
+    // --- AUTH ---
     db.auth.getSession().then(({ data: { session } }) => {
       if (session) showApp(session.user);
       else showAuth();
@@ -662,37 +603,30 @@
     });
 
     $('signupBtn').addEventListener('click', async () => {
-      showToast('Registriere...');
+      showToast('Account wird erstellt...');
       const { error } = await db.auth.signUp({
         email: elements.email.value.trim(),
         password: elements.password.value
       });
-      if (error) showToast('Fehler: ' + error.message, true);
-      else showToast('Account erstellt! Bitte einloggen.');
+      if (error) showToast(error ? error.message : 'Check deine Mails!', !!error);
     });
 
     $('logoutBtn').addEventListener('click', () => db.auth.signOut());
 
+    // --- REMINDER ---
     function checkMonthlyReminder() {
-        const lastDismissed = localStorage.getItem('last_dismissed_export_month');
-        const currentMonth = new Date().toISOString().slice(0, 7); 
-        if (lastDismissed !== currentMonth) {
-            elements.reminderBox.style.display = 'flex';
-        } else {
-            elements.reminderBox.style.display = 'none';
-        }
+        const last = localStorage.getItem('last_dismissed_export_month');
+        const curr = new Date().toISOString().slice(0, 7); 
+        if (last !== curr) elements.reminderBox.style.display = 'flex';
+        else elements.reminderBox.style.display = 'none';
     }
-
+    $('remindExportBtn').addEventListener('click', () => { exportData('xlsx'); });
     function dismissReminder() {
-        const currentMonth = new Date().toISOString().slice(0, 7);
-        localStorage.setItem('last_dismissed_export_month', currentMonth);
+        localStorage.setItem('last_dismissed_export_month', new Date().toISOString().slice(0, 7));
         elements.reminderBox.style.display = 'none';
     }
 
-    $('remindExportBtn').addEventListener('click', () => {
-        exportData('xlsx');
-    });
-
+    // --- EDITOR LOGIC ---
     document.querySelectorAll('.mood-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
@@ -705,23 +639,29 @@
         currentEditingId = null;
         elements.saveBtn.innerHTML = "<span>Speichern</span>";
         elements.cancelEditBtn.classList.add('hidden');
-        elements.fields.date.value = new Date().toISOString().split('T')[0];
+        
+        const today = new Date().toISOString().split('T')[0];
+        elements.fields.date.value = today;
+        elements.dateDisplay.textContent = "Heute";
+        
         elements.fields.best.value = '';
         elements.fields.lotta.value = '';
         elements.fields.thea.value = '';
         selectedMood = null;
         document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
-        ['best', 'lotta', 'thea'].forEach(id => {
-            elements.fields[id].style.height = 'auto'; 
-        });
+        ['best', 'lotta', 'thea'].forEach(id => { elements.fields[id].style.height = 'auto'; });
     }
 
     function startEdit(entry) {
         currentEditingId = entry.id;
-        elements.saveBtn.innerHTML = "<span>Änderungen speichern</span>";
+        elements.saveBtn.innerHTML = "<span>Update speichern</span>";
         elements.cancelEditBtn.classList.remove('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        
         elements.fields.date.value = entry.entry_date;
+        const d = new Date(entry.entry_date);
+        elements.dateDisplay.textContent = d.toLocaleDateString('de-DE', { day:'numeric', month:'long', year:'numeric' });
+
         elements.fields.best.value = entry.best_of_day || '';
         elements.fields.lotta.value = entry.lotta || '';
         elements.fields.thea.value = entry.thea || '';
@@ -732,16 +672,15 @@
         });
         ['best', 'lotta', 'thea'].forEach(id => autoResize(elements.fields[id]));
     }
-
     elements.cancelEditBtn.addEventListener('click', resetEditor);
 
+    // --- SAVE ---
     elements.saveBtn.addEventListener('click', async () => {
-      if (!selectedMood) return showToast('Wie war deine Stimmung? 😐', true);
+      if (!selectedMood) return showToast('Wie war die Stimmung? 🤔', true);
       if (!currentUser) return showToast('Nicht eingeloggt.', true);
 
       elements.saveBtn.disabled = true;
-      const originalHTML = elements.saveBtn.innerHTML;
-      elements.saveBtn.innerHTML = "<span>Speichert...</span>";
+      elements.saveBtn.innerHTML = "<span>Moment...</span>";
 
       const entryData = {
         user_id: currentUser.id,
@@ -753,93 +692,74 @@
       };
 
       try {
-          let error;
-          if (currentEditingId) {
-              const res = await db.from('entries').update(entryData).eq('id', currentEditingId);
-              error = res.error;
-          } else {
-              const res = await db.from('entries').insert(entryData);
-              error = res.error;
-          }
+          const { error } = currentEditingId 
+            ? await db.from('entries').update(entryData).eq('id', currentEditingId)
+            : await db.from('entries').insert(entryData);
           
           if (error) throw error;
-
-          showToast(currentEditingId ? 'Aktualisiert' : 'Gespeichert');
+          showToast(currentEditingId ? 'Eintrag aktualisiert ✨' : 'Gespeichert ✅');
           resetEditor();
           await loadEntries();
       } catch(err) {
           showToast('Fehler: ' + err.message, true);
       } finally {
           elements.saveBtn.disabled = false;
-          elements.saveBtn.innerHTML = originalHTML;
+          elements.saveBtn.innerHTML = "<span>Speichern</span>";
       }
     });
 
+    // --- LOAD & RENDER ---
     async function loadEntries() {
-      elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:40px; font-size:14px;">Lade Einträge...</div>';
-      const { data, error } = await db
-        .from('entries')
-        .select('*')
-        .order('entry_date', { ascending: false })
-        .limit(2000);
+      elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade...</div>';
+      const { data, error } = await db.from('entries').select('*').order('entry_date', { ascending: false }).limit(2000);
 
       if (error) return showToast('Ladefehler: ' + error.message, true);
-
       allEntriesCache = data || [];
-      fuse = new Fuse(allEntriesCache, {
-        includeScore: true,
-        threshold: 0.4, 
-        keys: ['best_of_day', 'lotta', 'thea', 'entry_date']
-      });
+      fuse = new Fuse(allEntriesCache, { includeScore: true, threshold: 0.4, keys: ['best_of_day', 'lotta', 'thea', 'entry_date'] });
       renderFilteredEntries();
     }
 
     function renderFilteredEntries() {
-        const searchTerm = elements.searchInput.value.toLowerCase().trim();
-        const dateFrom = elements.filterDateFrom.value;
-        const dateTo = elements.filterDateTo.value;
-        let filtered = allEntriesCache.filter(entry => {
-            if (dateFrom && entry.entry_date < dateFrom) return false;
-            if (dateTo && entry.entry_date > dateTo) return false;
-            return true;
-        });
-        if (searchTerm.length > 0) {
-            const fuseResult = fuse.search(searchTerm).map(r => r.item);
-            filtered = filtered.filter(item => fuseResult.includes(item));
+        const term = elements.searchInput.value.toLowerCase().trim();
+        let filtered = allEntriesCache;
+        if (term.length > 0) {
+            filtered = fuse.search(term).map(r => r.item);
         }
         renderDOM(filtered);
     }
-
     elements.searchInput.addEventListener('input', renderFilteredEntries);
-    elements.filterDateFrom.addEventListener('change', renderFilteredEntries);
-    elements.filterDateTo.addEventListener('change', renderFilteredEntries);
 
     function renderDOM(entries) {
       if (!entries.length) {
-        elements.entriesContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:60px 0;">Keine Einträge gefunden.</div>';
+        elements.entriesContainer.innerHTML = `
+            <div style="text-align:center; padding:60px 20px; color:var(--text-secondary);">
+                <div style="font-size:40px; margin-bottom:10px; opacity:0.3;">📭</div>
+                Keine Einträge gefunden.
+            </div>`;
         return;
       }
       elements.entriesContainer.innerHTML = entries.map(entry => {
         const moodMap = { 'happy': '🙂', 'neutral': '😐', 'sad': '😞' };
-        const dateObj = new Date(entry.entry_date);
-        
-        const weekday = dateObj.toLocaleDateString('de-DE', { weekday: 'short' }).toUpperCase();
-        const fullDate = dateObj.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+        const d = new Date(entry.entry_date);
+        const dateStr = d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
 
         return `
-          <div class="entry-card">
+          <div class="card entry-card">
             <div class="entry-header">
-              <span class="entry-date">${weekday}, ${fullDate}</span>
-              <span class="entry-mood">${moodMap[entry.mood] || ''}</span>
+              <span class="entry-date">${dateStr}</span>
+              <span style="font-size:20px;">${moodMap[entry.mood] || ''}</span>
             </div>
             <div class="entry-content">
-              ${entry.best_of_day ? `<div class="entry-block"><div class="entry-text">${escapeHtml(entry.best_of_day)}</div></div>` : ''}
-              ${entry.lotta ? `<div class="entry-block"><span class="label-text">Lotta</span><div class="entry-text">${escapeHtml(entry.lotta)}</div></div>` : ''}
-              ${entry.thea ? `<div class="entry-block"><span class="label-text">Thea</span><div class="entry-text">${escapeHtml(entry.thea)}</div></div>` : ''}
+              ${entry.best_of_day ? `<div style="margin-bottom:20px;"><div class="entry-text">${escapeHtml(entry.best_of_day)}</div></div>` : ''}
+              
+              <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                  ${entry.lotta ? `<div style="flex:1; min-width:120px;"><div class="entry-label">Lotta</div><div class="entry-text" style="font-size:15px;">${escapeHtml(entry.lotta)}</div></div>` : ''}
+                  ${entry.thea ? `<div style="flex:1; min-width:120px;"><div class="entry-label">Thea</div><div class="entry-text" style="font-size:15px;">${escapeHtml(entry.thea)}</div></div>` : ''}
+              </div>
             </div>
             <div class="entry-footer">
-                <span class="action-link edit-link" onclick="window.editEntry('${entry.id}')">Bearbeiten</span>
-                <span class="action-link delete-link" onclick="window.deleteEntry('${entry.id}')">Löschen</span>
+                <button class="txt-btn" style="color:var(--accent);" onclick="window.editEntry('${entry.id}')">Bearbeiten</button>
+                <button class="txt-btn" style="color:var(--danger);" onclick="window.deleteEntry('${entry.id}')">Löschen</button>
             </div>
           </div>
         `;
@@ -847,12 +767,12 @@
     }
 
     window.editEntry = (id) => {
-        const entry = allEntriesCache.find(e => e.id === id);
-        if (entry) startEdit(entry);
+        const e = allEntriesCache.find(x => x.id === id);
+        if (e) startEdit(e);
     };
 
     window.deleteEntry = async (id) => {
-      if (!window.confirm('Eintrag wirklich löschen?')) return; 
+      if (!confirm('Eintrag wirklich löschen?')) return; 
       const { error } = await db.from('entries').delete().eq('id', id);
       if (error) showToast(error.message, true);
       else {
@@ -863,152 +783,121 @@
       }
     };
 
+    // --- TOOLS ---
     elements.deleteAllBtn.addEventListener('click', async () => {
-        if (!confirm('Vorsicht! Willst du wirklich ALLE deine Einträge unwiderruflich löschen?')) return;
-        showToast('Lösche alle Einträge...');
+        if (!confirm('🚨 Wirklich ALLES unwiderruflich löschen?')) return;
         const { error } = await db.from('entries').delete().eq('user_id', currentUser.id);
-        if (error) showToast('Fehler: ' + error.message, true);
-        else { showToast('Alle Einträge gelöscht.'); loadEntries(); }
+        if (error) showToast(error.message, true);
+        else { showToast('Bereinigt.'); loadEntries(); }
     });
 
     const popover = elements.exportPopover;
     const trigger = $('exportTriggerBtn');
     trigger.addEventListener('click', (e) => {
       e.stopPropagation();
-      const isVisible = popover.style.display === 'flex';
-      popover.style.display = isVisible ? 'none' : 'flex';
+      const show = popover.style.display === 'flex';
+      popover.style.display = show ? 'none' : 'flex';
     });
     document.addEventListener('click', (e) => {
       if (!trigger.contains(e.target) && !popover.contains(e.target)) popover.style.display = 'none';
     });
 
-    $('exportCsvBtn').addEventListener('click', () => { popover.style.display = 'none'; exportData('csv'); });
-    $('exportXlsxBtn').addEventListener('click', () => { popover.style.display = 'none'; exportData('xlsx'); });
+    $('exportCsvBtn').addEventListener('click', () => { popover.style.display='none'; exportData('csv'); });
+    $('exportXlsxBtn').addEventListener('click', () => { popover.style.display='none'; exportData('xlsx'); });
 
     async function exportData(type) {
-      showToast(`Exportiere ${type.toUpperCase()}...`);
-      const data = allEntriesCache; 
-      const moodScore = { 'sad': 1, 'neutral': 2, 'happy': 3 };
-      const processedData = data.map(row => ({
-          entry_date: row.entry_date,
-          best_of_day: row.best_of_day,
-          lotta: row.lotta,
-          thea: row.thea,
-          mood: moodScore[row.mood] || row.mood
+      showToast('Exportiere...');
+      const data = allEntriesCache.map(r => ({
+          entry_date: r.entry_date,
+          best_of_day: r.best_of_day,
+          lotta: r.lotta,
+          thea: r.thea,
+          mood: r.mood
       }));
-      const filename = `Journal_Backup_${new Date().toISOString().slice(0, 10)}.${type}`;
+      const fname = `Journal_Export_${new Date().toISOString().slice(0,10)}.${type}`;
+      
       if (type === 'csv') {
         const headers = ['entry_date', 'best_of_day', 'lotta', 'thea', 'mood'];
-        const csvContent = [headers.join(','), ...processedData.map(row => headers.map(h => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(','))].join('\n');
-        downloadBlob(csvContent, filename, 'text/csv;charset=utf-8;');
+        const csv = [headers.join(','), ...data.map(row => headers.map(h => `"${String(row[h]||'').replace(/"/g,'""')}"`).join(','))].join('\n');
+        downloadBlob(csv, fname, 'text/csv;charset=utf-8;');
       } else {
-        const ws = XLSX.utils.json_to_sheet(processedData);
+        const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Journal");
-        XLSX.writeFile(wb, filename);
+        XLSX.writeFile(wb, fname);
       }
-      showToast('Export erfolgreich!');
-      dismissReminder(); 
+      showToast('Erledigt! 📂');
+      dismissReminder();
     }
 
     function normalizeDate(val) {
         if (!val) return null;
-        const numericVal = Number(val);
-        if (typeof XLSX !== 'undefined' && !isNaN(numericVal) && numericVal > 20000 && numericVal < 70000) { 
-             try {
-                const date = XLSX.utils.numberToDate(numericVal); 
-                date.setHours(12);
-                return date.toISOString().split('T')[0];
-             } catch(e) {}
+        const n = Number(val);
+        if (typeof XLSX!=='undefined' && !isNaN(n) && n>20000 && n<70000) { 
+             try { return XLSX.utils.numberToDate(n).toISOString().split('T')[0]; } catch(e){}
         }
-        const str = String(val).trim();
-        if (str.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
-            const parts = str.split('.');
-            return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+        const s = String(val).trim();
+        if (s.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) {
+            const p = s.split('.');
+            return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
         }
-        try {
-            const date = new Date(str);
-            if (!isNaN(date.getTime())) return date.toISOString().split('T')[0];
-        } catch(e) {}
-        return null;
-    }
-    
-    function parseCSV(text) {
-      const lines = text.split('\n').filter(l => l.trim());
-      if (lines.length < 2) return [];
-      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
-      return lines.slice(1).map(line => {
-        const obj = {};
-        let insideQuote = false, currentField = '', colIndex = 0;
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i], nextChar = line[i + 1];
-          if (char === '"') {
-            if (insideQuote && nextChar === '"') { currentField += '"'; i++; } 
-            else insideQuote = !insideQuote;
-          } else if (char === ',' && !insideQuote) {
-            if (colIndex < headers.length) obj[headers[colIndex]] = currentField;
-            currentField = ''; colIndex++;
-          } else currentField += char;
-        }
-        if (colIndex < headers.length) obj[headers[colIndex]] = currentField;
-        return obj;
-      }).filter(obj => Object.keys(obj).length > 0);
+        const d = new Date(s);
+        return !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : null;
     }
     
     $('importFile').addEventListener('change', async (e) => {
-      if (!currentUser) return showToast('Bitte anmelden.', true);
-      const file = e.target.files[0];
-      if (!file) return;
-      showToast('Importiere Daten...');
-      try {
-        let rows;
-        if (file.name.endsWith('.csv')) { 
-            rows = parseCSV(await file.text()); 
-        } else { 
-            const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' }); 
-            rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false }); 
-        }
-        const entries = rows.map(r => {
-            let mood = String(r.mood || '').toLowerCase().trim();
-            const moodMap = { '1': 'sad', '2': 'neutral', '3': 'happy' };
-            if (moodMap[mood]) mood = moodMap[mood];
-            if (!['sad','neutral','happy'].includes(mood)) mood = 'neutral';
-            
-            const normDate = normalizeDate(r.entry_date);
-            const bestText = String(r.best_of_day || '').trim() || null;
-            const lottaText = String(r.lotta || '').trim() || null;
-            const theaText = String(r.thea || '').trim() || null;
-            
-            return { 
-                user_id: currentUser.id, 
-                entry_date: normDate, 
-                best_of_day: bestText, 
-                lotta: lottaText, 
-                thea: theaText, 
-                mood: mood, 
-                _valid: !!(normDate && (bestText || lottaText || theaText)) 
-            };
-        }).filter(e => e._valid).map(e => { delete e._valid; return e; }); 
+        if (!currentUser) return showToast('Login erforderlich', true);
+        const f = e.target.files[0];
+        if (!f) return;
+        showToast('Verarbeite...');
+        try {
+            let rows;
+            if (f.name.endsWith('.csv')) {
+                 const text = await f.text();
+                 // Simple CSV parser
+                 const lines = text.split('\n').filter(l=>l.trim());
+                 const h = lines[0].split(',').map(x=>x.trim().replace(/^"|"$/g,'').toLowerCase());
+                 rows = lines.slice(1).map(l=>{
+                     const o={}; let inQ=false, val='', c=0;
+                     for(let i=0;i<l.length;i++){
+                         if(l[i]==='"'){ if(inQ && l[i+1]==='"'){val+='"';i++}else inQ=!inQ; }
+                         else if(l[i]===',' && !inQ){ if(c<h.length)o[h[c]]=val; val=''; c++; }
+                         else val+=l[i];
+                     }
+                     if(c<h.length)o[h[c]]=val;
+                     return o;
+                 });
+            } else {
+                const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+                rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false });
+            }
+            const clean = rows.map(r => {
+                let m = String(r.mood||'').toLowerCase().trim();
+                if(['1','sad'].includes(m)) m='sad';
+                else if(['3','happy'].includes(m)) m='happy';
+                else m='neutral';
+                
+                const d = normalizeDate(r.entry_date);
+                const b = String(r.best_of_day||'').trim() || null;
+                const l = String(r.lotta||'').trim() || null;
+                const t = String(r.thea||'').trim() || null;
+                return { user_id: currentUser.id, entry_date: d, best_of_day: b, lotta: l, thea: t, mood: m, _v: !!(d&&(b||l||t)) };
+            }).filter(x => x._v).map(x => { delete x._v; return x; });
 
-        if (entries.length === 0) return showToast('Keine gültigen Daten.', true);
-        const { error } = await db.from('entries').insert(entries);
-        if (error) showToast('Fehler: ' + error.message, true);
-        else { showToast(`${entries.length} Einträge importiert.`); loadEntries(); }
-      } catch (err) { showToast('Import Fehler: ' + err.message, true); }
-      $('importFile').value = ''; 
+            if (!clean.length) return showToast('Keine Daten erkannt', true);
+            const { error } = await db.from('entries').insert(clean);
+            if (error) throw error;
+            showToast(`${clean.length} importiert!`);
+            loadEntries();
+        } catch(err) { showToast('Fehler: '+err.message, true); }
+        $('importFile').value = '';
     });
 
-    function escapeHtml(text) {
-      if (typeof text !== 'string') return '';
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    function downloadBlob(content, filename, mimeType) {
-      const blob = new Blob([content], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = filename; a.click();
-      URL.revokeObjectURL(url);
+    function escapeHtml(t) { return (t||'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+    function downloadBlob(c, n, m) {
+      const u = URL.createObjectURL(new Blob([c], {type:m}));
+      const a = document.createElement('a'); a.href=u; a.download=n; a.click();
+      URL.revokeObjectURL(u);
     }
 
     initTheme();
