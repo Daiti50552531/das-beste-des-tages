@@ -301,7 +301,7 @@
         padding: 0;
         border: 1px solid var(--border);
         animation: fadeInUp 0.4s ease forwards;
-        opacity: 0; /* Starts hidden for animation */
+        opacity: 0; 
     }
     
     .entry-header {
@@ -508,7 +508,7 @@
   </div> 
 
 <script>
-    console.log('🚀 Das Beste des Tages loaded.');
+    console.log('🚀 Das Beste des Tages loaded (Search Optimized).');
     
     // --- SUPABASE SETUP ---
     const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
@@ -566,7 +566,6 @@
       const isDark = document.body.classList.contains('dark-mode');
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
       
-      // Update meta tag for PWA status bar seamlessly
       const metaTheme = document.querySelector('meta[name="theme-color"]');
       if (metaTheme) metaTheme.setAttribute("content", isDark ? "#000000" : "#F2F2F7");
     });
@@ -742,7 +741,20 @@
 
       if (error) return showToast('Ladefehler: ' + error.message, true);
       allEntriesCache = data || [];
-      fuse = new Fuse(allEntriesCache, { includeScore: true, threshold: 0.4, keys: ['best_of_day', 'lotta', 'thea', 'entry_date'] });
+      
+      // OPTIMIERTE SUCHLOGIK
+      fuse = new Fuse(allEntriesCache, { 
+          includeScore: true, 
+          threshold: 0.3,          // Präzisere Suche
+          ignoreLocation: true,    // WICHTIG: Erlaubt Treffer am Ende langer Texte
+          useExtendedSearch: true, // Erlaubt exakte Suche mit "Wort"
+          keys: [
+              { name: 'best_of_day', weight: 2 },  // Hauptfeld wird am stärksten gewichtet
+              { name: 'lotta', weight: 1.5 },
+              { name: 'thea', weight: 1.5 },
+              { name: 'entry_date', weight: 0.5 }
+          ]
+      });
       renderFilteredEntries();
     }
 
@@ -771,14 +783,12 @@
         return;
       }
       
-      // Calculate delay multiplier for fade-in stagger effect
       let delay = 0;
       elements.entriesContainer.innerHTML = entries.map((entry, index) => {
         const moodMap = { 'happy': '🙂', 'neutral': '😐', 'sad': '😞' };
         const d = new Date(entry.entry_date);
         const dateStr = d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
         
-        // Staggered animation limit (only animate first 10 nicely to avoid lag)
         const animationDelay = index < 10 ? `animation-delay: ${index * 0.05}s;` : 'animation-delay: 0s; opacity: 1;';
 
         return `
@@ -823,10 +833,7 @@
 
     // --- TOOLS ---
     elements.deleteAllBtn.addEventListener('click', async () => {
-        // Erster Sicherheits-Check
         if (!confirm('🚨 Wirklich ALLES unwiderruflich löschen?')) return;
-        
-        // Zweiter Sicherheits-Check
         if (!confirm('⚠️ BIST DU DIR WIRKLICH SICHER? Dieser Schritt kann NICHT rückgängig gemacht werden! Hast du ein Backup gemacht?')) return;
         
         const { error } = await db.from('entries').delete().eq('user_id', currentUser.id);
