@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Journal 2025</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  
+  <title>Das Beste des Tages</title>
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -32,7 +37,7 @@
       --border: rgba(0,0,0,0.08);
       --glass: rgba(255, 255, 255, 0.85);
       
-      --radius-l: 24px;  /* Modern, rounder look */
+      --radius-l: 24px;  
       --radius-m: 16px;
       --radius-s: 12px;
       
@@ -64,12 +69,14 @@
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
+    html { scroll-behavior: smooth; }
+    
     body {
       background-color: var(--bg-body);
       color: var(--text-main);
       margin: 0;
       padding-top: 80px;
-      padding-bottom: 120px; /* Space for bottom area */
+      padding-bottom: 120px;
       min-height: 100vh;
       font-family: var(--font-stack);
       -webkit-font-smoothing: antialiased;
@@ -168,9 +175,7 @@
     }
 
     /* --- INPUTS --- */
-    .input-group {
-        padding: 20px;
-    }
+    .input-group { padding: 20px; }
     label {
         font-size: 13px;
         font-weight: 600;
@@ -189,7 +194,7 @@
         font-size: 17px;
         line-height: 1.5;
         resize: none;
-        transition: box-shadow 0.2s;
+        transition: box-shadow 0.2s, background 0.2s;
     }
     textarea:focus, input:focus {
         outline: none;
@@ -197,10 +202,8 @@
         background: var(--bg-card);
     }
     
-    /* --- MOOD SELECTOR (Segmented Style) --- */
-    .mood-container {
-        padding: 0 20px 20px 20px;
-    }
+    /* --- MOOD SELECTOR --- */
+    .mood-container { padding: 0 20px 20px 20px; }
     .mood-grid {
         display: flex;
         background: var(--bg-input);
@@ -228,14 +231,13 @@
         transform: scale(1.05);
     }
 
-    /* --- ACTION GRID (The "Bento" Tools) --- */
+    /* --- ACTION GRID (Bento) --- */
     .action-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
         margin-top: 12px;
     }
-    .action-grid.full { grid-template-columns: 1fr; }
     
     .btn-tool {
         background: var(--bg-button-secondary);
@@ -257,9 +259,9 @@
     .btn-tool.danger { background: rgba(255, 59, 48, 0.1); color: var(--danger); }
     .btn-tool.danger:active { background: rgba(255, 59, 48, 0.2); }
     
-    /* --- MAIN BUTTON --- */
+    /* --- MAIN BUTTONS --- */
     .btn-primary {
-        background: var(--text-main); /* Black in Light, White in Dark */
+        background: var(--text-main); 
         color: var(--bg-body);
         width: 100%;
         padding: 18px;
@@ -273,12 +275,35 @@
         display: flex; align-items: center; justify-content: center; gap: 8px;
     }
     .btn-primary:active { transform: scale(0.96); }
+    
+    .btn-secondary {
+        background: var(--bg-button-secondary);
+        color: var(--text-main);
+        width: 100%;
+        padding: 16px;
+        border-radius: var(--radius-l);
+        border: none;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+        margin-top: 12px;
+    }
+    .btn-secondary:active { transform: scale(0.98); }
 
-    /* --- ENTRIES --- */
+    /* --- ENTRIES & ANIMATIONS --- */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
     .entry-card {
         padding: 0;
         border: 1px solid var(--border);
+        animation: fadeInUp 0.4s ease forwards;
+        opacity: 0; /* Starts hidden for animation */
     }
+    
     .entry-header {
         padding: 16px 20px;
         background: var(--bg-surface);
@@ -300,9 +325,7 @@
         border-top: 1px solid var(--border);
         background: rgba(128,128,128, 0.02);
     }
-    .txt-btn {
-        background: none; border: none; font-size: 14px; font-weight: 600; cursor: pointer;
-    }
+    .txt-btn { background: none; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
 
     /* --- POPOVER --- */
     .export-popover {
@@ -367,7 +390,7 @@
 
   <div id="authSection" class="auth-container">
     <div style="width:80px; height:80px; background:var(--text-main); border-radius:24px; margin:0 auto 20px auto; display:flex; align-items:center; justify-content:center; color:var(--bg-body); font-size:40px;">✒️</div>
-    <h1 style="font-size:32px; font-weight:800; margin-bottom:10px;">Journal</h1>
+    <h1 style="font-size:32px; font-weight:800; margin-bottom:10px;">Das Beste des Tages</h1>
     <p style="color:var(--text-secondary); margin-bottom:40px;">Deine Gedanken. Sicher und schön.</p>
     
     <div class="card" style="padding:24px;">
@@ -417,7 +440,7 @@
 
         <div class="input-group">
             <label>Das Beste des Tages</label>
-            <textarea id="bestOfDay" placeholder="Was was heute los?" rows="3"></textarea>
+            <textarea id="bestOfDay" placeholder="Was war heute los?" rows="3"></textarea>
         </div>
 
         <div class="input-group" style="padding-top:0; display:flex; gap:12px;">
@@ -443,7 +466,7 @@
             <button id="saveBtn" class="btn-primary">
                 <span>Speichern</span>
             </button>
-             <button id="cancelEditBtn" class="txt-btn hidden" style="width:100%; text-align:center; margin-top:16px; color:var(--text-secondary);">Abbrechen</button>
+            <button id="cancelEditBtn" class="btn-secondary hidden">Abbrechen</button>
         </div>
       </div>
 
@@ -477,17 +500,15 @@
           <svg class="icon icon-sm" style="color:var(--text-secondary); margin-right:4px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <input type="text" id="searchInput" class="search-input" placeholder="Suchen...">
       </div>
-      
-      <div style="display:none;">
-          <input type="date" id="filterDateFrom">
-          <input type="date" id="filterDateTo">
-      </div>
 
       <div id="entriesContainer">
         </div>
     
-    </div> </div> <script>
-    console.log('🚀 Journal 2025 Edition loaded.');
+    </div> 
+  </div> 
+
+<script>
+    console.log('🚀 Das Beste des Tages loaded.');
     
     // --- SUPABASE SETUP ---
     const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
@@ -501,6 +522,7 @@
     let allEntriesCache = [];
     let currentEditingId = null;
     let fuse;
+    let searchTimeout; // For debouncing
 
     const $ = id => document.getElementById(id);
     const elements = {
@@ -510,8 +532,6 @@
       password: $('authPassword'),
       entriesContainer: $('entriesContainer'),
       searchInput: $('searchInput'),
-      filterDateFrom: $('filterDateFrom'),
-      filterDateTo: $('filterDateTo'),
       themeToggle: $('themeToggle'),
       exportPopover: $('exportPopover'),
       saveBtn: $('saveBtn'),
@@ -538,14 +558,17 @@
 
     function initTheme() {
       const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-      }
+      if (savedTheme === 'dark') document.body.classList.add('dark-mode');
     }
+    
     elements.themeToggle.addEventListener('click', () => {
       document.body.classList.toggle('dark-mode');
       const isDark = document.body.classList.contains('dark-mode');
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      
+      // Update meta tag for PWA status bar seamlessly
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      if (metaTheme) metaTheme.setAttribute("content", isDark ? "#000000" : "#F2F2F7");
     });
 
     // Date Picker UI Logic
@@ -672,7 +695,11 @@
         });
         ['best', 'lotta', 'thea'].forEach(id => autoResize(elements.fields[id]));
     }
-    elements.cancelEditBtn.addEventListener('click', resetEditor);
+    
+    elements.cancelEditBtn.addEventListener('click', () => {
+        resetEditor();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 
     // --- SAVE ---
     elements.saveBtn.addEventListener('click', async () => {
@@ -680,7 +707,7 @@
       if (!currentUser) return showToast('Nicht eingeloggt.', true);
 
       elements.saveBtn.disabled = true;
-      elements.saveBtn.innerHTML = "<span>Moment...</span>";
+      elements.saveBtn.innerHTML = "<span>Wird gespeichert...</span>";
 
       const entryData = {
         user_id: currentUser.id,
@@ -710,7 +737,7 @@
 
     // --- LOAD & RENDER ---
     async function loadEntries() {
-      elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade...</div>';
+      elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade Einträge...</div>';
       const { data, error } = await db.from('entries').select('*').order('entry_date', { ascending: false }).limit(2000);
 
       if (error) return showToast('Ladefehler: ' + error.message, true);
@@ -727,7 +754,12 @@
         }
         renderDOM(filtered);
     }
-    elements.searchInput.addEventListener('input', renderFilteredEntries);
+    
+    // Performance: Debounce Filter Input
+    elements.searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(renderFilteredEntries, 300);
+    });
 
     function renderDOM(entries) {
       if (!entries.length) {
@@ -738,13 +770,19 @@
             </div>`;
         return;
       }
-      elements.entriesContainer.innerHTML = entries.map(entry => {
+      
+      // Calculate delay multiplier for fade-in stagger effect
+      let delay = 0;
+      elements.entriesContainer.innerHTML = entries.map((entry, index) => {
         const moodMap = { 'happy': '🙂', 'neutral': '😐', 'sad': '😞' };
         const d = new Date(entry.entry_date);
         const dateStr = d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+        
+        // Staggered animation limit (only animate first 10 nicely to avoid lag)
+        const animationDelay = index < 10 ? `animation-delay: ${index * 0.05}s;` : 'animation-delay: 0s; opacity: 1;';
 
         return `
-          <div class="card entry-card">
+          <div class="card entry-card" style="${animationDelay}">
             <div class="entry-header">
               <span class="entry-date">${dateStr}</span>
               <span style="font-size:20px;">${moodMap[entry.mood] || ''}</span>
@@ -785,7 +823,12 @@
 
     // --- TOOLS ---
     elements.deleteAllBtn.addEventListener('click', async () => {
+        // Erster Sicherheits-Check
         if (!confirm('🚨 Wirklich ALLES unwiderruflich löschen?')) return;
+        
+        // Zweiter Sicherheits-Check
+        if (!confirm('⚠️ BIST DU DIR WIRKLICH SICHER? Dieser Schritt kann NICHT rückgängig gemacht werden! Hast du ein Backup gemacht?')) return;
+        
         const { error } = await db.from('entries').delete().eq('user_id', currentUser.id);
         if (error) showToast(error.message, true);
         else { showToast('Bereinigt.'); loadEntries(); }
@@ -854,7 +897,6 @@
             let rows;
             if (f.name.endsWith('.csv')) {
                  const text = await f.text();
-                 // Simple CSV parser
                  const lines = text.split('\n').filter(l=>l.trim());
                  const h = lines[0].split(',').map(x=>x.trim().replace(/^"|"$/g,'').toLowerCase());
                  rows = lines.slice(1).map(l=>{
