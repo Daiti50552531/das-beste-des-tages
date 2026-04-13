@@ -388,9 +388,11 @@
         gap: 8px;
         align-items: flex-end;
         margin-bottom: 20px;
+        width: 100%;
     }
     .date-filter-field {
         flex: 1;
+        min-width: 0; /* verhindert Flex-Überlauf auf kleinen Screens */
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -407,12 +409,13 @@
         background: var(--bg-button-secondary) !important;
         border: none;
         border-radius: var(--radius-s) !important;
-        padding: 10px 12px !important;
-        font-size: 14px !important;
+        padding: 10px 10px !important;
+        font-size: 16px !important; /* mind. 16px: verhindert Auto-Zoom auf iOS */
         color: var(--text-main);
         width: 100%;
         box-shadow: none !important;
         font-family: var(--font-stack);
+        min-width: 0;
     }
     .date-filter-input:focus {
         box-shadow: 0 0 0 2px var(--accent) !important;
@@ -421,18 +424,21 @@
     .date-filter-input::-webkit-calendar-picker-indicator {
         opacity: 0.5;
         cursor: pointer;
+        flex-shrink: 0;
     }
     .clear-filter-btn {
         background: rgba(0,122,255,0.1);
         border: none;
         color: var(--accent);
-        font-size: 12px;
-        font-weight: 600;
+        font-size: 13px;
+        font-weight: 700;
         cursor: pointer;
-        padding: 10px 12px;
+        padding: 10px 10px;
         border-radius: var(--radius-s);
         white-space: nowrap;
+        flex-shrink: 0;
         transition: background 0.2s;
+        line-height: 1;
     }
     .clear-filter-btn:hover { background: rgba(0,122,255,0.18); }
     .clear-filter-btn:active { transform: scale(0.96); }
@@ -612,7 +618,7 @@
               <label>Bis</label>
               <input type="date" id="filterDateTo" class="date-filter-input">
           </div>
-          <button id="clearDateFilter" class="clear-filter-btn hidden">✕ Reset</button>
+          <button id="clearDateFilter" class="clear-filter-btn hidden">✕</button>
       </div>
       <div id="filterPills" class="filter-pills"></div>
       <div id="resultCount" class="result-count"></div>
