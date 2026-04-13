@@ -374,13 +374,116 @@
         border-radius: 12px;
         display: flex; align-items: center;
         padding: 0 12px;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
     .search-input {
         background: transparent !important;
         box-shadow: none !important;
         padding: 12px 8px !important;
     }
+
+    /* DATE FILTER */
+    .date-filter {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        margin-bottom: 20px;
+    }
+    .date-filter-field {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .date-filter-field label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 0;
+    }
+    .date-filter-input {
+        background: var(--bg-button-secondary) !important;
+        border: none;
+        border-radius: var(--radius-s) !important;
+        padding: 10px 12px !important;
+        font-size: 14px !important;
+        color: var(--text-main);
+        width: 100%;
+        box-shadow: none !important;
+        font-family: var(--font-stack);
+    }
+    .date-filter-input:focus {
+        box-shadow: 0 0 0 2px var(--accent) !important;
+        background: var(--bg-card) !important;
+    }
+    .date-filter-input::-webkit-calendar-picker-indicator {
+        opacity: 0.5;
+        cursor: pointer;
+    }
+    .clear-filter-btn {
+        background: rgba(0,122,255,0.1);
+        border: none;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 10px 12px;
+        border-radius: var(--radius-s);
+        white-space: nowrap;
+        transition: background 0.2s;
+    }
+    .clear-filter-btn:hover { background: rgba(0,122,255,0.18); }
+    .clear-filter-btn:active { transform: scale(0.96); }
+
+    /* FILTER PILLS */
+    .filter-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    .filter-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0,122,255,0.1);
+        color: var(--accent);
+        border-radius: 50px;
+        padding: 5px 8px 5px 14px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .filter-pill-remove {
+        background: rgba(0,122,255,0.2);
+        border: none;
+        color: var(--accent);
+        border-radius: 50%;
+        width: 18px; height: 18px;
+        font-size: 10px;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        line-height: 1;
+        transition: background 0.15s;
+    }
+    .filter-pill-remove:hover { background: rgba(0,122,255,0.35); }
+
+    /* RESULT COUNT */
+    .result-count {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        margin-bottom: 14px;
+        padding-left: 4px;
+        min-height: 18px;
+    }
+
+    /* MOOD BORDER ON ENTRY CARDS */
+    .entry-card { border-left-width: 4px !important; }
+
+    /* LOAD MORE BUTTON */
+    #loadMoreBtn { margin-bottom: 24px; }
 
   </style>
 </head>
@@ -500,6 +603,19 @@
           <svg class="icon icon-sm" style="color:var(--text-secondary); margin-right:4px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <input type="text" id="searchInput" class="search-input" placeholder="Suchen...">
       </div>
+      <div class="date-filter">
+          <div class="date-filter-field">
+              <label>Von</label>
+              <input type="date" id="filterDateFrom" class="date-filter-input">
+          </div>
+          <div class="date-filter-field">
+              <label>Bis</label>
+              <input type="date" id="filterDateTo" class="date-filter-input">
+          </div>
+          <button id="clearDateFilter" class="clear-filter-btn hidden">✕ Reset</button>
+      </div>
+      <div id="filterPills" class="filter-pills"></div>
+      <div id="resultCount" class="result-count"></div>
 
       <div id="entriesContainer">
         </div>
@@ -517,12 +633,30 @@
     const { createClient } = window.supabase;
     const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    const FUSE_OPTIONS = {
+        includeScore: true,
+        threshold: 0.3,
+        ignoreLocation: true,
+        useExtendedSearch: true,
+        keys: [
+            { name: 'best_of_day', weight: 2 },
+            { name: 'lotta', weight: 1.5 },
+            { name: 'thea', weight: 1.5 },
+            { name: 'entry_date', weight: 0.5 }
+        ]
+    };
+    const PAGE_SIZE = 20;
+    const CACHE_KEY_PREFIX = 'entries_cache_v1_';
+
     let currentUser = null;
     let selectedMood = null;
     let allEntriesCache = [];
     let currentEditingId = null;
     let fuse;
-    let searchTimeout; // For debouncing
+    let searchTimeout;
+    let filterDateFrom, filterDateTo, clearDateFilterBtn;
+    let currentFilteredEntries = [];
+    let currentPage = 0;
 
     const $ = id => document.getElementById(id);
     const elements = {
@@ -736,82 +870,218 @@
 
     // --- LOAD & RENDER ---
     async function loadEntries() {
-      elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade Einträge...</div>';
-      const { data, error } = await db.from('entries').select('*').order('entry_date', { ascending: false }).limit(2000);
+      // Sofort aus Cache rendern (falls vorhanden) → gefühlte Ladezeit gegen null
+      const cacheKey = CACHE_KEY_PREFIX + (currentUser?.id || 'guest');
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+          try {
+              allEntriesCache = JSON.parse(cached);
+              fuse = new Fuse(allEntriesCache, FUSE_OPTIONS);
+              renderFilteredEntries();
+          } catch(e) {
+              elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade Einträge...</div>';
+          }
+      } else {
+          elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade Einträge...</div>';
+      }
 
+      // Frische Daten im Hintergrund holen
+      const { data, error } = await db.from('entries').select('*').order('entry_date', { ascending: false }).limit(2000);
       if (error) return showToast('Ladefehler: ' + error.message, true);
+
       allEntriesCache = data || [];
-      
-      // OPTIMIERTE SUCHLOGIK
-      fuse = new Fuse(allEntriesCache, { 
-          includeScore: true, 
-          threshold: 0.3,          // Präzisere Suche
-          ignoreLocation: true,    // WICHTIG: Erlaubt Treffer am Ende langer Texte
-          useExtendedSearch: true, // Erlaubt exakte Suche mit "Wort"
-          keys: [
-              { name: 'best_of_day', weight: 2 },  // Hauptfeld wird am stärksten gewichtet
-              { name: 'lotta', weight: 1.5 },
-              { name: 'thea', weight: 1.5 },
-              { name: 'entry_date', weight: 0.5 }
-          ]
-      });
+      try { localStorage.setItem(cacheKey, JSON.stringify(allEntriesCache)); } catch(e) {}
+
+      fuse = new Fuse(allEntriesCache, FUSE_OPTIONS);
       renderFilteredEntries();
     }
 
+    // Date filter references (initialised after DOM ready)
+    filterDateFrom = $('filterDateFrom');
+    filterDateTo = $('filterDateTo');
+    clearDateFilterBtn = $('clearDateFilter');
+
     function renderFilteredEntries() {
-        const term = elements.searchInput.value.toLowerCase().trim();
+        const term = elements.searchInput.value.trim();
+        const fromDate = filterDateFrom.value;
+        const toDate   = filterDateTo.value;
+
+        // 1. Text search via Fuse.js
         let filtered = allEntriesCache;
         if (term.length > 0) {
             filtered = fuse.search(term).map(r => r.item);
         }
-        renderDOM(filtered);
+
+        // 2. Date range filter (ISO string comparison works lexicographically)
+        if (fromDate || toDate) {
+            filtered = filtered.filter(e => {
+                if (fromDate && e.entry_date < fromDate) return false;
+                if (toDate   && e.entry_date > toDate)   return false;
+                return true;
+            });
+            clearDateFilterBtn.classList.remove('hidden');
+        } else {
+            clearDateFilterBtn.classList.add('hidden');
+        }
+
+        // 3. Always show newest entries first (chronological order)
+        filtered = [...filtered].sort((a, b) => b.entry_date.localeCompare(a.entry_date));
+
+        // 4. Reset pagination and render
+        currentFilteredEntries = filtered;
+        currentPage = 0;
+        renderDOM(false);
+        updateFilterPills();
+        updateResultCount();
     }
-    
-    // Performance: Debounce Filter Input
+
+    // Text search – debounced
     elements.searchInput.addEventListener('input', () => {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(renderFilteredEntries, 300);
     });
 
-    function renderDOM(entries) {
-      if (!entries.length) {
-        elements.entriesContainer.innerHTML = `
-            <div style="text-align:center; padding:60px 20px; color:var(--text-secondary);">
-                <div style="font-size:40px; margin-bottom:10px; opacity:0.3;">📭</div>
-                Keine Einträge gefunden.
-            </div>`;
-        return;
-      }
-      
-      let delay = 0;
-      elements.entriesContainer.innerHTML = entries.map((entry, index) => {
-        const moodMap = { 'happy': '🙂', 'neutral': '😐', 'sad': '😞' };
-        const d = new Date(entry.entry_date);
-        const dateStr = d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-        
-        const animationDelay = index < 10 ? `animation-delay: ${index * 0.05}s;` : 'animation-delay: 0s; opacity: 1;';
+    // Date filters – immediate response
+    filterDateFrom.addEventListener('change', renderFilteredEntries);
+    filterDateTo.addEventListener('change', renderFilteredEntries);
 
-        return `
-          <div class="card entry-card" style="${animationDelay}">
-            <div class="entry-header">
-              <span class="entry-date">${dateStr}</span>
-              <span style="font-size:20px;">${moodMap[entry.mood] || ''}</span>
-            </div>
-            <div class="entry-content">
-              ${entry.best_of_day ? `<div style="margin-bottom:20px;"><div class="entry-text">${escapeHtml(entry.best_of_day)}</div></div>` : ''}
-              
-              <div style="display:flex; gap:20px; flex-wrap:wrap;">
-                  ${entry.lotta ? `<div style="flex:1; min-width:120px;"><div class="entry-label">Lotta</div><div class="entry-text" style="font-size:15px;">${escapeHtml(entry.lotta)}</div></div>` : ''}
-                  ${entry.thea ? `<div style="flex:1; min-width:120px;"><div class="entry-label">Thea</div><div class="entry-text" style="font-size:15px;">${escapeHtml(entry.thea)}</div></div>` : ''}
+    // Clear date filter
+    clearDateFilterBtn.addEventListener('click', () => {
+        filterDateFrom.value = '';
+        filterDateTo.value = '';
+        renderFilteredEntries();
+    });
+
+    function renderDOM(append = false) {
+      const entries = currentFilteredEntries;
+
+      // Remove old "load more" button
+      const oldBtn = $('loadMoreBtn');
+      if (oldBtn) oldBtn.remove();
+
+      if (!append) {
+          if (!entries.length) {
+              elements.entriesContainer.innerHTML = `
+                  <div style="text-align:center; padding:60px 20px; color:var(--text-secondary);">
+                      <div style="font-size:40px; margin-bottom:10px; opacity:0.3;">📭</div>
+                      Keine Einträge gefunden.
+                  </div>`;
+              return;
+          }
+          elements.entriesContainer.innerHTML = '';
+      }
+
+      const moodMap    = { happy: '🙂', neutral: '😐', sad: '😞' };
+      const moodBorder = { happy: 'var(--success)', neutral: 'var(--text-tertiary)', sad: 'var(--danger)' };
+
+      const start = currentPage * PAGE_SIZE;
+      const slice = entries.slice(start, start + PAGE_SIZE);
+
+      const fragment = document.createDocumentFragment();
+
+      slice.forEach((entry, i) => {
+          const globalIdx   = start + i;
+          const d           = new Date(entry.entry_date);
+          const dateStr     = d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+          const animDelay   = !append && globalIdx < 10 ? `${globalIdx * 0.05}s` : '0s';
+          const borderColor = moodBorder[entry.mood] || 'var(--border)';
+
+          const bestHtml  = entry.best_of_day
+              ? `<div style="margin-bottom:20px;"><div class="entry-text">${escapeHtml(entry.best_of_day)}</div></div>`
+              : '';
+          const lottaHtml = entry.lotta
+              ? `<div style="flex:1; min-width:120px;"><div class="entry-label">Lotta</div><div class="entry-text" style="font-size:15px;">${escapeHtml(entry.lotta)}</div></div>`
+              : '';
+          const theaHtml  = entry.thea
+              ? `<div style="flex:1; min-width:120px;"><div class="entry-label">Thea</div><div class="entry-text" style="font-size:15px;">${escapeHtml(entry.thea)}</div></div>`
+              : '';
+
+          const card = document.createElement('div');
+          card.className = 'card entry-card';
+          card.style.cssText = `animation-delay:${animDelay}; border-left-color:${borderColor};`;
+          card.innerHTML = `
+              <div class="entry-header">
+                  <span class="entry-date">${dateStr}</span>
+                  <span style="font-size:20px;">${moodMap[entry.mood] || ''}</span>
               </div>
-            </div>
-            <div class="entry-footer">
-                <button class="txt-btn" style="color:var(--accent);" onclick="window.editEntry('${entry.id}')">Bearbeiten</button>
-                <button class="txt-btn" style="color:var(--danger);" onclick="window.deleteEntry('${entry.id}')">Löschen</button>
-            </div>
-          </div>
-        `;
-      }).join('');
+              <div class="entry-content">
+                  ${bestHtml}
+                  <div style="display:flex; gap:20px; flex-wrap:wrap;">${lottaHtml}${theaHtml}</div>
+              </div>
+              <div class="entry-footer">
+                  <button class="txt-btn" style="color:var(--accent);" onclick="window.editEntry('${entry.id}')">Bearbeiten</button>
+                  <button class="txt-btn" style="color:var(--danger);" onclick="window.deleteEntry('${entry.id}')">Löschen</button>
+              </div>`;
+          fragment.appendChild(card);
+      });
+
+      elements.entriesContainer.appendChild(fragment);
+
+      // "Mehr laden" button if pages remain
+      const shown = start + PAGE_SIZE;
+      if (shown < entries.length) {
+          const remaining = entries.length - shown;
+          const btn = document.createElement('button');
+          btn.id = 'loadMoreBtn';
+          btn.className = 'btn-secondary';
+          btn.textContent = `${Math.min(remaining, PAGE_SIZE)} weitere anzeigen (${remaining} übrig)`;
+          btn.addEventListener('click', () => { currentPage++; renderDOM(true); });
+          elements.entriesContainer.appendChild(btn);
+      }
+    }
+
+    function updateFilterPills() {
+        const container = $('filterPills');
+        container.innerHTML = '';
+        const term     = elements.searchInput.value.trim();
+        const fromDate = filterDateFrom.value;
+        const toDate   = filterDateTo.value;
+        if (!term && !fromDate && !toDate) return;
+
+        const fragment = document.createDocumentFragment();
+
+        if (term) {
+            fragment.appendChild(makePill(`"${term}"`, () => {
+                elements.searchInput.value = '';
+                renderFilteredEntries();
+            }));
+        }
+        if (fromDate || toDate) {
+            const fmt = val => new Date(val).toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' });
+            let label = fromDate && toDate ? `${fmt(fromDate)} – ${fmt(toDate)}`
+                      : fromDate ? `ab ${fmt(fromDate)}`
+                      : `bis ${fmt(toDate)}`;
+            fragment.appendChild(makePill(label, () => {
+                filterDateFrom.value = '';
+                filterDateTo.value   = '';
+                renderFilteredEntries();
+            }));
+        }
+        container.appendChild(fragment);
+    }
+
+    function makePill(text, onRemove) {
+        const pill = document.createElement('div');
+        pill.className = 'filter-pill';
+        const span = document.createElement('span');
+        span.textContent = text;
+        const btn = document.createElement('button');
+        btn.className = 'filter-pill-remove';
+        btn.textContent = '✕';
+        btn.addEventListener('click', onRemove);
+        pill.appendChild(span);
+        pill.appendChild(btn);
+        return pill;
+    }
+
+    function updateResultCount() {
+        const el      = $('resultCount');
+        const total   = allEntriesCache.length;
+        const shown   = currentFilteredEntries.length;
+        const hasFilter = elements.searchInput.value.trim() || filterDateFrom.value || filterDateTo.value;
+        el.textContent = hasFilter
+            ? `${shown} von ${total} ${total === 1 ? 'Eintrag' : 'Einträgen'}`
+            : `${total} ${total === 1 ? 'Eintrag' : 'Einträge'}`;
     }
 
     window.editEntry = (id) => {
