@@ -374,13 +374,68 @@
         border-radius: 12px;
         display: flex; align-items: center;
         padding: 0 12px;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
     .search-input {
         background: transparent !important;
         box-shadow: none !important;
         padding: 12px 8px !important;
     }
+
+    /* DATE FILTER */
+    .date-filter {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        margin-bottom: 20px;
+    }
+    .date-filter-field {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .date-filter-field label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 0;
+    }
+    .date-filter-input {
+        background: var(--bg-button-secondary) !important;
+        border: none;
+        border-radius: var(--radius-s) !important;
+        padding: 10px 12px !important;
+        font-size: 14px !important;
+        color: var(--text-main);
+        width: 100%;
+        box-shadow: none !important;
+        font-family: var(--font-stack);
+    }
+    .date-filter-input:focus {
+        box-shadow: 0 0 0 2px var(--accent) !important;
+        background: var(--bg-card) !important;
+    }
+    .date-filter-input::-webkit-calendar-picker-indicator {
+        opacity: 0.5;
+        cursor: pointer;
+    }
+    .clear-filter-btn {
+        background: rgba(0,122,255,0.1);
+        border: none;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 10px 12px;
+        border-radius: var(--radius-s);
+        white-space: nowrap;
+        transition: background 0.2s;
+    }
+    .clear-filter-btn:hover { background: rgba(0,122,255,0.18); }
+    .clear-filter-btn:active { transform: scale(0.96); }
 
   </style>
 </head>
@@ -500,6 +555,17 @@
           <svg class="icon icon-sm" style="color:var(--text-secondary); margin-right:4px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <input type="text" id="searchInput" class="search-input" placeholder="Suchen...">
       </div>
+      <div class="date-filter">
+          <div class="date-filter-field">
+              <label>Von</label>
+              <input type="date" id="filterDateFrom" class="date-filter-input">
+          </div>
+          <div class="date-filter-field">
+              <label>Bis</label>
+              <input type="date" id="filterDateTo" class="date-filter-input">
+          </div>
+          <button id="clearDateFilter" class="clear-filter-btn hidden">✕ Reset</button>
+      </div>
 
       <div id="entriesContainer">
         </div>
@@ -522,7 +588,8 @@
     let allEntriesCache = [];
     let currentEditingId = null;
     let fuse;
-    let searchTimeout; // For debouncing
+    let searchTimeout;
+    let filterDateFrom, filterDateTo, clearDateFilterBtn;
 
     const $ = id => document.getElementById(id);
     const elements = {
@@ -758,19 +825,55 @@
       renderFilteredEntries();
     }
 
+    // Date filter references (initialised after DOM ready)
+    filterDateFrom = $('filterDateFrom');
+    filterDateTo = $('filterDateTo');
+    clearDateFilterBtn = $('clearDateFilter');
+
     function renderFilteredEntries() {
-        const term = elements.searchInput.value.toLowerCase().trim();
+        const term = elements.searchInput.value.trim();
+        const fromDate = filterDateFrom.value;  // ISO string "YYYY-MM-DD" or ""
+        const toDate   = filterDateTo.value;
+
+        // 1. Text search via Fuse.js
         let filtered = allEntriesCache;
         if (term.length > 0) {
             filtered = fuse.search(term).map(r => r.item);
         }
+
+        // 2. Date range filter (ISO string comparison works lexicographically)
+        if (fromDate || toDate) {
+            filtered = filtered.filter(e => {
+                if (fromDate && e.entry_date < fromDate) return false;
+                if (toDate   && e.entry_date > toDate)   return false;
+                return true;
+            });
+            clearDateFilterBtn.classList.remove('hidden');
+        } else {
+            clearDateFilterBtn.classList.add('hidden');
+        }
+
+        // 3. Always show newest entries first (chronological order)
+        filtered = [...filtered].sort((a, b) => b.entry_date.localeCompare(a.entry_date));
+
         renderDOM(filtered);
     }
-    
-    // Performance: Debounce Filter Input
+
+    // Text search – debounced
     elements.searchInput.addEventListener('input', () => {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(renderFilteredEntries, 300);
+    });
+
+    // Date filters – immediate response
+    filterDateFrom.addEventListener('change', renderFilteredEntries);
+    filterDateTo.addEventListener('change', renderFilteredEntries);
+
+    // Clear date filter
+    clearDateFilterBtn.addEventListener('click', () => {
+        filterDateFrom.value = '';
+        filterDateTo.value = '';
+        renderFilteredEntries();
     });
 
     function renderDOM(entries) {
