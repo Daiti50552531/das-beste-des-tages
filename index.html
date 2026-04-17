@@ -399,9 +399,7 @@
         flex-direction: column;
         gap: 4px;
         min-width: 0;
-    }
-    .clear-filter-btn {
-        grid-column: 1 / -1; /* volle Breite unter den beiden Feldern */
+        overflow: hidden; /* klemmt iOS date-input hart in die Grid-Zelle */
     }
     .date-filter-field label {
         font-size: 11px;
@@ -415,10 +413,11 @@
         background: var(--bg-button-secondary) !important;
         border: none;
         border-radius: var(--radius-s) !important;
-        padding: 10px 10px !important;
-        font-size: 16px !important; /* mind. 16px: verhindert Auto-Zoom auf iOS */
+        padding: 10px !important;
+        font-size: 16px !important;
         color: var(--text-main);
         width: 100%;
+        max-width: 100%;
         box-shadow: none !important;
         font-family: var(--font-stack);
         min-width: 0;
@@ -430,9 +429,9 @@
     .date-filter-input::-webkit-calendar-picker-indicator {
         opacity: 0.5;
         cursor: pointer;
-        flex-shrink: 0;
     }
     .clear-filter-btn {
+        grid-column: 1 / -1; /* volle Breite unter den Datumsfeldern */
         background: rgba(0,122,255,0.1);
         border: none;
         color: var(--accent);
