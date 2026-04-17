@@ -389,49 +389,46 @@
 
     /* DATE FILTER */
     .date-filter {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
+        display: flex;
+        flex-direction: column;
         gap: 8px;
         margin-bottom: 20px;
     }
     .date-filter-field {
         display: flex;
-        flex-direction: column;
-        gap: 4px;
-        min-width: 0;
-        overflow: hidden; /* klemmt iOS date-input hart in die Grid-Zelle */
+        align-items: center;
+        gap: 10px;
+        background: var(--bg-button-secondary);
+        border-radius: var(--radius-s);
+        padding: 0 14px;
     }
     .date-filter-field label {
-        font-size: 11px;
+        font-size: 13px;
         font-weight: 600;
         color: var(--text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
         margin: 0;
+        white-space: nowrap;
+        width: 32px;
     }
     .date-filter-input {
-        background: var(--bg-button-secondary) !important;
+        background: transparent !important;
         border: none;
-        border-radius: var(--radius-s) !important;
-        padding: 10px !important;
+        padding: 12px 0 !important;
         font-size: 16px !important;
         color: var(--text-main);
-        width: 100%;
-        max-width: 100%;
+        flex: 1;
         box-shadow: none !important;
         font-family: var(--font-stack);
-        min-width: 0;
     }
     .date-filter-input:focus {
-        box-shadow: 0 0 0 2px var(--accent) !important;
-        background: var(--bg-card) !important;
+        outline: none;
+        box-shadow: none !important;
     }
     .date-filter-input::-webkit-calendar-picker-indicator {
         opacity: 0.5;
         cursor: pointer;
     }
     .clear-filter-btn {
-        grid-column: 1 / -1; /* volle Breite unter den Datumsfeldern */
         background: rgba(0,122,255,0.1);
         border: none;
         color: var(--accent);
@@ -443,6 +440,7 @@
         transition: background 0.2s;
         line-height: 1;
         text-align: center;
+        width: 100%;
     }
     .clear-filter-btn:hover { background: rgba(0,122,255,0.18); }
     .clear-filter-btn:active { transform: scale(0.96); }
