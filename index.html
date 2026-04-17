@@ -58,7 +58,7 @@
       --bg-body: #0D0D0F;        /* Fast-Schwarz mit kühlem Unterton – Tiefe auf OLED */
       --bg-card: #1C1C1E;
       --bg-surface: #252527;
-      --bg-input: #1C1C1E;
+      --bg-input: #141416;       /* Dunkler als Card → Felder sichtbar */
       --bg-button-secondary: #3A3A3C;
 
       --text-main: #F2F2F7;      /* Apples Off-White – weniger grell beim Lesen */
@@ -389,18 +389,19 @@
 
     /* DATE FILTER */
     .date-filter {
-        display: flex;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 8px;
-        align-items: flex-end;
         margin-bottom: 20px;
-        width: 100%;
     }
     .date-filter-field {
-        flex: 1;
-        min-width: 0; /* verhindert Flex-Überlauf auf kleinen Screens */
         display: flex;
         flex-direction: column;
         gap: 4px;
+        min-width: 0;
+    }
+    .clear-filter-btn {
+        grid-column: 1 / -1; /* volle Breite unter den beiden Feldern */
     }
     .date-filter-field label {
         font-size: 11px;
@@ -438,12 +439,11 @@
         font-size: 13px;
         font-weight: 700;
         cursor: pointer;
-        padding: 10px 10px;
+        padding: 10px;
         border-radius: var(--radius-s);
-        white-space: nowrap;
-        flex-shrink: 0;
         transition: background 0.2s;
         line-height: 1;
+        text-align: center;
     }
     .clear-filter-btn:hover { background: rgba(0,122,255,0.18); }
     .clear-filter-btn:active { transform: scale(0.96); }
