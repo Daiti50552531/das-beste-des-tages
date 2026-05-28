@@ -7,7 +7,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-  
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+
   <title>Das Beste des Tages</title>
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -493,6 +495,13 @@
     /* LOAD MORE BUTTON */
     #loadMoreBtn { margin-bottom: 24px; }
 
+    /* EDIT MODE */
+    #editorCard.editing {
+        border: 2px solid var(--accent) !important;
+        box-shadow: 0 0 0 5px rgba(0,122,255,0.08), var(--shadow-card) !important;
+        transition: border 0.2s, box-shadow 0.2s;
+    }
+
   </style>
 </head>
 <body>
@@ -538,7 +547,7 @@
           <button id="remindExportBtn" style="background:#FF9F0A; color:white; border:none; padding:6px 12px; border-radius:20px; font-weight:600; font-size:12px; cursor:pointer;">Exportieren</button>
       </div>
 
-      <div class="section-title">Neuer Eintrag</div>
+      <div class="section-title" id="editorSectionTitle">Neuer Eintrag</div>
       <div class="card" id="editorCard">
         
         <div style="padding:20px 20px 0 20px;">
@@ -557,11 +566,11 @@
         <div class="input-group" style="padding-top:0; display:flex; gap:12px;">
             <div style="flex:1;">
                 <label>Lotta</label>
-                <textarea id="lotta" rows="2"></textarea>
+                <textarea id="lotta" placeholder="Was hat Lotta heute erlebt?" rows="2"></textarea>
             </div>
             <div style="flex:1;">
                 <label>Thea</label>
-                <textarea id="thea" rows="2"></textarea>
+                <textarea id="thea" placeholder="Was hat Thea heute erlebt?" rows="2"></textarea>
             </div>
         </div>
 
@@ -689,13 +698,27 @@
       }
     };
 
+    let toastDismissTimer = null;
+
     function showToast(msg, isError = false) {
       const el = $('toast');
       el.textContent = msg;
+      el.className = 'toast visible' + (isError ? ' error' : '');
+      if (toastDismissTimer) clearTimeout(toastDismissTimer);
+      toastDismissTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+    }
+
+    function showToastWithUndo(msg, onUndo) {
+      const el = $('toast');
       el.className = 'toast visible';
-      if(isError) el.classList.add('error');
-      else el.classList.remove('error');
-      setTimeout(() => el.classList.remove('visible'), 3000);
+      el.innerHTML = `<span>${escapeHtml(msg)}</span><button style="margin-left:16px;background:rgba(255,255,255,0.25);border:none;color:white;font-weight:700;font-size:13px;padding:4px 12px;border-radius:20px;cursor:pointer;font-family:inherit;" id="toastUndoBtn">Rückgängig</button>`;
+      if (toastDismissTimer) clearTimeout(toastDismissTimer);
+      toastDismissTimer = setTimeout(() => el.classList.remove('visible'), 5000);
+      $('toastUndoBtn').addEventListener('click', () => {
+        if (toastDismissTimer) clearTimeout(toastDismissTimer);
+        el.classList.remove('visible');
+        onUndo();
+      });
     }
 
     function initTheme() {
@@ -803,11 +826,13 @@
         currentEditingId = null;
         elements.saveBtn.innerHTML = "<span>Speichern</span>";
         elements.cancelEditBtn.classList.add('hidden');
-        
+        $('editorCard').classList.remove('editing');
+        $('editorSectionTitle').textContent = 'Neuer Eintrag';
+
         const today = new Date().toISOString().split('T')[0];
         elements.fields.date.value = today;
         elements.dateDisplay.textContent = "Heute";
-        
+
         elements.fields.best.value = '';
         elements.fields.lotta.value = '';
         elements.fields.thea.value = '';
@@ -820,6 +845,8 @@
         currentEditingId = entry.id;
         elements.saveBtn.innerHTML = "<span>Update speichern</span>";
         elements.cancelEditBtn.classList.remove('hidden');
+        $('editorCard').classList.add('editing');
+        $('editorSectionTitle').textContent = 'Eintrag bearbeiten';
         window.scrollTo({ top: 0, behavior: 'smooth' });
         
         elements.fields.date.value = entry.entry_date;
@@ -878,7 +905,6 @@
 
     // --- LOAD & RENDER ---
     async function loadEntries() {
-      // Sofort aus Cache rendern (falls vorhanden) → gefühlte Ladezeit gegen null
       const cacheKey = CACHE_KEY_PREFIX + (currentUser?.id || 'guest');
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
@@ -887,21 +913,35 @@
               fuse = new Fuse(allEntriesCache, FUSE_OPTIONS);
               renderFilteredEntries();
           } catch(e) {
+              localStorage.removeItem(cacheKey);
               elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade Einträge...</div>';
           }
       } else {
           elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade Einträge...</div>';
       }
 
-      // Frische Daten im Hintergrund holen
-      const { data, error } = await db.from('entries').select('*').order('entry_date', { ascending: false }).limit(2000);
-      if (error) return showToast('Ladefehler: ' + error.message, true);
+      const fetchPromise = db.from('entries').select('*').order('entry_date', { ascending: false }).limit(2000);
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('network-timeout')), 12000));
 
-      allEntriesCache = data || [];
-      try { localStorage.setItem(cacheKey, JSON.stringify(allEntriesCache)); } catch(e) {}
-
-      fuse = new Fuse(allEntriesCache, FUSE_OPTIONS);
-      renderFilteredEntries();
+      try {
+          const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+          if (error) { showToast('Ladefehler: ' + error.message, true); return; }
+          allEntriesCache = data || [];
+          try { localStorage.setItem(cacheKey, JSON.stringify(allEntriesCache)); } catch(e) {}
+          fuse = new Fuse(allEntriesCache, FUSE_OPTIONS);
+          renderFilteredEntries();
+      } catch(err) {
+          if (err.message === 'network-timeout') {
+              if (!allEntriesCache.length) {
+                  showToast('Server nicht erreichbar – bitte Verbindung prüfen.', true);
+                  elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--text-secondary);"><div style="font-size:40px; margin-bottom:10px; opacity:0.4;">📡</div>Keine Verbindung</div>';
+              } else {
+                  showToast('Aktualisierung fehlgeschlagen – Offline-Daten werden angezeigt.');
+              }
+          } else {
+              showToast('Verbindungsfehler: ' + err.message, true);
+          }
+      }
     }
 
     // Date filter references (initialised after DOM ready)
@@ -969,11 +1009,11 @@
 
       if (!append) {
           if (!entries.length) {
-              elements.entriesContainer.innerHTML = `
-                  <div style="text-align:center; padding:60px 20px; color:var(--text-secondary);">
-                      <div style="font-size:40px; margin-bottom:10px; opacity:0.3;">📭</div>
-                      Keine Einträge gefunden.
-                  </div>`;
+              const hasFilter = elements.searchInput.value.trim() || filterDateFrom.value || filterDateTo.value;
+              const emptyContent = hasFilter
+                  ? `<div style="font-size:40px; margin-bottom:10px; opacity:0.3;">📭</div>Keine Einträge gefunden.`
+                  : `<div style="font-size:48px; margin-bottom:16px; opacity:0.5;">✍️</div><div style="font-weight:600; margin-bottom:8px; color:var(--text-main);">Noch keine Einträge</div><div style="font-size:15px;">Schreib deinen ersten Eintrag oben!</div>`;
+              elements.entriesContainer.innerHTML = `<div style="text-align:center; padding:60px 20px; color:var(--text-secondary);">${emptyContent}</div>`;
               return;
           }
           elements.entriesContainer.innerHTML = '';
@@ -1097,16 +1137,55 @@
         if (e) startEdit(e);
     };
 
-    window.deleteEntry = async (id) => {
-      if (!confirm('Eintrag wirklich löschen?')) return; 
-      const { error } = await db.from('entries').delete().eq('id', id);
-      if (error) showToast(error.message, true);
-      else {
-        showToast('Gelöscht.');
-        allEntriesCache = allEntriesCache.filter(e => e.id !== id);
+    let pendingDeleteTimer = null;
+    let pendingDeleteEntry = null;
+
+    async function executePendingDelete() {
+      const entry = pendingDeleteEntry;
+      pendingDeleteTimer = null;
+      pendingDeleteEntry = null;
+      if (!entry) return;
+      const { error } = await db.from('entries').delete().eq('id', entry.id);
+      if (error) {
+        allEntriesCache = [...allEntriesCache, entry].sort((a,b) => b.entry_date.localeCompare(a.entry_date));
+        const ck = CACHE_KEY_PREFIX + (currentUser?.id || 'guest');
+        try { localStorage.setItem(ck, JSON.stringify(allEntriesCache)); } catch(e) {}
         fuse.setCollection(allEntriesCache);
         renderFilteredEntries();
+        showToast('Löschen fehlgeschlagen: ' + error.message, true);
       }
+    }
+
+    window.deleteEntry = (id) => {
+      const entry = allEntriesCache.find(e => e.id === id);
+      if (!entry) return;
+
+      if (pendingDeleteTimer) {
+        clearTimeout(pendingDeleteTimer);
+        executePendingDelete();
+      }
+
+      allEntriesCache = allEntriesCache.filter(e => e.id !== id);
+      const ck = CACHE_KEY_PREFIX + (currentUser?.id || 'guest');
+      try { localStorage.setItem(ck, JSON.stringify(allEntriesCache)); } catch(e) {}
+      fuse.setCollection(allEntriesCache);
+      renderFilteredEntries();
+
+      pendingDeleteEntry = entry;
+
+      showToastWithUndo('Eintrag gelöscht', () => {
+        clearTimeout(pendingDeleteTimer);
+        pendingDeleteTimer = null;
+        allEntriesCache = [...allEntriesCache, pendingDeleteEntry].sort((a,b) => b.entry_date.localeCompare(a.entry_date));
+        const ck2 = CACHE_KEY_PREFIX + (currentUser?.id || 'guest');
+        try { localStorage.setItem(ck2, JSON.stringify(allEntriesCache)); } catch(e) {}
+        fuse.setCollection(allEntriesCache);
+        pendingDeleteEntry = null;
+        renderFilteredEntries();
+        showToast('Löschen rückgängig gemacht ↩️');
+      });
+
+      pendingDeleteTimer = setTimeout(executePendingDelete, 5000);
     };
 
     // --- TOOLS ---
@@ -1212,9 +1291,21 @@
             }).filter(x => x._v).map(x => { delete x._v; return x; });
 
             if (!clean.length) return showToast('Keine Daten erkannt', true);
-            const { error } = await db.from('entries').insert(clean);
+
+            const existingDates = new Set(allEntriesCache.map(e => e.entry_date));
+            const newRows = clean.filter(r => !existingDates.has(r.entry_date));
+            const dupCount = clean.length - newRows.length;
+
+            if (!newRows.length) {
+                showToast(`Alle ${dupCount} Einträge bereits vorhanden – nichts importiert.`, true);
+                $('importFile').value = '';
+                return;
+            }
+
+            const { error } = await db.from('entries').insert(newRows);
             if (error) throw error;
-            showToast(`${clean.length} importiert!`);
+            if (dupCount > 0) showToast(`${newRows.length} importiert, ${dupCount} Duplikat(e) übersprungen.`);
+            else showToast(`${newRows.length} Einträge importiert ✅`);
             loadEntries();
         } catch(err) { showToast('Fehler: '+err.message, true); }
         $('importFile').value = '';
@@ -1225,6 +1316,13 @@
       const u = URL.createObjectURL(new Blob([c], {type:m}));
       const a = document.createElement('a'); a.href=u; a.download=n; a.click();
       URL.revokeObjectURL(u);
+    }
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .catch(err => console.warn('Service Worker konnte nicht registriert werden:', err));
+        });
     }
 
     initTheme();
