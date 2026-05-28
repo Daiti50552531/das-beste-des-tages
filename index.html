@@ -522,6 +522,7 @@
       <div style="margin-top:24px; display:flex; flex-direction:column; gap:12px;">
         <button id="loginBtn" class="btn-primary">Anmelden</button>
         <button id="signupBtn" class="txt-btn" style="color:var(--text-secondary); margin-top:10px;">Account erstellen</button>
+        <button id="forgotBtn" class="txt-btn" style="color:var(--accent); font-size:13px;">Passwort vergessen?</button>
       </div>
     </div>
   </div>
@@ -796,6 +797,17 @@
         password: elements.password.value
       });
       if (error) showToast(error ? error.message : 'Check deine Mails!', !!error);
+    });
+
+    $('forgotBtn').addEventListener('click', async () => {
+      const email = elements.email.value.trim();
+      if (!email) return showToast('Bitte zuerst E-Mail-Adresse eingeben.', true);
+      showToast('Sende Reset-Link...');
+      const { error } = await db.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.href
+      });
+      if (error) showToast('Fehler: ' + error.message, true);
+      else showToast('Reset-Link gesendet! Bitte E-Mails checken. 📬');
     });
 
     $('logoutBtn').addEventListener('click', () => db.auth.signOut());
