@@ -1,0 +1,19 @@
+{
+  "name": "Das Beste des Tages",
+  "short_name": "Beste d. Tages",
+  "description": "Dein tägliches Journal für die schönsten Momente",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F2F2F7",
+  "theme_color": "#000000",
+  "lang": "de",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
