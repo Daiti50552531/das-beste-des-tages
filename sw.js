@@ -21,17 +21,14 @@ self.addEventListener('fetch', event => {
 
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match('./index.html').then(cached => {
-        const fresh = fetch(event.request)
-          .then(response => {
-            if (response.ok) {
-              caches.open(CACHE_NAME).then(c => c.put('./index.html', response.clone()));
-            }
-            return response;
-          })
-          .catch(() => cached);
-        return cached || fresh;
-      })
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            caches.open(CACHE_NAME).then(c => c.put('./index.html', response.clone()));
+          }
+          return response;
+        })
+        .catch(() => caches.match('./index.html'))
     );
     return;
   }
