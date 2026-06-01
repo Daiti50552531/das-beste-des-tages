@@ -502,11 +502,33 @@
         transition: border 0.2s, box-shadow 0.2s;
     }
 
+    /* PASSWORD RECOVERY MODAL */
+    .modal-overlay {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 500;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+        backdrop-filter: blur(4px);
+    }
+
   </style>
 </head>
 <body>
 
   <div id="toast" class="toast">Nachricht</div>
+
+  <div id="recoveryModal" class="modal-overlay hidden">
+    <div class="card" style="width:100%;max-width:400px;padding:28px;">
+      <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;">Neues Passwort setzen</h2>
+      <p style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;">Wähle ein neues Passwort für deinen Account.</p>
+      <label>Neues Passwort</label>
+      <input type="password" id="newPassword" placeholder="Mindestens 6 Zeichen" style="margin-bottom:16px;">
+      <label>Passwort bestätigen</label>
+      <input type="password" id="confirmPassword" placeholder="Passwort wiederholen">
+      <button id="setPasswordBtn" class="btn-primary" style="margin-top:24px;">Passwort setzen</button>
+    </div>
+  </div>
 
   <div id="authSection" class="auth-container">
     <div style="width:80px; height:80px; background:var(--text-main); border-radius:24px; margin:0 auto 20px auto; display:flex; align-items:center; justify-content:center; color:var(--bg-body); font-size:40px;">✒️</div>
@@ -667,6 +689,7 @@
     const CACHE_KEY_PREFIX = 'entries_cache_v1_';
 
     let currentUser = null;
+    let currentSessionToken = null;
     let selectedMood = null;
     let allEntriesCache = [];
     let currentEditingId = null;
@@ -762,15 +785,46 @@
     });
 
     db.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) showApp(session.user);
+      currentSessionToken = session?.access_token || null;
+      if (event === 'PASSWORD_RECOVERY') showPasswordRecovery();
+      else if (event === 'SIGNED_IN' && session) showApp(session.user);
       else if (event === 'SIGNED_OUT') showAuth();
     });
 
     function showAuth() {
       elements.authSection.classList.remove('hidden');
       elements.appSection.classList.add('hidden');
+      $('recoveryModal').classList.add('hidden');
       currentUser = null;
     }
+
+    function showPasswordRecovery() {
+      $('recoveryModal').classList.remove('hidden');
+      elements.authSection.classList.add('hidden');
+      elements.appSection.classList.add('hidden');
+      $('newPassword').value = '';
+      $('confirmPassword').value = '';
+    }
+
+    $('setPasswordBtn').addEventListener('click', async () => {
+      const pwd = $('newPassword').value;
+      const confirm = $('confirmPassword').value;
+      if (pwd.length < 6) return showToast('Passwort muss mindestens 6 Zeichen haben.', true);
+      if (pwd !== confirm) return showToast('Passwörter stimmen nicht überein.', true);
+      $('setPasswordBtn').disabled = true;
+      $('setPasswordBtn').textContent = 'Wird gesetzt...';
+      const { error } = await db.auth.updateUser({ password: pwd });
+      if (error) {
+        showToast('Fehler: ' + error.message, true);
+        $('setPasswordBtn').disabled = false;
+        $('setPasswordBtn').textContent = 'Passwort setzen';
+      } else {
+        $('recoveryModal').classList.add('hidden');
+        showToast('Passwort erfolgreich gesetzt ✅');
+        const { data: { session } } = await db.auth.getSession();
+        if (session) showApp(session.user);
+      }
+    });
 
     function showApp(user) {
       currentUser = user;
@@ -932,11 +986,13 @@
           elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade Einträge...</div>';
       }
 
+      let cancelled = false;
       const fetchPromise = db.from('entries').select('*').order('entry_date', { ascending: false }).limit(2000);
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('network-timeout')), 12000));
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => { cancelled = true; reject(new Error('network-timeout')); }, 12000));
 
       try {
           const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+          if (cancelled) return;
           if (error) { showToast('Ladefehler: ' + error.message, true); return; }
           allEntriesCache = data || [];
           try { localStorage.setItem(cacheKey, JSON.stringify(allEntriesCache)); } catch(e) {}
@@ -1304,9 +1360,16 @@
 
             if (!clean.length) return showToast('Keine Daten erkannt', true);
 
+            const importDates = new Set();
+            const deduplicated = clean.filter(r => {
+                if (importDates.has(r.entry_date)) return false;
+                importDates.add(r.entry_date);
+                return true;
+            });
+            const batchDupCount = clean.length - deduplicated.length;
             const existingDates = new Set(allEntriesCache.map(e => e.entry_date));
-            const newRows = clean.filter(r => !existingDates.has(r.entry_date));
-            const dupCount = clean.length - newRows.length;
+            const newRows = deduplicated.filter(r => !existingDates.has(r.entry_date));
+            const dupCount = deduplicated.length - newRows.length + batchDupCount;
 
             if (!newRows.length) {
                 showToast(`Alle ${dupCount} Einträge bereits vorhanden – nichts importiert.`, true);
@@ -1329,6 +1392,23 @@
       const a = document.createElement('a'); a.href=u; a.download=n; a.click();
       URL.revokeObjectURL(u);
     }
+
+    window.addEventListener('beforeunload', () => {
+      if (pendingDeleteTimer && pendingDeleteEntry && currentSessionToken) {
+        clearTimeout(pendingDeleteTimer);
+        const entry = pendingDeleteEntry;
+        pendingDeleteTimer = null;
+        pendingDeleteEntry = null;
+        fetch(`${SUPABASE_URL}/rest/v1/entries?id=eq.${entry.id}`, {
+          method: 'DELETE',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + currentSessionToken
+          },
+          keepalive: true
+        });
+      }
+    });
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
