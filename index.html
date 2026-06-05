@@ -512,6 +512,37 @@
         backdrop-filter: blur(4px);
     }
 
+    /* VOICE INPUT */
+    .field-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    .field-header label { margin-bottom: 0; }
+    .mic-btn {
+        background: var(--bg-button-secondary);
+        border: none;
+        border-radius: 50%;
+        width: 30px; height: 30px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        color: var(--text-secondary);
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+    .mic-btn:active { transform: scale(0.9); }
+    .mic-btn.recording {
+        background: var(--danger);
+        color: white;
+        animation: mic-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes mic-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0.4); }
+        50% { box-shadow: 0 0 0 8px rgba(255,59,48,0); }
+    }
+
+
   </style>
 </head>
 <body>
@@ -582,17 +613,32 @@
         </div>
 
         <div class="input-group">
-            <label>Das Beste des Tages</label>
+            <div class="field-header">
+                <label>Das Beste des Tages</label>
+                <button class="mic-btn" data-target="bestOfDay" title="Spracheingabe">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                </button>
+            </div>
             <textarea id="bestOfDay" placeholder="Was war heute los?" rows="3"></textarea>
         </div>
 
         <div class="input-group" style="padding-top:0; display:flex; gap:12px;">
             <div style="flex:1;">
-                <label>Lotta</label>
+                <div class="field-header">
+                    <label>Lotta</label>
+                    <button class="mic-btn" data-target="lotta" title="Spracheingabe">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                    </button>
+                </div>
                 <textarea id="lotta" placeholder="Was hat Lotta heute erlebt?" rows="2"></textarea>
             </div>
             <div style="flex:1;">
-                <label>Thea</label>
+                <div class="field-header">
+                    <label>Thea</label>
+                    <button class="mic-btn" data-target="thea" title="Spracheingabe">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                    </button>
+                </div>
                 <textarea id="thea" placeholder="Was hat Thea heute erlebt?" rows="2"></textarea>
             </div>
         </div>
@@ -1409,6 +1455,67 @@
         });
       }
     });
+
+    // --- VOICE INPUT ---
+    function setupSpeechRecognition() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) {
+            document.querySelectorAll('.mic-btn').forEach(b => b.classList.add('hidden'));
+            return;
+        }
+
+        const micSvg = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
+        const stopSvg = `<svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"></rect></svg>`;
+
+        let activeRecognition = null;
+        let activeBtn = null;
+
+        document.querySelectorAll('.mic-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const textarea = $(btn.dataset.target);
+
+                if (activeRecognition) {
+                    activeRecognition.stop();
+                    if (activeBtn === btn) return;
+                }
+
+                const recognition = new SR();
+                recognition.lang = 'de-DE';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onstart = () => {
+                    activeRecognition = recognition;
+                    activeBtn = btn;
+                    btn.classList.add('recording');
+                    btn.innerHTML = stopSvg;
+                    showToast('Aufnahme läuft…');
+                };
+
+                recognition.onresult = event => {
+                    const transcript = event.results[0][0].transcript;
+                    textarea.value += (textarea.value ? ' ' : '') + transcript;
+                    autoResize(textarea);
+                };
+
+                recognition.onerror = event => {
+                    if (event.error === 'not-allowed') showToast('Mikrofon-Zugriff verweigert.', true);
+                    else if (event.error !== 'aborted') showToast('Spracherkennung fehlgeschlagen.', true);
+                };
+
+                recognition.onend = () => {
+                    activeRecognition = null;
+                    activeBtn = null;
+                    btn.classList.remove('recording');
+                    btn.innerHTML = micSvg;
+                };
+
+                recognition.start();
+            });
+        });
+    }
+    setupSpeechRecognition();
+
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
