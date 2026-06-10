@@ -567,6 +567,7 @@
     .mood-filter-btn.active { background: var(--accent); color: white; }
     .mood-filter-btn:active { transform: scale(0.95); }
 
+
     /* VOICE INPUT */
     .field-header {
         display: flex;
@@ -1617,6 +1618,7 @@
         const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
         $('statMood').textContent = { happy: '🙂', neutral: '😐', sad: '😞' }[top];
     }
+
 
     // --- VOICE INPUT ---
     function setupSpeechRecognition() {
