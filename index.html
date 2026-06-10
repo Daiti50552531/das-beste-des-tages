@@ -502,7 +502,7 @@
         transition: border 0.2s, box-shadow 0.2s;
     }
 
-    /* PASSWORD RECOVERY MODAL */
+    /* MODAL OVERLAY */
     .modal-overlay {
         position: fixed; inset: 0;
         background: rgba(0,0,0,0.5);
@@ -511,6 +511,61 @@
         padding: 20px;
         backdrop-filter: blur(4px);
     }
+
+    /* STATS BAR */
+    .stats-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+    .stat-chip {
+        flex: 1;
+        background: var(--bg-card);
+        border-radius: var(--radius-m);
+        padding: 14px 10px;
+        text-align: center;
+        box-shadow: var(--shadow-card);
+    }
+    .stat-value {
+        display: block;
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1.1;
+    }
+    .stat-label {
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    /* MOOD FILTER ROW */
+    .mood-filter-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+    }
+    .mood-filter-row::-webkit-scrollbar { display: none; }
+    .mood-filter-btn {
+        border: none;
+        background: var(--bg-button-secondary);
+        border-radius: 50px;
+        padding: 7px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s;
+        flex-shrink: 0;
+        font-family: var(--font-stack);
+    }
+    .mood-filter-btn.active { background: var(--accent); color: white; }
+    .mood-filter-btn:active { transform: scale(0.95); }
 
     /* VOICE INPUT */
     .field-header {
@@ -548,6 +603,18 @@
 <body>
 
   <div id="toast" class="toast">Nachricht</div>
+
+  <div id="deleteModal" class="modal-overlay hidden">
+    <div class="card" style="width:100%;max-width:380px;padding:28px;">
+      <div style="font-size:40px;text-align:center;margin-bottom:16px;">🗑️</div>
+      <h2 style="font-size:20px;font-weight:800;margin:0 0 10px;text-align:center;">Alle Einträge löschen?</h2>
+      <p style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;text-align:center;line-height:1.5;">Diese Aktion kann nicht rückgängig gemacht werden. Stelle sicher, dass du ein Backup hast.</p>
+      <div style="display:flex;gap:12px;">
+        <button id="deleteCancelBtn" class="btn-secondary" style="margin-top:0;flex:1;">Abbrechen</button>
+        <button id="deleteConfirmBtn" class="btn-primary" style="flex:1;background:var(--danger);">Alles löschen</button>
+      </div>
+    </div>
+  </div>
 
   <div id="recoveryModal" class="modal-overlay hidden">
     <div class="card" style="width:100%;max-width:400px;padding:28px;">
@@ -685,6 +752,22 @@
       </div>
 
       <div class="section-title">Einträge</div>
+
+      <div class="stats-bar">
+          <div class="stat-chip">
+              <span class="stat-value" id="statTotal">–</span>
+              <span class="stat-label">Einträge</span>
+          </div>
+          <div class="stat-chip">
+              <span class="stat-value" id="statStreak">–</span>
+              <span class="stat-label">Tage in Folge</span>
+          </div>
+          <div class="stat-chip">
+              <span class="stat-value" id="statMood">–</span>
+              <span class="stat-label">Diese Woche</span>
+          </div>
+      </div>
+
       <div class="search-bar">
           <svg class="icon icon-sm" style="color:var(--text-secondary); margin-right:4px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <input type="text" id="searchInput" class="search-input" placeholder="Suchen...">
@@ -700,6 +783,13 @@
           </div>
           <button id="clearDateFilter" class="clear-filter-btn hidden">✕</button>
       </div>
+      <div class="mood-filter-row" id="moodFilterRow">
+          <button class="mood-filter-btn active" data-mood="">Alle</button>
+          <button class="mood-filter-btn" data-mood="happy">🙂 Gut</button>
+          <button class="mood-filter-btn" data-mood="neutral">😐 Neutral</button>
+          <button class="mood-filter-btn" data-mood="sad">😞 Schwierig</button>
+      </div>
+
       <div id="filterPills" class="filter-pills"></div>
       <div id="resultCount" class="result-count"></div>
 
@@ -737,6 +827,7 @@
     let currentUser = null;
     let currentSessionToken = null;
     let selectedMood = null;
+    let selectedMoodFilter = null;
     let allEntriesCache = [];
     let currentEditingId = null;
     let fuse;
@@ -986,6 +1077,15 @@
       if (!selectedMood) return showToast('Wie war die Stimmung? 🤔', true);
       if (!currentUser) return showToast('Nicht eingeloggt.', true);
 
+      if (!currentEditingId) {
+          const duplicate = allEntriesCache.find(e => e.entry_date === elements.fields.date.value);
+          if (duplicate) {
+              currentEditingId = duplicate.id;
+              elements.saveBtn.innerHTML = "<span>Update speichern</span>";
+              showToast('Datum bereits vorhanden – Eintrag wird aktualisiert.');
+          }
+      }
+
       elements.saveBtn.disabled = true;
       elements.saveBtn.innerHTML = "<span>Wird gespeichert...</span>";
 
@@ -1023,6 +1123,7 @@
           try {
               allEntriesCache = JSON.parse(cached);
               fuse = new Fuse(allEntriesCache, FUSE_OPTIONS);
+              updateStats();
               renderFilteredEntries();
           } catch(e) {
               localStorage.removeItem(cacheKey);
@@ -1043,6 +1144,7 @@
           allEntriesCache = data || [];
           try { localStorage.setItem(cacheKey, JSON.stringify(allEntriesCache)); } catch(e) {}
           fuse = new Fuse(allEntriesCache, FUSE_OPTIONS);
+          updateStats();
           renderFilteredEntries();
       } catch(err) {
           if (err.message === 'network-timeout') {
@@ -1074,7 +1176,12 @@
             filtered = fuse.search(term).map(r => r.item);
         }
 
-        // 2. Date range filter (ISO string comparison works lexicographically)
+        // 2. Mood filter
+        if (selectedMoodFilter) {
+            filtered = filtered.filter(e => e.mood === selectedMoodFilter);
+        }
+
+        // 3. Date range filter (ISO string comparison works lexicographically)
         if (fromDate || toDate) {
             filtered = filtered.filter(e => {
                 if (fromDate && e.entry_date < fromDate) return false;
@@ -1086,10 +1193,10 @@
             clearDateFilterBtn.classList.add('hidden');
         }
 
-        // 3. Always show newest entries first (chronological order)
+        // 4. Always show newest entries first (chronological order)
         filtered = [...filtered].sort((a, b) => b.entry_date.localeCompare(a.entry_date));
 
-        // 4. Reset pagination and render
+        // 5. Reset pagination and render
         currentFilteredEntries = filtered;
         currentPage = 0;
         renderDOM(false);
@@ -1106,6 +1213,16 @@
     // Date filters – immediate response
     filterDateFrom.addEventListener('change', renderFilteredEntries);
     filterDateTo.addEventListener('change', renderFilteredEntries);
+
+    // Mood filter pills
+    document.querySelectorAll('.mood-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            selectedMoodFilter = btn.dataset.mood || null;
+            document.querySelectorAll('.mood-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderFilteredEntries();
+        });
+    });
 
     // Clear date filter
     clearDateFilterBtn.addEventListener('click', () => {
@@ -1303,13 +1420,19 @@
     };
 
     // --- TOOLS ---
-    elements.deleteAllBtn.addEventListener('click', async () => {
-        if (!confirm('🚨 Wirklich ALLES unwiderruflich löschen?')) return;
-        if (!confirm('⚠️ BIST DU DIR WIRKLICH SICHER? Dieser Schritt kann NICHT rückgängig gemacht werden! Hast du ein Backup gemacht?')) return;
-        
+    elements.deleteAllBtn.addEventListener('click', () => {
+        $('deleteModal').classList.remove('hidden');
+    });
+    $('deleteCancelBtn').addEventListener('click', () => {
+        $('deleteModal').classList.add('hidden');
+    });
+    $('deleteConfirmBtn').addEventListener('click', async () => {
+        $('deleteModal').classList.add('hidden');
+        $('deleteConfirmBtn').disabled = true;
         const { error } = await db.from('entries').delete().eq('user_id', currentUser.id);
+        $('deleteConfirmBtn').disabled = false;
         if (error) showToast(error.message, true);
-        else { showToast('Bereinigt.'); loadEntries(); }
+        else { showToast('Alle Einträge gelöscht.'); loadEntries(); }
     });
 
     const popover = elements.exportPopover;
@@ -1456,6 +1579,45 @@
       }
     });
 
+    // --- KEYBOARD SHORTCUTS ---
+    document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            elements.saveBtn.click();
+        }
+    });
+
+    // --- STATS ---
+    function calcStreak() {
+        if (!allEntriesCache.length) return 0;
+        const dates = new Set(allEntriesCache.map(e => e.entry_date));
+        let d = new Date();
+        d.setHours(0, 0, 0, 0);
+        if (!dates.has(d.toISOString().split('T')[0])) d.setDate(d.getDate() - 1);
+        let streak = 0;
+        while (dates.has(d.toISOString().split('T')[0])) {
+            streak++;
+            d.setDate(d.getDate() - 1);
+        }
+        return streak;
+    }
+
+    function updateStats() {
+        const total = allEntriesCache.length;
+        const streak = calcStreak();
+        $('statTotal').textContent = total;
+        $('statStreak').textContent = streak > 0 ? `${streak} 🔥` : '–';
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const weekStr = weekAgo.toISOString().split('T')[0];
+        const recent = allEntriesCache.filter(e => e.entry_date >= weekStr);
+        if (!recent.length) { $('statMood').textContent = '–'; return; }
+        const counts = { happy: 0, neutral: 0, sad: 0 };
+        recent.forEach(e => { if (counts[e.mood] !== undefined) counts[e.mood]++; });
+        const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+        $('statMood').textContent = { happy: '🙂', neutral: '😐', sad: '😞' }[top];
+    }
+
     // --- VOICE INPUT ---
     function setupSpeechRecognition() {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1464,50 +1626,54 @@
             return;
         }
 
-        const micSvg = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
         const stopSvg = `<svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"></rect></svg>`;
 
-        let activeRecognition = null;
-        let activeBtn = null;
-
         document.querySelectorAll('.mic-btn').forEach(btn => {
+            const micHtml = btn.innerHTML;
+            let recognition = null;
+            let baseText = '';
+            let confirmedNew = '';
+
             btn.addEventListener('click', () => {
+                if (recognition) { recognition.stop(); return; }
+
                 const textarea = $(btn.dataset.target);
+                baseText = textarea.value;
+                confirmedNew = '';
 
-                if (activeRecognition) {
-                    activeRecognition.stop();
-                    if (activeBtn === btn) return;
-                }
-
-                const recognition = new SR();
+                recognition = new SR();
                 recognition.lang = 'de-DE';
                 recognition.continuous = false;
-                recognition.interimResults = false;
+                recognition.interimResults = true;
 
                 recognition.onstart = () => {
-                    activeRecognition = recognition;
-                    activeBtn = btn;
                     btn.classList.add('recording');
                     btn.innerHTML = stopSvg;
-                    showToast('Aufnahme läuft…');
                 };
 
-                recognition.onresult = event => {
-                    const transcript = event.results[0][0].transcript;
-                    textarea.value += (textarea.value ? ' ' : '') + transcript;
+                recognition.onresult = (event) => {
+                    let interim = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const t = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) confirmedNew += (confirmedNew ? ' ' : '') + t;
+                        else interim = t;
+                    }
+                    const allNew = confirmedNew + (interim ? (confirmedNew ? ' ' : '') + interim : '');
+                    textarea.value = baseText + (baseText && allNew ? ' ' : '') + allNew;
                     autoResize(textarea);
                 };
 
-                recognition.onerror = event => {
+                recognition.onerror = (event) => {
                     if (event.error === 'not-allowed') showToast('Mikrofon-Zugriff verweigert.', true);
-                    else if (event.error !== 'aborted') showToast('Spracherkennung fehlgeschlagen.', true);
+                    else if (event.error !== 'aborted' && event.error !== 'no-speech') showToast('Spracherkennung fehlgeschlagen.', true);
                 };
 
                 recognition.onend = () => {
-                    activeRecognition = null;
-                    activeBtn = null;
+                    textarea.value = baseText + (baseText && confirmedNew ? ' ' : '') + confirmedNew;
+                    autoResize(textarea);
+                    recognition = null;
                     btn.classList.remove('recording');
-                    btn.innerHTML = micSvg;
+                    btn.innerHTML = micHtml;
                 };
 
                 recognition.start();
