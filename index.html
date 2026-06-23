@@ -598,6 +598,51 @@
         50% { box-shadow: 0 0 0 8px rgba(255,59,48,0); }
     }
 
+    /* NUDGE / ON-THIS-DAY CARDS */
+    #todayNudge, #onThisDayCard { margin-bottom: 16px; }
+
+    /* CALENDAR HEATMAP */
+    .heatmap-wrap {
+        overflow-x: auto;
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .heatmap-grid {
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: repeat(7, 13px);
+        gap: 3px;
+        width: max-content;
+    }
+    .heatmap-cell {
+        width: 13px; height: 13px;
+        border-radius: 3px;
+        background: var(--bg-button-secondary);
+        cursor: pointer;
+        transition: transform 0.15s;
+    }
+    .heatmap-cell:active { transform: scale(0.8); }
+    .heatmap-cell.happy { background: var(--success); }
+    .heatmap-cell.neutral { background: #FF9F0A; }
+    .heatmap-cell.sad { background: var(--danger); }
+    .heatmap-cell.future { visibility: hidden; cursor: default; }
+
+    /* PHOTO ATTACHMENT */
+    .photo-picker-label {
+        width: auto !important;
+        padding: 10px 16px !important;
+        flex-direction: row !important;
+        font-size: 13px !important;
+        cursor: pointer;
+    }
+    .entry-photo {
+        width: 100%; max-height: 220px; object-fit: cover;
+        border-radius: var(--radius-m);
+        margin-bottom: 16px;
+        background: var(--bg-input);
+        display: block;
+    }
 
   </style>
 </head>
@@ -626,6 +671,14 @@
       <label>Passwort bestätigen</label>
       <input type="password" id="confirmPassword" placeholder="Passwort wiederholen">
       <button id="setPasswordBtn" class="btn-primary" style="margin-top:24px;">Passwort setzen</button>
+    </div>
+  </div>
+
+  <div id="yearWrapModal" class="modal-overlay hidden">
+    <div class="card" style="width:100%;max-width:400px;padding:28px;max-height:85vh;overflow-y:auto;">
+      <h2 style="font-size:22px;font-weight:800;margin:0 0 20px;text-align:center;">📊 Jahresrückblick</h2>
+      <div id="yearWrapContent"></div>
+      <button id="yearWrapCloseBtn" class="btn-secondary" style="margin-top:24px;">Schließen</button>
     </div>
   </div>
 
@@ -667,6 +720,19 @@
       <div id="reminderBox" class="card" style="background:rgba(255, 159, 10, 0.1); border:1px solid rgba(255, 159, 10, 0.2); padding:16px; display:none; flex-direction:row; align-items:center; justify-content:space-between;">
           <div style="color:#FF9F0A; font-weight:700; font-size:14px;">Backup empfohlen</div>
           <button id="remindExportBtn" style="background:#FF9F0A; color:white; border:none; padding:6px 12px; border-radius:20px; font-weight:600; font-size:12px; cursor:pointer;">Exportieren</button>
+      </div>
+
+      <div id="todayNudge" class="card hidden" style="background:rgba(0,122,255,0.08); border:1px solid rgba(0,122,255,0.2); padding:16px; display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:12px;">
+          <div style="color:var(--accent); font-weight:700; font-size:14px;">📝 Heute noch nichts geschrieben</div>
+          <button id="nudgeWriteBtn" style="background:var(--accent); color:white; border:none; padding:6px 14px; border-radius:20px; font-weight:600; font-size:12px; cursor:pointer; white-space:nowrap;">Jetzt schreiben</button>
+      </div>
+
+      <div id="onThisDayCard" class="card hidden" style="padding:20px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <span style="font-size:20px;">🕰️</span>
+              <span style="font-weight:700; font-size:15px;">Vor X Jahren an diesem Tag</span>
+          </div>
+          <div id="onThisDayContent"></div>
       </div>
 
       <div class="section-title" id="editorSectionTitle">Neuer Eintrag</div>
@@ -711,6 +777,16 @@
             </div>
         </div>
 
+        <div class="input-group" style="padding-top:0;">
+            <label>Foto (optional)</label>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <label for="photoInput" class="btn-tool photo-picker-label">📷 Foto wählen</label>
+                <input type="file" id="photoInput" accept="image/*" class="hidden-input">
+                <img id="photoPreview" class="hidden" style="width:48px; height:48px; border-radius:10px; object-fit:cover;">
+                <button id="removePhotoBtn" class="txt-btn hidden" style="color:var(--danger);">Entfernen</button>
+            </div>
+        </div>
+
         <div class="mood-container">
             <div class="mood-grid">
                 <button class="mood-btn" data-mood="sad">😞</button>
@@ -740,6 +816,16 @@
               Import
               <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
           </label>
+
+          <button id="notifyBtn" class="btn-tool">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              Erinnerung
+          </button>
+
+          <button id="yearWrapBtn" class="btn-tool">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>
+              Jahresrückblick
+          </button>
 
           <button id="deleteAllBtn" class="btn-tool danger" style="grid-column: span 2;">
               <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -790,6 +876,13 @@
           <button class="mood-filter-btn" data-mood="neutral">😐 Neutral</button>
           <button class="mood-filter-btn" data-mood="sad">😞 Schwierig</button>
       </div>
+      <div class="mood-filter-row" id="personFilterRow">
+          <button class="mood-filter-btn active" data-person="">👨‍👩‍👧‍👧 Alle</button>
+          <button class="mood-filter-btn" data-person="lotta">Lotta</button>
+          <button class="mood-filter-btn" data-person="thea">Thea</button>
+      </div>
+
+      <div class="heatmap-wrap"><div id="heatmapContainer" class="heatmap-grid"></div></div>
 
       <div id="filterPills" class="filter-pills"></div>
       <div id="resultCount" class="result-count"></div>
@@ -824,11 +917,13 @@
     };
     const PAGE_SIZE = 20;
     const CACHE_KEY_PREFIX = 'entries_cache_v1_';
+    const VAPID_PUBLIC_KEY = 'BAQvAK4Ysgh3pVjZjqZuYwOOteBBmCNkyOiwtFQC8S6baQoGl7VxuZzyDbz4XRs7u4uz-b3yYQfQwtlzdfG6Kuk';
 
     let currentUser = null;
     let currentSessionToken = null;
     let selectedMood = null;
     let selectedMoodFilter = null;
+    let selectedPerson = null;
     let allEntriesCache = [];
     let currentEditingId = null;
     let fuse;
@@ -836,6 +931,9 @@
     let filterDateFrom, filterDateTo, clearDateFilterBtn;
     let currentFilteredEntries = [];
     let currentPage = 0;
+    let pendingPhotoFile = null;
+    let removeExistingPhoto = false;
+    let draftTimeout = null;
 
     const $ = id => document.getElementById(id);
     const elements = {
@@ -903,18 +1001,64 @@
         if(!isNaN(d.getTime())){
             elements.dateDisplay.textContent = d.toLocaleDateString('de-DE', { day:'numeric', month:'long', year:'numeric' });
         }
+        saveDraft();
     });
 
     // Auto Resize Textarea
     function autoResize(textarea) {
-      textarea.style.height = 'auto'; 
-      textarea.style.height = textarea.scrollHeight + 'px'; 
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
     }
     ['best', 'lotta', 'thea'].forEach(id => {
       const el = elements.fields[id];
-      el.addEventListener('input', () => autoResize(el));
+      el.addEventListener('input', () => {
+        autoResize(el);
+        clearTimeout(draftTimeout);
+        draftTimeout = setTimeout(saveDraft, 500);
+      });
       setTimeout(() => autoResize(el), 50);
     });
+
+    // --- DRAFT AUTOSAVE ---
+    function draftKey() { return 'draft_v1_' + (currentUser?.id || 'guest'); }
+
+    function saveDraft() {
+        if (currentEditingId) return;
+        const draft = {
+            date: elements.fields.date.value,
+            best: elements.fields.best.value,
+            lotta: elements.fields.lotta.value,
+            thea: elements.fields.thea.value,
+            mood: selectedMood
+        };
+        const isEmpty = !draft.best && !draft.lotta && !draft.thea && !draft.mood;
+        if (isEmpty) { localStorage.removeItem(draftKey()); return; }
+        try { localStorage.setItem(draftKey(), JSON.stringify(draft)); } catch(e) {}
+    }
+
+    function clearDraft() { localStorage.removeItem(draftKey()); }
+
+    function restoreDraft() {
+        const raw = localStorage.getItem(draftKey());
+        if (!raw) return;
+        try {
+            const draft = JSON.parse(raw);
+            if (draft.best) elements.fields.best.value = draft.best;
+            if (draft.lotta) elements.fields.lotta.value = draft.lotta;
+            if (draft.thea) elements.fields.thea.value = draft.thea;
+            if (draft.date) {
+                elements.fields.date.value = draft.date;
+                const d = new Date(draft.date);
+                if (!isNaN(d.getTime())) elements.dateDisplay.textContent = d.toLocaleDateString('de-DE', { day:'numeric', month:'long', year:'numeric' });
+            }
+            if (draft.mood) {
+                selectedMood = draft.mood;
+                document.querySelectorAll('.mood-btn').forEach(b => b.classList.toggle('selected', b.dataset.mood === draft.mood));
+            }
+            ['best', 'lotta', 'thea'].forEach(id => autoResize(elements.fields[id]));
+            if (draft.best || draft.lotta || draft.thea) showToast('Entwurf wiederhergestellt 📝');
+        } catch(e) {}
+    }
 
     // --- AUTH ---
     db.auth.getSession().then(({ data: { session } }) => {
@@ -969,8 +1113,19 @@
       elements.authSection.classList.add('hidden');
       elements.appSection.classList.remove('hidden');
       resetEditor();
+      restoreDraft();
       loadEntries();
       checkMonthlyReminder();
+      handleLaunchParams();
+    }
+
+    // --- PWA LAUNCH PARAMS (Homescreen-Shortcut) ---
+    function handleLaunchParams() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('action') === 'new') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => elements.fields.best.focus(), 300);
+        }
     }
 
     $('loginBtn').addEventListener('click', async () => {
@@ -1023,8 +1178,18 @@
         document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         selectedMood = btn.dataset.mood;
+        saveDraft();
       });
     });
+
+    function resetPhotoUI() {
+        pendingPhotoFile = null;
+        removeExistingPhoto = false;
+        $('photoInput').value = '';
+        $('photoPreview').classList.add('hidden');
+        $('photoPreview').src = '';
+        $('removePhotoBtn').classList.add('hidden');
+    }
 
     function resetEditor() {
         currentEditingId = null;
@@ -1043,6 +1208,7 @@
         selectedMood = null;
         document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
         ['best', 'lotta', 'thea'].forEach(id => { elements.fields[id].style.height = 'auto'; });
+        resetPhotoUI();
     }
 
     function startEdit(entry) {
@@ -1052,7 +1218,7 @@
         $('editorCard').classList.add('editing');
         $('editorSectionTitle').textContent = 'Eintrag bearbeiten';
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        
+
         elements.fields.date.value = entry.entry_date;
         const d = new Date(entry.entry_date);
         elements.dateDisplay.textContent = d.toLocaleDateString('de-DE', { day:'numeric', month:'long', year:'numeric' });
@@ -1066,7 +1232,41 @@
             else b.classList.remove('selected');
         });
         ['best', 'lotta', 'thea'].forEach(id => autoResize(elements.fields[id]));
+
+        resetPhotoUI();
+        if (entry.photo_path) {
+            $('removePhotoBtn').classList.remove('hidden');
+            db.storage.from('entry-photos').createSignedUrl(entry.photo_path, 3600).then(({ data }) => {
+                if (data?.signedUrl) {
+                    $('photoPreview').src = data.signedUrl;
+                    $('photoPreview').classList.remove('hidden');
+                }
+            });
+        }
     }
+
+    $('photoInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        pendingPhotoFile = file;
+        removeExistingPhoto = false;
+        const reader = new FileReader();
+        reader.onload = () => {
+            $('photoPreview').src = reader.result;
+            $('photoPreview').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+        $('removePhotoBtn').classList.remove('hidden');
+    });
+
+    $('removePhotoBtn').addEventListener('click', () => {
+        pendingPhotoFile = null;
+        removeExistingPhoto = true;
+        $('photoInput').value = '';
+        $('photoPreview').classList.add('hidden');
+        $('photoPreview').src = '';
+        $('removePhotoBtn').classList.add('hidden');
+    });
     
     elements.cancelEditBtn.addEventListener('click', () => {
         resetEditor();
@@ -1100,12 +1300,26 @@
       };
 
       try {
-          const { error } = currentEditingId 
+          let photoPath = currentEditingId
+              ? (allEntriesCache.find(e => e.id === currentEditingId)?.photo_path || null)
+              : null;
+          if (removeExistingPhoto) photoPath = null;
+          if (pendingPhotoFile) {
+              const ext = (pendingPhotoFile.name.split('.').pop() || 'jpg').toLowerCase();
+              const path = `${currentUser.id}/${Date.now()}.${ext}`;
+              const { error: upErr } = await db.storage.from('entry-photos').upload(path, pendingPhotoFile);
+              if (upErr) throw upErr;
+              photoPath = path;
+          }
+          entryData.photo_path = photoPath;
+
+          const { error } = currentEditingId
             ? await db.from('entries').update(entryData).eq('id', currentEditingId)
             : await db.from('entries').insert(entryData);
-          
+
           if (error) throw error;
           showToast(currentEditingId ? 'Eintrag aktualisiert ✨' : 'Gespeichert ✅');
+          clearDraft();
           resetEditor();
           await loadEntries();
       } catch(err) {
@@ -1126,6 +1340,9 @@
               fuse = new Fuse(allEntriesCache, FUSE_OPTIONS);
               updateStats();
               renderFilteredEntries();
+              renderHeatmap();
+              updateTodayNudge();
+              renderOnThisDay();
           } catch(e) {
               localStorage.removeItem(cacheKey);
               elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade Einträge...</div>';
@@ -1147,6 +1364,9 @@
           fuse = new Fuse(allEntriesCache, FUSE_OPTIONS);
           updateStats();
           renderFilteredEntries();
+          renderHeatmap();
+          updateTodayNudge();
+          renderOnThisDay();
       } catch(err) {
           if (err.message === 'network-timeout') {
               if (!allEntriesCache.length) {
@@ -1180,6 +1400,11 @@
         // 2. Mood filter
         if (selectedMoodFilter) {
             filtered = filtered.filter(e => e.mood === selectedMoodFilter);
+        }
+
+        // 2b. Person filter (Lotta / Thea Rückblick)
+        if (selectedPerson) {
+            filtered = filtered.filter(e => e[selectedPerson] && e[selectedPerson].trim());
         }
 
         // 3. Date range filter (ISO string comparison works lexicographically)
@@ -1216,10 +1441,20 @@
     filterDateTo.addEventListener('change', renderFilteredEntries);
 
     // Mood filter pills
-    document.querySelectorAll('.mood-filter-btn').forEach(btn => {
+    document.querySelectorAll('#moodFilterRow .mood-filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             selectedMoodFilter = btn.dataset.mood || null;
-            document.querySelectorAll('.mood-filter-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#moodFilterRow .mood-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderFilteredEntries();
+        });
+    });
+
+    // Person filter pills (Lotta / Thea Rückblick)
+    document.querySelectorAll('#personFilterRow .mood-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            selectedPerson = btn.dataset.person || null;
+            document.querySelectorAll('#personFilterRow .mood-filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             renderFilteredEntries();
         });
@@ -1266,6 +1501,9 @@
           const animDelay   = !append && globalIdx < 10 ? `${globalIdx * 0.05}s` : '0s';
           const borderColor = moodBorder[entry.mood] || 'var(--border)';
 
+          const photoHtml = entry.photo_path
+              ? `<img class="entry-photo" data-path="${escapeHtml(entry.photo_path)}" alt="Foto">`
+              : '';
           const bestHtml  = entry.best_of_day
               ? `<div style="margin-bottom:20px;"><div class="entry-text">${escapeHtml(entry.best_of_day)}</div></div>`
               : '';
@@ -1285,6 +1523,7 @@
                   <span style="font-size:20px;">${moodMap[entry.mood] || ''}</span>
               </div>
               <div class="entry-content">
+                  ${photoHtml}
                   ${bestHtml}
                   <div style="display:flex; gap:20px; flex-wrap:wrap;">${lottaHtml}${theaHtml}</div>
               </div>
@@ -1296,6 +1535,7 @@
       });
 
       elements.entriesContainer.appendChild(fragment);
+      loadEntryPhotos(elements.entriesContainer);
 
       // "Mehr laden" button if pages remain
       const shown = start + PAGE_SIZE;
@@ -1619,6 +1859,222 @@
         $('statMood').textContent = { happy: '🙂', neutral: '😐', sad: '😞' }[top];
     }
 
+    // --- ENTRY PHOTOS (Supabase Storage, signed URLs) ---
+    async function loadEntryPhotos(root) {
+        const imgs = root.querySelectorAll('.entry-photo[data-path]');
+        for (const img of imgs) {
+            const path = img.dataset.path;
+            try {
+                const { data } = await db.storage.from('entry-photos').createSignedUrl(path, 3600);
+                if (data?.signedUrl) img.src = data.signedUrl;
+            } catch(e) {}
+        }
+    }
+
+    // --- TODAY NUDGE ---
+    function updateTodayNudge() {
+        const today = new Date().toISOString().split('T')[0];
+        const hasToday = allEntriesCache.some(e => e.entry_date === today);
+        $('todayNudge').classList.toggle('hidden', hasToday);
+    }
+    $('nudgeWriteBtn').addEventListener('click', () => {
+        resetEditor();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => elements.fields.best.focus(), 300);
+    });
+
+    // --- ON THIS DAY (Vor X Jahren) ---
+    function renderOnThisDay() {
+        const card = $('onThisDayCard');
+        const content = $('onThisDayContent');
+        const today = new Date();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const moodMap = { happy: '🙂', neutral: '😐', sad: '😞' };
+
+        const matches = allEntriesCache
+            .filter(e => {
+                const p = e.entry_date.split('-');
+                return p[1] === mm && p[2] === dd && p[0] !== String(today.getFullYear());
+            })
+            .sort((a, b) => b.entry_date.localeCompare(a.entry_date));
+
+        if (!matches.length) { card.classList.add('hidden'); return; }
+
+        content.innerHTML = matches.map(e => {
+            const years = today.getFullYear() - Number(e.entry_date.split('-')[0]);
+            const text = e.best_of_day || e.lotta || e.thea || '';
+            return `<div style="padding:10px 0; border-top:1px solid var(--border);">
+                <div style="font-size:12px; color:var(--text-secondary); font-weight:600; margin-bottom:4px;">Vor ${years} ${years === 1 ? 'Jahr' : 'Jahren'} ${moodMap[e.mood] || ''}</div>
+                <div style="font-size:14px; color:var(--text-main);">${escapeHtml(text)}</div>
+            </div>`;
+        }).join('');
+        card.classList.remove('hidden');
+    }
+
+    // --- CALENDAR HEATMAP ---
+    function renderHeatmap() {
+        const container = $('heatmapContainer');
+        const DAYS = 119; // ~17 weeks
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const start = new Date(today);
+        start.setDate(start.getDate() - (DAYS - 1));
+        start.setDate(start.getDate() - start.getDay()); // align to Sunday
+
+        const entryByDate = {};
+        allEntriesCache.forEach(e => { entryByDate[e.entry_date] = e; });
+
+        const moodClass = { happy: 'happy', neutral: 'neutral', sad: 'sad' };
+        let html = '';
+        const cursor = new Date(start);
+        while (cursor <= today) {
+            const iso = cursor.toISOString().split('T')[0];
+            const entry = entryByDate[iso];
+            const cls = entry ? (moodClass[entry.mood] || '') : '';
+            html += `<div class="heatmap-cell ${cls}" data-date="${iso}" title="${iso}"></div>`;
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        // pad remaining cells of current week so columns stay aligned, but keep them invisible/non-interactive
+        const padDays = (7 - ((new Date(today).getDay()) + 1)) ;
+        for (let i = 0; i < padDays; i++) {
+            html += `<div class="heatmap-cell future"></div>`;
+        }
+        container.innerHTML = html;
+    }
+
+    $('heatmapContainer').addEventListener('click', (e) => {
+        const cell = e.target.closest('.heatmap-cell');
+        if (!cell || cell.classList.contains('future') || !cell.dataset.date) return;
+        const date = cell.dataset.date;
+        const entry = allEntriesCache.find(x => x.entry_date === date);
+        if (entry) {
+            startEdit(entry);
+        } else {
+            resetEditor();
+            elements.fields.date.value = date;
+            elements.fields.date.dispatchEvent(new Event('change'));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+
+    // --- JAHRESRÜCKBLICK (Wrapped) ---
+    function computeYearWrap(year) {
+        const yearEntries = allEntriesCache.filter(e => e.entry_date.startsWith(String(year)));
+        const total = yearEntries.length;
+        const moodCounts = { happy: 0, neutral: 0, sad: 0 };
+        yearEntries.forEach(e => { if (moodCounts[e.mood] !== undefined) moodCounts[e.mood]++; });
+
+        const monthCounts = Array(12).fill(0);
+        yearEntries.forEach(e => { monthCounts[Number(e.entry_date.split('-')[1]) - 1]++; });
+        const monthNames = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+        const topMonthIdx = monthCounts.indexOf(Math.max(...monthCounts));
+
+        const dates = yearEntries.map(e => e.entry_date).sort();
+        let longest = 0, current = 0, prev = null;
+        dates.forEach(d => {
+            current = (prev && (new Date(d) - new Date(prev)) / 86400000 === 1) ? current + 1 : 1;
+            longest = Math.max(longest, current);
+            prev = d;
+        });
+
+        return {
+            total,
+            moodCounts,
+            topMonth: total ? monthNames[topMonthIdx] : '–',
+            topMonthCount: monthCounts[topMonthIdx] || 0,
+            longestStreak: longest,
+            lottaCount: yearEntries.filter(e => e.lotta).length,
+            theaCount: yearEntries.filter(e => e.thea).length
+        };
+    }
+
+    function showYearWrap() {
+        const year = new Date().getFullYear();
+        const w = computeYearWrap(year);
+        if (!w.total) { showToast(`Noch keine Einträge für ${year}.`, true); return; }
+        const pct = m => w.total ? Math.round((w.moodCounts[m] / w.total) * 100) : 0;
+        $('yearWrapContent').innerHTML = `
+            <div style="text-align:center; margin-bottom:24px;">
+                <div style="font-size:48px; font-weight:800;">${w.total}</div>
+                <div style="color:var(--text-secondary); font-weight:600;">Einträge in ${year}</div>
+            </div>
+            <div style="display:flex; justify-content:space-around; margin-bottom:24px;">
+                <div style="text-align:center;"><div style="font-size:28px;">🙂</div><div style="font-weight:700;">${pct('happy')}%</div></div>
+                <div style="text-align:center;"><div style="font-size:28px;">😐</div><div style="font-weight:700;">${pct('neutral')}%</div></div>
+                <div style="text-align:center;"><div style="font-size:28px;">😞</div><div style="font-weight:700;">${pct('sad')}%</div></div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">🔥 Längste Serie: <strong>${w.longestStreak} Tage</strong></div>
+                <div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">📅 Aktivster Monat: <strong>${w.topMonth}</strong> (${w.topMonthCount})</div>
+                <div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">👧 Lotta erwähnt: <strong>${w.lottaCount}×</strong></div>
+                <div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">👧 Thea erwähnt: <strong>${w.theaCount}×</strong></div>
+            </div>`;
+        $('yearWrapModal').classList.remove('hidden');
+    }
+    $('yearWrapBtn').addEventListener('click', showYearWrap);
+    $('yearWrapCloseBtn').addEventListener('click', () => $('yearWrapModal').classList.add('hidden'));
+
+    // --- ERROR TRACKING ---
+    const _loggedErrors = new Set();
+    let _errorLogCount = 0;
+    async function logClientError(message, stack) {
+        if (_errorLogCount >= 5 || !currentUser) return;
+        const key = String(message) + '|' + String(stack || '').slice(0, 200);
+        if (_loggedErrors.has(key)) return;
+        _loggedErrors.add(key);
+        _errorLogCount++;
+        try {
+            await db.from('error_logs').insert({
+                user_id: currentUser.id,
+                message: String(message || '').slice(0, 1000),
+                stack: String(stack || '').slice(0, 4000),
+                url: window.location.href
+            });
+        } catch(e) { /* swallow – error logging must never throw */ }
+    }
+    window.addEventListener('error', (e) => logClientError(e.message, e.error?.stack));
+    window.addEventListener('unhandledrejection', (e) => logClientError(e.reason?.message || String(e.reason), e.reason?.stack));
+
+    // --- PUSH NOTIFICATIONS (Tägliche Erinnerung) ---
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+    }
+
+    $('notifyBtn').addEventListener('click', async () => {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            return showToast('Push wird von diesem Browser nicht unterstützt.', true);
+        }
+        if (VAPID_PUBLIC_KEY.startsWith('PASTE_')) {
+            return showToast('Push-Setup noch nicht abgeschlossen (VAPID-Key fehlt).', true);
+        }
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') return showToast('Benachrichtigungen wurden nicht erlaubt.', true);
+
+            const reg = await navigator.serviceWorker.ready;
+            let sub = await reg.pushManager.getSubscription();
+            if (!sub) {
+                sub = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+            }
+            const { endpoint, keys } = sub.toJSON();
+            const { error } = await db.from('push_subscriptions').upsert({
+                user_id: currentUser.id,
+                endpoint,
+                p256dh: keys.p256dh,
+                auth: keys.auth
+            }, { onConflict: 'endpoint' });
+            if (error) throw error;
+            showToast('Tägliche Erinnerung aktiviert 🔔');
+        } catch (err) {
+            showToast('Fehler: ' + err.message, true);
+        }
+    });
 
     // --- VOICE INPUT ---
     function setupSpeechRecognition() {

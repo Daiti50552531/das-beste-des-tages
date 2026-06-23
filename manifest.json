@@ -15,5 +15,16 @@
       "type": "image/svg+xml",
       "purpose": "any"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Neuer Eintrag",
+      "short_name": "Neu",
+      "description": "Heutigen Eintrag direkt erfassen",
+      "url": "./?action=new",
+      "icons": [
+        { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+      ]
+    }
   ]
 }
