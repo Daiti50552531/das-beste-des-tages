@@ -1,4 +1,4 @@
-const CACHE_NAME = 'das-beste-des-tages-v1';
+const CACHE_NAME = 'das-beste-des-tages-v2';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
@@ -46,4 +46,30 @@ self.addEventListener('fetch', event => {
       })
     );
   }
+});
+
+self.addEventListener('push', event => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch (e) {}
+  const title = payload.title || 'Das Beste des Tages';
+  const options = {
+    body: payload.body || 'Hast du heute schon dein Bestes des Tages festgehalten?',
+    icon: './icon.svg',
+    badge: './icon.svg',
+    data: { url: payload.url || './?action=new' }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || './';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window' }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+    })
+  );
 });
