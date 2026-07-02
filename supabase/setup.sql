@@ -7,6 +7,12 @@
 -- 1) Foto-Anhänge: Spalte auf der entries-Tabelle
 alter table entries add column if not exists photo_path text;
 
+-- 1b) Duplikat-Schutz: pro Nutzer und Tag genau ein Eintrag.
+-- Hinweis: Schlägt fehl, falls es bereits doppelte Datums-Einträge gibt —
+-- dann zuerst Duplikate löschen und den Befehl erneut ausführen.
+create unique index if not exists entries_user_date_unique
+  on entries (user_id, entry_date);
+
 -- 1a) Privater Storage-Bucket für Fotos (pro Nutzer isoliert)
 insert into storage.buckets (id, name, public)
 values ('entry-photos', 'entry-photos', false)
