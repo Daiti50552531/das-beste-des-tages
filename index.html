@@ -23,6 +23,7 @@
       --primary-rgb: 0,0,0;
       
       --accent: #007AFF; /* iOS Blue */
+      --accent-rgb: 0,122,255;
       --success: #34C759; /* iOS Green */
       --danger: #FF3B30;  /* iOS Red */
       
@@ -54,6 +55,7 @@
       --primary-rgb: 242,242,247;
 
       --accent: #0A84FF;         /* iOS Dark Mode Blue  — lebendiger als #007AFF */
+      --accent-rgb: 10,132,255;
       --success: #30D158;        /* iOS Dark Mode Green */
       --danger: #FF453A;         /* iOS Dark Mode Red   */
 
@@ -700,6 +702,124 @@
         object-fit: contain;
     }
 
+    /* --- GREETING --- */
+    .greeting {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin: 4px 4px 16px;
+    }
+    .greeting small {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-top: 2px;
+    }
+
+    /* --- PROMPT CARD (Impuls des Tages) --- */
+    .prompt-card {
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+        background: linear-gradient(135deg, rgba(var(--accent-rgb, 0,122,255), 0.09), rgba(var(--accent-rgb, 0,122,255), 0.03));
+        border: 1px solid rgba(var(--accent-rgb, 0,122,255), 0.15);
+    }
+    .prompt-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 3px;
+    }
+    .prompt-text {
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        line-height: 1.4;
+    }
+
+    /* --- ACCENT SWATCHES --- */
+    .accent-row {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin: 10px 0 6px;
+    }
+    .accent-swatch {
+        width: 42px; height: 42px;
+        border-radius: 50%;
+        border: 3px solid transparent;
+        cursor: pointer;
+        transition: transform 0.15s, border-color 0.15s;
+        padding: 0;
+    }
+    .accent-swatch.selected {
+        border-color: var(--text-main);
+        transform: scale(1.12);
+    }
+    .accent-swatch:active { transform: scale(0.95); }
+
+    /* --- ONBOARDING --- */
+    .ob-step-dots { display: flex; justify-content: center; gap: 7px; margin-bottom: 18px; }
+    .ob-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bg-button-secondary); transition: background 0.2s; }
+    .ob-dot.active { background: var(--accent); }
+
+    /* --- MOOD TREND CHART --- */
+    .trend-grid {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        height: 130px;
+        padding-top: 20px;
+    }
+    .trend-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        height: 100%;
+        gap: 5px;
+    }
+    .trend-track {
+        width: 100%;
+        max-width: 34px;
+        flex: 1;
+        display: flex;
+        align-items: flex-end;
+        background: var(--bg-input);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    .trend-bar {
+        width: 100%;
+        border-radius: 4px 4px 0 0;
+        min-height: 4px;
+        transition: height 0.4s ease;
+    }
+    .trend-month {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+    .trend-emoji { font-size: 15px; line-height: 1; }
+
+    /* --- MONTH CARD ROWS --- */
+    .month-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 15px;
+    }
+    .month-row:last-child { border-bottom: none; }
+    .month-row strong { font-weight: 700; }
+
     /* --- PULL TO REFRESH --- */
     .ptr {
         position: fixed;
@@ -749,6 +869,52 @@
     </div>
   </div>
 
+  <div id="onboardingModal" class="modal-overlay hidden">
+    <div class="card" style="width:100%;max-width:420px;padding:28px;max-height:88vh;overflow-y:auto;">
+      <div class="ob-step-dots">
+        <div class="ob-dot active" data-step="1"></div>
+        <div class="ob-dot" data-step="2"></div>
+        <div class="ob-dot" data-step="3"></div>
+      </div>
+
+      <div id="obStep1">
+        <div style="font-size:44px;text-align:center;margin-bottom:12px;">👋</div>
+        <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;text-align:center;">Willkommen!</h2>
+        <p style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;text-align:center;line-height:1.5;">Lass uns die App in drei kurzen Schritten auf dich einstellen.</p>
+        <label>Wie dürfen wir dich nennen? (optional)</label>
+        <input type="text" id="obName" placeholder="Dein Name">
+      </div>
+
+      <div id="obStep2" class="hidden">
+        <div style="font-size:44px;text-align:center;margin-bottom:12px;">✍️</div>
+        <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;text-align:center;">Deine Extra-Felder</h2>
+        <p style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;text-align:center;line-height:1.5;">Neben deinem Haupt-Eintrag kannst du über bis zu zwei Menschen oder Themen schreiben – z.&nbsp;B. deine Kinder, Partner oder dein Haustier. Leer lassen blendet das Feld aus.</p>
+        <label>Feld 1 (optional)</label>
+        <input type="text" id="obField1" placeholder="z. B. Lotta" style="margin-bottom:16px;">
+        <label>Feld 2 (optional)</label>
+        <input type="text" id="obField2" placeholder="z. B. Thea">
+      </div>
+
+      <div id="obStep3" class="hidden">
+        <div style="font-size:44px;text-align:center;margin-bottom:12px;">🎨</div>
+        <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;text-align:center;">Dein Stil</h2>
+        <p style="color:var(--text-secondary);margin:0 0 20px;font-size:15px;text-align:center;line-height:1.5;">Wähle deine Akzentfarbe und deine Wunschzeit für die tägliche Erinnerung.</p>
+        <label>Akzentfarbe</label>
+        <div id="obAccentRow" class="accent-row"></div>
+        <label style="margin-top:16px;">Erinnerungszeit</label>
+        <div class="date-filter-field" style="margin-top:8px;">
+            <input type="time" id="obReminderTime" class="date-filter-input" value="20:00">
+        </div>
+        <p style="color:var(--text-secondary);font-size:13px;margin:10px 0 0;line-height:1.4;">Aktivieren kannst du die Erinnerung jederzeit unter <strong>Mehr → Erinnerung</strong>.</p>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:26px;">
+        <button id="obBackBtn" class="btn-secondary hidden" style="flex:1;margin-top:0;">Zurück</button>
+        <button id="obNextBtn" class="btn-primary" style="flex:1;">Weiter</button>
+      </div>
+    </div>
+  </div>
+
   <div id="yearWrapModal" class="modal-overlay hidden">
     <div class="card" style="width:100%;max-width:400px;padding:28px;max-height:85vh;overflow-y:auto;">
       <h2 style="font-size:22px;font-weight:800;margin:0 0 20px;text-align:center;">📊 Jahresrückblick</h2>
@@ -794,6 +960,8 @@
 
       <div id="tab-heute" class="tab-page">
 
+      <div id="greeting" class="greeting hidden"></div>
+
       <div id="reminderBox" class="card" style="background:rgba(255, 159, 10, 0.1); border:1px solid rgba(255, 159, 10, 0.2); padding:16px; display:none; flex-direction:row; align-items:center; justify-content:space-between;">
           <div style="color:#FF9F0A; font-weight:700; font-size:14px;">Backup empfohlen</div>
           <button id="remindExportBtn" style="background:#FF9F0A; color:white; border:none; padding:6px 12px; border-radius:20px; font-weight:600; font-size:12px; cursor:pointer;">Exportieren</button>
@@ -810,6 +978,15 @@
               <span style="font-weight:700; font-size:15px;">Vor X Jahren an diesem Tag</span>
           </div>
           <div id="onThisDayContent"></div>
+      </div>
+
+      <div id="promptCard" class="card prompt-card">
+          <span style="font-size:22px;">💡</span>
+          <div style="flex:1;">
+              <div class="prompt-label">Impuls des Tages</div>
+              <div id="promptText" class="prompt-text"></div>
+          </div>
+          <button id="promptShuffleBtn" class="mic-btn" title="Anderer Impuls" style="font-size:14px;">🔄</button>
       </div>
 
       <div class="section-title" id="editorSectionTitle">Neuer Eintrag</div>
@@ -833,19 +1010,19 @@
             <textarea id="bestOfDay" placeholder="Was war heute los?" rows="3"></textarea>
         </div>
 
-        <div class="input-group" style="padding-top:0; display:flex; gap:12px;">
-            <div style="flex:1;">
+        <div class="input-group" id="extraFieldsRow" style="padding-top:0; display:flex; gap:12px;">
+            <div style="flex:1;" id="field1Wrap">
                 <div class="field-header">
-                    <label>Lotta</label>
+                    <label id="field1EditorLabel">Lotta</label>
                     <button class="mic-btn" data-target="lotta" title="Spracheingabe">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                     </button>
                 </div>
                 <textarea id="lotta" placeholder="Was hat Lotta heute erlebt?" rows="2"></textarea>
             </div>
-            <div style="flex:1;">
+            <div style="flex:1;" id="field2Wrap">
                 <div class="field-header">
-                    <label>Thea</label>
+                    <label id="field2EditorLabel">Thea</label>
                     <button class="mic-btn" data-target="thea" title="Spracheingabe">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                     </button>
@@ -885,6 +1062,9 @@
       </div><!-- /tab-heute -->
 
       <div id="tab-mehr" class="tab-page hidden">
+      <div class="section-title">Einstellungen</div>
+      <button id="openSettingsBtn" class="btn-secondary" style="margin-top:0; margin-bottom:8px;">⚙️ App anpassen (Name, Felder, Farbe)</button>
+
       <div class="section-title">Werkzeuge</div>
       <div class="action-grid" style="position:relative;">
           
@@ -932,6 +1112,14 @@
               <span class="stat-value" id="statMood">–</span>
               <span class="stat-label">Diese Woche</span>
           </div>
+      </div>
+
+      <div class="section-title">Dein Monat</div>
+      <div class="card" id="monthCard" style="padding:8px 20px;"></div>
+
+      <div class="section-title">Stimmungs-Verlauf (6 Monate)</div>
+      <div class="card" style="padding:16px 20px 14px;">
+          <div id="moodTrend" class="trend-grid"></div>
       </div>
 
       <div class="section-title">Kalender</div>
@@ -1107,6 +1295,7 @@
 
       const metaTheme = document.querySelector('meta[name="theme-color"]');
       if (metaTheme) metaTheme.setAttribute("content", isDark ? "#000000" : "#F2F2F7");
+      applyAccent();
     });
 
     // --- LOCAL DATE (deutsche Zeitzone statt UTC – Mitternachts-Bugfix) ---
@@ -1127,8 +1316,282 @@
         window.scrollTo({ top: 0 });
     }
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        btn.addEventListener('click', () => {
+            const alreadyActive = !$('tab-' + btn.dataset.tab).classList.contains('hidden');
+            if (alreadyActive) window.scrollTo({ top: 0, behavior: 'smooth' });
+            else switchTab(btn.dataset.tab);
+        });
     });
+
+    // --- EINSTELLUNGEN (pro Account, lokal gespeichert) ---
+    const DEFAULT_SETTINGS = {
+        displayName: '',
+        field1Label: 'Lotta',
+        field2Label: 'Thea',
+        field1Enabled: true,
+        field2Enabled: true,
+        accent: 'blue',
+        reminderTime: '20:00',
+        onboarded: false
+    };
+    let settings = { ...DEFAULT_SETTINGS };
+    function settingsKey() { return 'settings_v1_' + (currentUser?.id || 'guest'); }
+    function loadSettings() {
+        try { settings = { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem(settingsKey())) || {}) }; }
+        catch(e) { settings = { ...DEFAULT_SETTINGS }; }
+    }
+    function saveSettings() {
+        try { localStorage.setItem(settingsKey(), JSON.stringify(settings)); } catch(e) {}
+    }
+
+    // --- AKZENTFARBEN ---
+    const ACCENTS = {
+        blue:   { light: '#007AFF', dark: '#0A84FF' },
+        purple: { light: '#AF52DE', dark: '#BF5AF2' },
+        pink:   { light: '#FF2D55', dark: '#FF375F' },
+        green:  { light: '#34C759', dark: '#30D158' },
+        orange: { light: '#FF9500', dark: '#FF9F0A' },
+        teal:   { light: '#30B0C7', dark: '#40C8E0' }
+    };
+    function applyAccent() {
+        const a = ACCENTS[settings.accent] || ACCENTS.blue;
+        const hex = document.body.classList.contains('dark-mode') ? a.dark : a.light;
+        document.body.style.setProperty('--accent', hex);
+        const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+        document.body.style.setProperty('--accent-rgb', `${r},${g},${b}`);
+    }
+
+    // --- BEGRÜSSUNG ---
+    function updateGreeting() {
+        const h = new Date().getHours();
+        const part = h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend';
+        const name = settings.displayName ? `, ${escapeHtml(settings.displayName)}` : '';
+        const dateStr = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+        $('greeting').innerHTML = `${part}${name} ✨<small>${dateStr}</small>`;
+        $('greeting').classList.remove('hidden');
+    }
+
+    // --- EINSTELLUNGEN ANWENDEN (Felder, Filter, Farbe, Gruß) ---
+    function applySettings() {
+        applyAccent();
+        const f1 = settings.field1Enabled, f2 = settings.field2Enabled;
+        $('field1Wrap').classList.toggle('hidden', !f1);
+        $('field2Wrap').classList.toggle('hidden', !f2);
+        $('extraFieldsRow').classList.toggle('hidden', !f1 && !f2);
+        $('field1EditorLabel').textContent = settings.field1Label;
+        $('field2EditorLabel').textContent = settings.field2Label;
+        elements.fields.lotta.placeholder = `Was hat ${settings.field1Label} heute erlebt?`;
+        elements.fields.thea.placeholder = `Was hat ${settings.field2Label} heute erlebt?`;
+        const btn1 = document.querySelector('#personFilterRow [data-person="lotta"]');
+        const btn2 = document.querySelector('#personFilterRow [data-person="thea"]');
+        btn1.textContent = settings.field1Label;
+        btn2.textContent = settings.field2Label;
+        btn1.classList.toggle('hidden', !f1);
+        btn2.classList.toggle('hidden', !f2);
+        $('personFilterRow').classList.toggle('hidden', !f1 && !f2);
+        if ((selectedPerson === 'lotta' && !f1) || (selectedPerson === 'thea' && !f2)) {
+            selectedPerson = null;
+            document.querySelectorAll('#personFilterRow .mood-filter-btn').forEach(b => b.classList.toggle('active', !b.dataset.person));
+        }
+        updateGreeting();
+    }
+
+    // --- ONBOARDING / EINSTELLUNGS-ASSISTENT ---
+    let obStep = 1;
+    let obAccentChoice = 'blue';
+    function buildAccentRow() {
+        const row = $('obAccentRow');
+        row.innerHTML = '';
+        Object.keys(ACCENTS).forEach(key => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'accent-swatch' + (key === obAccentChoice ? ' selected' : '');
+            b.style.background = ACCENTS[key].light;
+            b.dataset.accent = key;
+            b.addEventListener('click', () => {
+                obAccentChoice = key;
+                row.querySelectorAll('.accent-swatch').forEach(s => s.classList.toggle('selected', s.dataset.accent === key));
+            });
+            row.appendChild(b);
+        });
+    }
+    function showObStep(n) {
+        obStep = n;
+        [1, 2, 3].forEach(i => $('obStep' + i).classList.toggle('hidden', i !== n));
+        document.querySelectorAll('.ob-dot').forEach(d => d.classList.toggle('active', Number(d.dataset.step) <= n));
+        $('obBackBtn').classList.toggle('hidden', n === 1);
+        $('obNextBtn').textContent = n === 3 ? 'Los geht’s! 🎉' : 'Weiter';
+    }
+    function openOnboarding() {
+        $('obName').value = settings.displayName || '';
+        $('obField1').value = settings.field1Enabled ? settings.field1Label : '';
+        $('obField2').value = settings.field2Enabled ? settings.field2Label : '';
+        $('obReminderTime').value = settings.reminderTime || '20:00';
+        obAccentChoice = settings.accent || 'blue';
+        buildAccentRow();
+        showObStep(1);
+        $('onboardingModal').classList.remove('hidden');
+    }
+    $('obBackBtn').addEventListener('click', () => showObStep(obStep - 1));
+    $('obNextBtn').addEventListener('click', () => {
+        if (obStep < 3) return showObStep(obStep + 1);
+        const l1 = $('obField1').value.trim();
+        const l2 = $('obField2').value.trim();
+        settings.displayName = $('obName').value.trim();
+        settings.field1Enabled = !!l1;
+        settings.field2Enabled = !!l2;
+        if (l1) settings.field1Label = l1;
+        if (l2) settings.field2Label = l2;
+        settings.accent = obAccentChoice;
+        settings.reminderTime = $('obReminderTime').value || '20:00';
+        const firstTime = !settings.onboarded;
+        settings.onboarded = true;
+        saveSettings();
+        applySettings();
+        renderFilteredEntries();
+        $('onboardingModal').classList.add('hidden');
+        if (firstTime) { confettiBurst(true); showToast('Alles eingerichtet – viel Freude! ✨'); }
+        else showToast('Einstellungen gespeichert ✅');
+    });
+    $('openSettingsBtn').addEventListener('click', openOnboarding);
+
+    // --- IMPULS DES TAGES ---
+    const PROMPTS = [
+        'Wofür warst du heute dankbar?',
+        'Was hat dich heute zum Lachen gebracht?',
+        'Welcher kleine Moment hat den Tag besonders gemacht?',
+        'Was hast du heute zum ersten Mal gemacht oder bemerkt?',
+        'Wer hat dir heute ein gutes Gefühl gegeben – und womit?',
+        'Was war heute leckerer, schöner oder besser als erwartet?',
+        'Worauf bist du heute ein bisschen stolz?',
+        'Welches Gespräch von heute bleibt dir im Kopf?',
+        'Was hast du heute für dich selbst getan?',
+        'Welcher Geruch, Klang oder Anblick ist dir heute aufgefallen?',
+        'Was würdest du vom heutigen Tag gern nochmal erleben?',
+        'Wem würdest du für heute gern Danke sagen?',
+        'Was hat dich heute überrascht?',
+        'Welche kleine Freundlichkeit hast du heute erlebt oder verschenkt?',
+        'Was hat dir heute Energie gegeben?',
+        'Welcher Moment heute war zum Festhalten schön?',
+        'Was hast du heute gelernt – über dich oder die Welt?',
+        'Was lief heute leichter als gedacht?',
+        'Worüber hast du dich heute gefreut wie ein Kind?',
+        'Welche Begegnung hat den Tag besser gemacht?',
+        'Was war heute dein Lieblingsgeräusch?',
+        'Wo warst du heute ganz im Moment?',
+        'Was hat heute gut geschmeckt?',
+        'Welche Nachricht oder Botschaft hat dich heute erreicht und berührt?',
+        'Was hast du heute draußen erlebt?',
+        'Welcher Song, Satz oder Gedanke hat dich heute begleitet?',
+        'Was würdest du deinem Ich von heute Morgen sagen?',
+        'Welche kleine Gewohnheit hat dir heute gutgetan?',
+        'Was hat heute Farbe in deinen Tag gebracht?',
+        'Worauf freust du dich, wenn du an morgen denkst?',
+        'Was war heute schöner, weil du es geteilt hast?',
+        'Welchen Augenblick von heute möchtest du nie vergessen?',
+        'Was hat dich heute zum Staunen gebracht?',
+        'Wann hast du heute richtig durchgeatmet?',
+        'Welches Kompliment hast du heute bekommen oder gemacht?',
+        'Was war das Mutigste, das du heute getan hast?',
+        'Welcher Mensch ging dir heute nicht aus dem Kopf – warum?',
+        'Was hat heute einfach funktioniert?',
+        'Womit hast du heute jemandem eine Freude gemacht?',
+        'Welchen kleinen Luxus hast du dir heute gegönnt?',
+        'Was macht den heutigen Tag einzigartig?',
+        'Wofür hat sich das Aufstehen heute gelohnt?'
+    ];
+    let promptOffset = 0;
+    function dayOfYear() {
+        const now = new Date();
+        return Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+    }
+    function renderDailyPrompt() {
+        $('promptText').textContent = PROMPTS[(dayOfYear() + promptOffset) % PROMPTS.length];
+    }
+    $('promptShuffleBtn').addEventListener('click', () => { promptOffset++; renderDailyPrompt(); });
+    $('promptText').addEventListener('click', () => {
+        const q = $('promptText').textContent;
+        const ta = elements.fields.best;
+        if (!ta.value.trim()) {
+            ta.value = q + '\n';
+            autoResize(ta);
+            saveDraft();
+        }
+        ta.focus();
+        const len = ta.value.length;
+        ta.setSelectionRange(len, len);
+    });
+
+    // --- KONFETTI ---
+    function confettiBurst(big = false) {
+        const canvas = document.createElement('canvas');
+        canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:2000;pointer-events:none;';
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        document.body.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        const accent = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#007AFF';
+        const colors = [accent, '#34C759', '#FF9F0A', '#FF2D55', '#AF52DE', '#FFD60A'];
+        const N = big ? 170 : 70;
+        const parts = [];
+        for (let i = 0; i < N; i++) {
+            parts.push({
+                x: canvas.width / 2 + (Math.random() - 0.5) * canvas.width * 0.6,
+                y: canvas.height * (big ? 0.35 : 0.3),
+                vx: (Math.random() - 0.5) * 9,
+                vy: -Math.random() * 11 - 4,
+                size: Math.random() * 7 + 4,
+                color: colors[i % colors.length],
+                rot: Math.random() * Math.PI,
+                vr: (Math.random() - 0.5) * 0.3
+            });
+        }
+        const t0 = performance.now();
+        const dur = big ? 2600 : 1600;
+        (function frame(t) {
+            const elapsed = t - t0;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            parts.forEach(p => {
+                p.x += p.vx; p.y += p.vy; p.vy += 0.35; p.rot += p.vr;
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rot);
+                ctx.globalAlpha = Math.max(0, 1 - elapsed / dur);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                ctx.restore();
+            });
+            if (elapsed < dur) requestAnimationFrame(frame);
+            else canvas.remove();
+        })(t0);
+    }
+
+    // --- MEILENSTEINE ---
+    const STREAK_MILESTONES = [7, 14, 30, 50, 100, 200, 365];
+    const COUNT_MILESTONES = [10, 25, 50, 100, 250, 500, 1000];
+    function milestonesKey() { return 'milestones_v1_' + (currentUser?.id || 'guest'); }
+    function checkMilestones() {
+        let seen;
+        try { seen = JSON.parse(localStorage.getItem(milestonesKey())) || {}; } catch(e) { seen = {}; }
+        seen.streak = seen.streak || [];
+        seen.count = seen.count || [];
+        const streak = calcStreak();
+        const total = allEntriesCache.length;
+        const newStreaks = STREAK_MILESTONES.filter(m => streak >= m && !seen.streak.includes(m));
+        const newCounts = COUNT_MILESTONES.filter(m => total >= m && !seen.count.includes(m));
+        newStreaks.forEach(m => seen.streak.push(m));
+        newCounts.forEach(m => seen.count.push(m));
+        try { localStorage.setItem(milestonesKey(), JSON.stringify(seen)); } catch(e) {}
+        if (newStreaks.length) {
+            showToast(`🔥 ${Math.max(...newStreaks)} Tage in Folge – stark!`);
+            return true;
+        }
+        if (newCounts.length) {
+            showToast(`🏆 ${Math.max(...newCounts)}. Eintrag – Wahnsinn!`);
+            return true;
+        }
+        return false;
+    }
 
     // Date Picker UI Logic
     elements.fields.date.addEventListener('change', (e) => {
@@ -1247,11 +1710,15 @@
       currentUser = user;
       elements.authSection.classList.add('hidden');
       elements.appSection.classList.remove('hidden');
+      loadSettings();
+      applySettings();
+      renderDailyPrompt();
       resetEditor();
       restoreDraft();
       loadEntries();
       checkMonthlyReminder();
       handleLaunchParams();
+      if (!settings.onboarded) openOnboarding();
     }
 
     // --- PWA LAUNCH PARAMS (Homescreen-Shortcut) ---
@@ -1483,10 +1950,15 @@
               db.storage.from('entry-photos').remove([oldPhotoPath]).catch(() => {});
           }
 
+          const wasNewEntry = !currentEditingId;
           showToast(currentEditingId ? 'Eintrag aktualisiert ✨' : 'Gespeichert ✅');
           clearDraft();
           resetEditor();
           await loadEntries();
+          if (wasNewEntry) {
+              const milestone = checkMilestones();
+              confettiBurst(milestone);
+          }
       } catch(err) {
           if (err.code === '23505') showToast('Für dieses Datum gibt es schon einen Eintrag.', true);
           else showToast('Fehler: ' + err.message, true);
@@ -1509,6 +1981,8 @@
               renderHeatmap();
               updateTodayNudge();
               renderOnThisDay();
+              renderMonthCard();
+              renderMoodTrend();
           } catch(e) {
               localStorage.removeItem(cacheKey);
               elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade Einträge...</div>';
@@ -1533,6 +2007,8 @@
           renderHeatmap();
           updateTodayNudge();
           renderOnThisDay();
+          renderMonthCard();
+          renderMoodTrend();
       } catch(err) {
           if (err.message === 'network-timeout') {
               if (!allEntriesCache.length) {
@@ -1674,10 +2150,10 @@
               ? `<div style="margin-bottom:20px;"><div class="entry-text">${escapeHtml(entry.best_of_day)}</div></div>`
               : '';
           const lottaHtml = entry.lotta
-              ? `<div style="flex:1; min-width:120px;"><div class="entry-label">Lotta</div><div class="entry-text" style="font-size:15px;">${escapeHtml(entry.lotta)}</div></div>`
+              ? `<div style="flex:1; min-width:120px;"><div class="entry-label">${escapeHtml(settings.field1Label)}</div><div class="entry-text" style="font-size:15px;">${escapeHtml(entry.lotta)}</div></div>`
               : '';
           const theaHtml  = entry.thea
-              ? `<div style="flex:1; min-width:120px;"><div class="entry-label">Thea</div><div class="entry-text" style="font-size:15px;">${escapeHtml(entry.thea)}</div></div>`
+              ? `<div style="flex:1; min-width:120px;"><div class="entry-label">${escapeHtml(settings.field2Label)}</div><div class="entry-text" style="font-size:15px;">${escapeHtml(entry.thea)}</div></div>`
               : '';
 
           const card = document.createElement('div');
@@ -1694,6 +2170,7 @@
                   <div style="display:flex; gap:20px; flex-wrap:wrap;">${lottaHtml}${theaHtml}</div>
               </div>
               <div class="entry-footer">
+                  <button class="txt-btn" style="color:var(--text-secondary); margin-right:auto;" onclick="window.shareEntry('${entry.id}')">Teilen</button>
                   <button class="txt-btn" style="color:var(--accent);" onclick="window.editEntry('${entry.id}')">Bearbeiten</button>
                   <button class="txt-btn" style="color:var(--danger);" onclick="window.deleteEntry('${entry.id}')">Löschen</button>
               </div>`;
@@ -2173,12 +2650,16 @@
             prev = d;
         });
 
+        const words = yearEntries.reduce((sum, e) =>
+            sum + [e.best_of_day, e.lotta, e.thea].filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length, 0);
+
         return {
             total,
             moodCounts,
             topMonth: total ? monthNames[topMonthIdx] : '–',
             topMonthCount: monthCounts[topMonthIdx] || 0,
             longestStreak: longest,
+            words,
             lottaCount: yearEntries.filter(e => e.lotta).length,
             theaCount: yearEntries.filter(e => e.thea).length
         };
@@ -2202,13 +2683,170 @@
             <div style="display:flex; flex-direction:column; gap:10px;">
                 <div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">🔥 Längste Serie: <strong>${w.longestStreak} Tage</strong></div>
                 <div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">📅 Aktivster Monat: <strong>${w.topMonth}</strong> (${w.topMonthCount})</div>
-                <div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">👧 Lotta erwähnt: <strong>${w.lottaCount}×</strong></div>
-                <div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">👧 Thea erwähnt: <strong>${w.theaCount}×</strong></div>
+                <div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">✍️ Geschriebene Wörter: <strong>${w.words}</strong></div>
+                ${settings.field1Enabled ? `<div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">💬 ${escapeHtml(settings.field1Label)} erwähnt: <strong>${w.lottaCount}×</strong></div>` : ''}
+                ${settings.field2Enabled ? `<div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">💬 ${escapeHtml(settings.field2Label)} erwähnt: <strong>${w.theaCount}×</strong></div>` : ''}
             </div>`;
         $('yearWrapModal').classList.remove('hidden');
     }
     $('yearWrapBtn').addEventListener('click', showYearWrap);
     $('yearWrapCloseBtn').addEventListener('click', () => $('yearWrapModal').classList.add('hidden'));
+
+    // --- DEIN MONAT (Statistik-Karte) ---
+    function renderMonthCard() {
+        const el = $('monthCard');
+        const monthPrefix = localISODate().slice(0, 7);
+        const monthEntries = allEntriesCache.filter(e => e.entry_date.startsWith(monthPrefix));
+        if (!monthEntries.length) {
+            el.innerHTML = '<div style="padding:12px 0; color:var(--text-secondary); font-size:14px;">Noch keine Einträge in diesem Monat.</div>';
+            return;
+        }
+        const moodMap = { happy: '🙂', neutral: '😐', sad: '😞' };
+        const counts = { happy: 0, neutral: 0, sad: 0 };
+        monthEntries.forEach(e => { if (counts[e.mood] !== undefined) counts[e.mood]++; });
+        const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+        const photos = monthEntries.filter(e => e.photo_path).length;
+        const words = monthEntries.reduce((sum, e) =>
+            sum + [e.best_of_day, e.lotta, e.thea].filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length, 0);
+        const monthName = new Date().toLocaleDateString('de-DE', { month: 'long' });
+        el.innerHTML = `
+            <div class="month-row"><span>📅 Einträge im ${monthName}</span><strong>${monthEntries.length}</strong></div>
+            <div class="month-row"><span>💛 Häufigste Stimmung</span><strong>${moodMap[top]}</strong></div>
+            <div class="month-row"><span>✍️ Geschriebene Wörter</span><strong>${words}</strong></div>
+            <div class="month-row"><span>📷 Fotos</span><strong>${photos}</strong></div>`;
+    }
+
+    // --- STIMMUNGS-VERLAUF (letzte 6 Monate) ---
+    function renderMoodTrend() {
+        const el = $('moodTrend');
+        const now = new Date();
+        const moodScore = { happy: 3, neutral: 2, sad: 1 };
+        const moodColor = { happy: 'var(--success)', neutral: '#FF9F0A', sad: 'var(--danger)' };
+        const moodEmoji = { happy: '🙂', neutral: '😐', sad: '😞' };
+        let html = '';
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const prefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            const monthEntries = allEntriesCache.filter(e => e.entry_date.startsWith(prefix));
+            const label = d.toLocaleDateString('de-DE', { month: 'short' });
+            if (!monthEntries.length) {
+                html += `<div class="trend-col"><div class="trend-emoji" style="opacity:0.3;">·</div><div class="trend-track"></div><div class="trend-month">${label}</div></div>`;
+                continue;
+            }
+            const avg = monthEntries.reduce((s, e) => s + (moodScore[e.mood] || 2), 0) / monthEntries.length;
+            const dominant = avg >= 2.4 ? 'happy' : avg >= 1.7 ? 'neutral' : 'sad';
+            const pct = Math.round(((avg - 0.6) / 2.4) * 100);
+            html += `<div class="trend-col" title="${monthEntries.length} Einträge">
+                <div class="trend-emoji">${moodEmoji[dominant]}</div>
+                <div class="trend-track"><div class="trend-bar" style="height:${pct}%; background:${moodColor[dominant]};"></div></div>
+                <div class="trend-month">${label}</div>
+            </div>`;
+        }
+        el.innerHTML = html;
+    }
+
+    // --- EINTRAG ALS KARTE TEILEN ---
+    function shadeColor(hex, pct) {
+        const n = parseInt(hex.slice(1), 16);
+        const r = Math.max(0, Math.min(255, (n >> 16) + Math.round(2.55 * pct)));
+        const g = Math.max(0, Math.min(255, ((n >> 8) & 0xFF) + Math.round(2.55 * pct)));
+        const b = Math.max(0, Math.min(255, (n & 0xFF) + Math.round(2.55 * pct)));
+        return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+    }
+
+    function drawRoundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+    }
+
+    function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+        const words = String(text).replace(/\s+/g, ' ').trim().split(' ');
+        const lines = [];
+        let line = '';
+        for (const w of words) {
+            const test = line ? line + ' ' + w : w;
+            if (ctx.measureText(test).width > maxWidth && line) {
+                lines.push(line);
+                line = w;
+                if (lines.length === maxLines) break;
+            } else {
+                line = test;
+            }
+        }
+        if (lines.length < maxLines && line) lines.push(line);
+        else if (lines.length === maxLines) lines[maxLines - 1] += ' …';
+        lines.forEach((l, i) => ctx.fillText(l, x, y + i * lineHeight));
+        return lines.length;
+    }
+
+    async function renderShareCard(entry) {
+        const W = 1080, H = 1350;
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        const ctx = canvas.getContext('2d');
+        const accent = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#007AFF';
+
+        const grad = ctx.createLinearGradient(0, 0, W, H);
+        grad.addColorStop(0, accent);
+        grad.addColorStop(1, shadeColor(accent, -35));
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        const pad = 80, cardY = 190, cardH = H - 400;
+        drawRoundRect(ctx, pad, cardY, W - pad * 2, cardH, 48);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.shadowColor = 'rgba(0,0,0,0.25)';
+        ctx.shadowBlur = 40;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        const moodMap = { happy: '🙂', neutral: '😐', sad: '😞' };
+        const d = new Date(entry.entry_date);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#8E8E93';
+        ctx.font = '600 34px -apple-system, "Helvetica Neue", Arial, sans-serif';
+        ctx.fillText(d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), W / 2, cardY + 110);
+
+        ctx.font = '86px -apple-system, "Helvetica Neue", Arial, sans-serif';
+        ctx.fillText(moodMap[entry.mood] || '✨', W / 2, cardY + 235);
+
+        const text = entry.best_of_day || entry.lotta || entry.thea || '';
+        ctx.fillStyle = '#1C1C1E';
+        ctx.font = '600 46px -apple-system, "Helvetica Neue", Arial, sans-serif';
+        drawWrappedText(ctx, text, W / 2, cardY + 350, W - pad * 2 - 140, 66, 9);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.92)';
+        ctx.font = '700 38px -apple-system, "Helvetica Neue", Arial, sans-serif';
+        ctx.fillText('✒️ Das Beste des Tages', W / 2, H - 92);
+
+        return new Promise(res => canvas.toBlob(res, 'image/png'));
+    }
+
+    window.shareEntry = async (id) => {
+        const entry = allEntriesCache.find(e => e.id === id);
+        if (!entry) return;
+        showToast('Karte wird erstellt…');
+        try {
+            const blob = await renderShareCard(entry);
+            const file = new File([blob], 'das-beste-des-tages.png', { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: 'Das Beste des Tages' });
+            } else {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'das-beste-des-tages.png'; a.click();
+                URL.revokeObjectURL(url);
+            }
+        } catch(err) {
+            if (err.name !== 'AbortError') showToast('Teilen fehlgeschlagen: ' + err.message, true);
+        }
+    };
 
     // --- ERROR TRACKING ---
     const _loggedErrors = new Set();
