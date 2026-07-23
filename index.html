@@ -702,6 +702,64 @@
         object-fit: contain;
     }
 
+    /* --- LOCK SCREEN --- */
+    .lock-screen {
+        position: fixed; inset: 0;
+        z-index: 1500;
+        background: var(--bg-body);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        padding: 40px 30px calc(40px + env(safe-area-inset-bottom));
+        text-align: center;
+    }
+    .lock-icon {
+        width: 84px; height: 84px;
+        background: var(--text-main);
+        color: var(--bg-body);
+        border-radius: 26px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 42px;
+    }
+    .lock-title { font-size: 22px; font-weight: 800; margin: 0; }
+    .lock-sub { font-size: 15px; color: var(--text-secondary); margin: -12px 0 4px; max-width: 300px; line-height: 1.5; }
+    .lock-actions { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 300px; }
+
+    /* --- SECURITY TOGGLE ROW --- */
+    .setting-toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        background: var(--bg-card);
+        border-radius: var(--radius-m);
+        box-shadow: var(--shadow-card);
+        padding: 16px;
+        margin-bottom: 8px;
+    }
+    .setting-toggle-row .st-label { font-size: 15px; font-weight: 700; }
+    .setting-toggle-row .st-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.35; }
+    .switch { position: relative; width: 52px; height: 31px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch .slider {
+        position: absolute; inset: 0;
+        background: var(--bg-button-secondary);
+        border-radius: 34px;
+        transition: background 0.25s;
+        cursor: pointer;
+    }
+    .switch .slider::before {
+        content: ''; position: absolute;
+        width: 27px; height: 27px; left: 2px; top: 2px;
+        background: #fff; border-radius: 50%;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+        transition: transform 0.25s;
+    }
+    .switch input:checked + .slider { background: var(--success); }
+    .switch input:checked + .slider::before { transform: translateX(21px); }
+
     /* --- GREETING --- */
     .greeting {
         font-size: 26px;
@@ -1065,6 +1123,18 @@
       <div class="section-title">Einstellungen</div>
       <button id="openSettingsBtn" class="btn-secondary" style="margin-top:0; margin-bottom:8px;">⚙️ App anpassen (Name, Felder, Farbe)</button>
 
+      <div class="section-title">Sicherheit</div>
+      <div class="setting-toggle-row">
+          <div>
+              <div class="st-label">🔒 Mit Face ID sperren</div>
+              <div class="st-desc">Beim Öffnen der App werden deine Einträge erst nach Face ID sichtbar.</div>
+          </div>
+          <label class="switch">
+              <input type="checkbox" id="faceLockToggle">
+              <span class="slider"></span>
+          </label>
+      </div>
+
       <div class="section-title">Werkzeuge</div>
       <div class="action-grid" style="position:relative;">
           
@@ -1194,6 +1264,16 @@
   </div>
 
   <div id="lightbox" class="lightbox hidden"><img id="lightboxImg" alt="Foto"></div>
+
+  <div id="lockScreen" class="lock-screen hidden">
+      <div class="lock-icon">🔒</div>
+      <h2 class="lock-title">Tagebuch gesperrt</h2>
+      <p class="lock-sub">Entsperre deine Einträge mit Face ID.</p>
+      <div class="lock-actions">
+          <button id="unlockBtn" class="btn-primary">Mit Face ID entsperren</button>
+          <button id="lockLogoutBtn" class="txt-btn" style="color:var(--text-secondary);">Stattdessen abmelden</button>
+      </div>
+  </div>
 
 <script>
     console.log('🚀 Das Beste des Tages loaded (Search Optimized).');
@@ -1332,6 +1412,7 @@
         field2Enabled: true,
         accent: 'blue',
         reminderTime: '20:00',
+        faceLock: false,
         onboarded: false
     };
     let settings = { ...DEFAULT_SETTINGS };
@@ -1343,6 +1424,125 @@
     function saveSettings() {
         try { localStorage.setItem(settingsKey(), JSON.stringify(settings)); } catch(e) {}
     }
+
+    // --- FACE ID / APP-SPERRE (WebAuthn, gerätgebunden) ---
+    function bufToB64url(buf) {
+        return btoa(String.fromCharCode(...new Uint8Array(buf)))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+    function b64urlToBuf(str) {
+        const pad = '='.repeat((4 - str.length % 4) % 4);
+        const b64 = (str + pad).replace(/-/g, '+').replace(/_/g, '/');
+        return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    }
+    function randomBuf(n = 32) {
+        const a = new Uint8Array(n);
+        crypto.getRandomValues(a);
+        return a;
+    }
+    function credKey() { return 'facelock_cred_' + (currentUser?.id || 'guest'); }
+    function hasFaceCredential() { return !!localStorage.getItem(credKey()); }
+    function webauthnSupported() {
+        return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
+    }
+    function shouldLock() { return settings.faceLock && hasFaceCredential() && webauthnSupported(); }
+
+    async function registerFaceLock() {
+        if (!webauthnSupported()) { showToast('Face ID wird von diesem Gerät/Browser nicht unterstützt.', true); return false; }
+        try {
+            const cred = await navigator.credentials.create({
+                publicKey: {
+                    challenge: randomBuf(),
+                    rp: { name: 'Das Beste des Tages' },
+                    user: {
+                        id: randomBuf(16),
+                        name: currentUser?.email || 'nutzer',
+                        displayName: settings.displayName || currentUser?.email || 'Nutzer'
+                    },
+                    pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+                    authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+                    timeout: 60000,
+                    attestation: 'none'
+                }
+            });
+            if (!cred) return false;
+            localStorage.setItem(credKey(), bufToB64url(cred.rawId));
+            return true;
+        } catch (err) {
+            if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+                showToast('Face ID konnte nicht eingerichtet werden.', true);
+            }
+            return false;
+        }
+    }
+
+    async function unlockWithFaceID() {
+        const stored = localStorage.getItem(credKey());
+        if (!stored) return true; // keine Registrierung -> nicht sperren
+        try {
+            const assertion = await navigator.credentials.get({
+                publicKey: {
+                    challenge: randomBuf(),
+                    allowCredentials: [{ type: 'public-key', id: b64urlToBuf(stored), transports: ['internal'] }],
+                    userVerification: 'required',
+                    timeout: 60000
+                }
+            });
+            return !!assertion;
+        } catch (err) {
+            return false;
+        }
+    }
+
+    let reLockPending = false;
+    function showLock() { $('lockScreen').classList.remove('hidden'); }
+    function hideLock() { $('lockScreen').classList.add('hidden'); reLockPending = false; }
+    async function attemptUnlock() {
+        $('unlockBtn').disabled = true;
+        const ok = await unlockWithFaceID();
+        $('unlockBtn').disabled = false;
+        if (ok) hideLock();
+        return ok;
+    }
+    function maybeLockOnOpen() {
+        hideLock();
+        if (shouldLock()) { showLock(); attemptUnlock(); }
+    }
+
+    $('unlockBtn').addEventListener('click', attemptUnlock);
+    $('lockLogoutBtn').addEventListener('click', () => { hideLock(); db.auth.signOut(); });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            if (currentUser && shouldLock()) reLockPending = true;
+        } else if (document.visibilityState === 'visible') {
+            if (currentUser && reLockPending && shouldLock()) { showLock(); attemptUnlock(); }
+        }
+    });
+
+    // Schalter in den Einstellungen
+    $('faceLockToggle').addEventListener('change', async (e) => {
+        if (e.target.checked) {
+            if (!webauthnSupported()) {
+                e.target.checked = false;
+                showToast('Face ID wird von diesem Gerät nicht unterstützt.', true);
+                return;
+            }
+            const ok = await registerFaceLock();
+            if (ok) {
+                settings.faceLock = true;
+                saveSettings();
+                showToast('Face-ID-Sperre aktiviert 🔒');
+            } else {
+                e.target.checked = false;
+            }
+        } else {
+            settings.faceLock = false;
+            saveSettings();
+            localStorage.removeItem(credKey());
+            showToast('Face-ID-Sperre deaktiviert');
+        }
+    });
 
     // --- AKZENTFARBEN ---
     const ACCENTS = {
@@ -1393,6 +1593,7 @@
             selectedPerson = null;
             document.querySelectorAll('#personFilterRow .mood-filter-btn').forEach(b => b.classList.toggle('active', !b.dataset.person));
         }
+        $('faceLockToggle').checked = !!(settings.faceLock && hasFaceCredential());
         updateGreeting();
     }
 
@@ -1719,6 +1920,7 @@
       checkMonthlyReminder();
       handleLaunchParams();
       if (!settings.onboarded) openOnboarding();
+      maybeLockOnOpen();
     }
 
     // --- PWA LAUNCH PARAMS (Homescreen-Shortcut) ---
