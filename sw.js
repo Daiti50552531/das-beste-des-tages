@@ -1,4 +1,4 @@
-const CACHE_NAME = 'das-beste-des-tages-v5';
+const CACHE_NAME = 'das-beste-des-tages-v6';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
