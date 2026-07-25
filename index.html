@@ -821,6 +821,130 @@
     .switch input:checked + .slider { background: var(--success); }
     .switch input:checked + .slider::before { transform: translateX(21px); }
 
+    /* --- LISTEN-KOPF: Suche + ein einziger Filter-Knopf --- */
+    .list-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+    .list-toolbar .search-bar { flex: 1; margin-bottom: 0; }
+    .filter-toggle {
+        position: relative;
+        width: 44px; height: 44px;
+        border: none; border-radius: 12px;
+        background: var(--bg-button-secondary);
+        color: var(--text-secondary);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; flex-shrink: 0;
+        transition: background 0.2s, color 0.2s;
+    }
+    .filter-toggle.active { background: var(--accent); color: #fff; }
+    .filter-toggle:active { transform: scale(0.94); }
+    .filter-count {
+        position: absolute; top: -5px; right: -5px;
+        background: var(--danger); color: #fff;
+        font-size: 10px; font-weight: 700;
+        min-width: 18px; height: 18px; padding: 0 5px;
+        border-radius: 9px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .filter-panel {
+        max-height: 0; opacity: 0; overflow: hidden;
+        transition: max-height 0.32s ease, opacity 0.25s ease, margin-bottom 0.32s ease;
+    }
+    .filter-panel.open { max-height: 420px; opacity: 1; margin-bottom: 10px; }
+
+    /* --- EINTRAGS-KARTE (ruhige Vorschau) --- */
+    .entry-card.tappable { cursor: pointer; transition: transform 0.15s ease; }
+    .entry-card.tappable:active { transform: scale(0.985); }
+    .entry-preview {
+        display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .entry-thumb {
+        width: 100%; height: 150px; object-fit: cover;
+        border-radius: var(--radius-m);
+        margin-bottom: 14px;
+        background: var(--bg-input);
+        display: block;
+    }
+    .entry-meta {
+        display: flex; align-items: center; gap: 10px;
+        font-size: 12px; color: var(--text-secondary);
+        margin-top: 12px; font-weight: 600;
+    }
+
+    /* --- DETAIL-ANSICHT --- */
+    .detail-sheet {
+        position: fixed; inset: 0;
+        z-index: 900;
+        background: var(--bg-body);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: calc(14px + env(safe-area-inset-top)) 0 calc(40px + env(safe-area-inset-bottom));
+        transform: translateY(100%);
+        visibility: hidden;
+        transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.34s;
+    }
+    .detail-sheet.open { transform: translateY(0); visibility: visible; }
+    .detail-head {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0 20px 18px;
+    }
+    .detail-close {
+        background: var(--bg-button-secondary); border: none;
+        width: 36px; height: 36px; border-radius: 50%;
+        font-size: 17px; color: var(--text-main); cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .detail-close:active { transform: scale(0.9); }
+    .detail-date { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+    .detail-body { padding: 0 20px; }
+    .detail-text { font-size: 17px; line-height: 1.65; white-space: pre-wrap; }
+    .detail-block { margin-bottom: 26px; }
+    .detail-actions { display: flex; gap: 10px; padding: 8px 20px 0; }
+    .detail-actions button { flex: 1; margin-top: 0; }
+
+    /* --- HASHTAGS --- */
+    .tag { color: var(--accent); font-weight: 600; cursor: pointer; }
+
+    /* --- SUCHTREFFER --- */
+    mark {
+        background: rgba(var(--accent-rgb), 0.22);
+        color: inherit; border-radius: 4px; padding: 0 2px;
+    }
+
+    /* --- ERKENNTNISSE --- */
+    .insight-row {
+        display: flex; gap: 11px; align-items: flex-start;
+        padding: 11px 0; border-bottom: 1px solid var(--border);
+        font-size: 14.5px; line-height: 1.5;
+    }
+    .insight-row:last-child { border-bottom: none; }
+    .insight-row .ico { font-size: 17px; line-height: 1.3; flex-shrink: 0; }
+
+    /* --- SEGMENTED CONTROL (Erscheinungsbild) --- */
+    .seg { display: flex; background: var(--bg-input); border-radius: 12px; padding: 3px; gap: 3px; }
+    .seg button {
+        flex: 1; border: none; background: transparent;
+        padding: 9px 0; border-radius: 9px;
+        font-size: 14px; font-weight: 600;
+        color: var(--text-secondary); font-family: var(--font-stack);
+        cursor: pointer; transition: background 0.2s, color 0.2s;
+    }
+    .seg button.active { background: var(--bg-card); color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+
+    /* --- PDF / DRUCK --- */
+    #printRoot { display: none; }
+    @media print {
+      body { padding: 0 !important; background: #fff !important; }
+      body > *:not(#printRoot) { display: none !important; }
+      #printRoot { display: block !important; color: #000; font-family: Georgia, "Times New Roman", serif; }
+      .print-cover { text-align: center; padding: 60px 0 40px; page-break-after: always; }
+      .print-cover h1 { font-size: 34px; margin: 0 0 10px; }
+      .print-cover p { color: #555; font-size: 15px; margin: 0; }
+      .print-entry { page-break-inside: avoid; margin-bottom: 26px; padding-bottom: 18px; border-bottom: 1px solid #ddd; }
+      .print-entry h2 { font-size: 15px; margin: 0 0 8px; color: #333; }
+      .print-entry p { font-size: 13.5px; line-height: 1.6; margin: 0 0 8px; white-space: pre-wrap; }
+      .print-entry .pl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #777; margin: 10px 0 2px; }
+    }
+
     /* --- GREETING --- */
     .greeting {
         font-size: 26px;
@@ -1018,6 +1142,12 @@
         <div style="font-size:44px;text-align:center;margin-bottom:12px;">🎨</div>
         <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;text-align:center;">Dein Stil</h2>
         <p style="color:var(--text-secondary);margin:0 0 20px;font-size:15px;text-align:center;line-height:1.5;">Wähle deine Akzentfarbe und deine Wunschzeit für die tägliche Erinnerung.</p>
+        <label>Erscheinungsbild</label>
+        <div id="obThemeSeg" class="seg" style="margin-bottom:18px;">
+            <button type="button" data-theme="system">Automatisch</button>
+            <button type="button" data-theme="light">Hell</button>
+            <button type="button" data-theme="dark">Dunkel</button>
+        </div>
         <label>Akzentfarbe</label>
         <div id="obAccentRow" class="accent-row"></div>
         <label style="margin-top:16px;">Erinnerungszeit</label>
@@ -1221,6 +1351,7 @@
           </button>
 
           <div id="exportPopover" class="export-popover">
+            <button id="exportPdfBtn" class="popover-item">📕 Als PDF sichern</button>
             <button id="exportCsvBtn" class="popover-item">📄 CSV Datei</button>
             <button id="exportXlsxBtn" class="popover-item">📊 Excel Datei</button>
           </div>
@@ -1248,6 +1379,11 @@
       <div class="section-title">Dein Monat</div>
       <div class="card" id="monthCard" style="padding:8px 20px;"></div>
 
+      <div id="insightsWrap" class="hidden">
+          <div class="section-title">Was auffällt</div>
+          <div class="card" id="insightsCard" style="padding:8px 20px;"></div>
+      </div>
+
       <div class="section-title">Stimmungs-Verlauf (6 Monate)</div>
       <div class="card" style="padding:16px 20px 14px;">
           <div id="moodTrend" class="trend-grid"></div>
@@ -1262,31 +1398,40 @@
       <div id="tab-verlauf" class="tab-page hidden">
       <div class="section-title">Einträge</div>
 
-      <div class="search-bar">
-          <svg class="icon icon-sm" style="color:var(--text-secondary); margin-right:4px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input type="text" id="searchInput" class="search-input" placeholder="Suchen...">
-      </div>
-      <div class="date-filter">
-          <div class="date-filter-field">
-              <label>Von</label>
-              <input type="date" id="filterDateFrom" class="date-filter-input">
+      <div class="list-toolbar">
+          <div class="search-bar">
+              <svg class="icon icon-sm" style="color:var(--text-secondary); margin-right:4px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="searchInput" class="search-input" placeholder="Suchen...">
           </div>
-          <div class="date-filter-field">
-              <label>Bis</label>
-              <input type="date" id="filterDateTo" class="date-filter-input">
+          <button id="filterToggleBtn" class="filter-toggle" aria-label="Filter">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="10" y1="18" x2="14" y2="18"></line></svg>
+              <span id="filterCount" class="filter-count hidden">0</span>
+          </button>
+      </div>
+
+      <div id="filterPanel" class="filter-panel">
+          <div class="date-filter">
+              <div class="date-filter-field">
+                  <label>Von</label>
+                  <input type="date" id="filterDateFrom" class="date-filter-input">
+              </div>
+              <div class="date-filter-field">
+                  <label>Bis</label>
+                  <input type="date" id="filterDateTo" class="date-filter-input">
+              </div>
+              <button id="clearDateFilter" class="clear-filter-btn hidden">✕</button>
           </div>
-          <button id="clearDateFilter" class="clear-filter-btn hidden">✕</button>
-      </div>
-      <div class="mood-filter-row" id="moodFilterRow">
-          <button class="mood-filter-btn active" data-mood="">Alle</button>
-          <button class="mood-filter-btn" data-mood="happy">🙂 Gut</button>
-          <button class="mood-filter-btn" data-mood="neutral">😐 Neutral</button>
-          <button class="mood-filter-btn" data-mood="sad">😞 Schwierig</button>
-      </div>
-      <div class="mood-filter-row" id="personFilterRow">
-          <button class="mood-filter-btn active" data-person="">👨‍👩‍👧‍👧 Alle</button>
-          <button class="mood-filter-btn" data-person="lotta">Lotta</button>
-          <button class="mood-filter-btn" data-person="thea">Thea</button>
+          <div class="mood-filter-row" id="moodFilterRow">
+              <button class="mood-filter-btn active" data-mood="">Alle</button>
+              <button class="mood-filter-btn" data-mood="happy">🙂 Gut</button>
+              <button class="mood-filter-btn" data-mood="neutral">😐 Neutral</button>
+              <button class="mood-filter-btn" data-mood="sad">😞 Schwierig</button>
+          </div>
+          <div class="mood-filter-row" id="personFilterRow">
+              <button class="mood-filter-btn active" data-person="">👨‍👩‍👧‍👧 Alle</button>
+              <button class="mood-filter-btn" data-person="lotta">Lotta</button>
+              <button class="mood-filter-btn" data-person="thea">Thea</button>
+          </div>
       </div>
 
       <div id="filterPills" class="filter-pills"></div>
@@ -1325,6 +1470,24 @@
   </div>
 
   <div id="lightbox" class="lightbox hidden"><img id="lightboxImg" alt="Foto"></div>
+
+  <div id="detailSheet" class="detail-sheet">
+      <div class="detail-head">
+          <span id="detailDate" class="detail-date"></span>
+          <div style="display:flex; align-items:center; gap:12px;">
+              <span id="detailMood" style="font-size:24px;"></span>
+              <button id="detailCloseBtn" class="detail-close">✕</button>
+          </div>
+      </div>
+      <div id="detailBody" class="detail-body"></div>
+      <div class="detail-actions">
+          <button id="detailShareBtn" class="btn-secondary">Teilen</button>
+          <button id="detailEditBtn" class="btn-secondary" style="color:var(--accent);">Bearbeiten</button>
+          <button id="detailDeleteBtn" class="btn-secondary" style="color:var(--danger);">Löschen</button>
+      </div>
+  </div>
+
+  <div id="printRoot"></div>
 
   <div id="lockScreen" class="lock-screen">
       <div class="lock-icon">🔒</div>
@@ -1434,19 +1597,24 @@
       });
     }
 
-    function initTheme() {
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark') document.body.classList.add('dark-mode');
-    }
-    
-    elements.themeToggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-      const isDark = document.body.classList.contains('dark-mode');
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-
+    // --- ERSCHEINUNGSBILD ('system' folgt der iPhone-Einstellung) ---
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+    function themePref() { return localStorage.getItem('theme') || 'system'; }
+    function applyTheme() {
+      const pref = themePref();
+      const isDark = pref === 'dark' || (pref === 'system' && systemDark.matches);
+      document.body.classList.toggle('dark-mode', isDark);
       const metaTheme = document.querySelector('meta[name="theme-color"]');
-      if (metaTheme) metaTheme.setAttribute("content", isDark ? "#000000" : "#F2F2F7");
-      applyAccent();
+      if (metaTheme) metaTheme.setAttribute('content', isDark ? '#000000' : '#F2F2F7');
+      if (typeof applyAccent === 'function') applyAccent();
+    }
+    function setTheme(pref) { localStorage.setItem('theme', pref); applyTheme(); }
+    function initTheme() { applyTheme(); }
+    systemDark.addEventListener('change', () => { if (themePref() === 'system') applyTheme(); });
+
+    // Kopfzeilen-Knopf: schneller Wechsel hell/dunkel
+    elements.themeToggle.addEventListener('click', () => {
+      setTheme(document.body.classList.contains('dark-mode') ? 'light' : 'dark');
     });
 
     // --- LOCAL DATE (deutsche Zeitzone statt UTC – Mitternachts-Bugfix) ---
@@ -1788,6 +1956,14 @@
         $('obBackBtn').classList.toggle('hidden', n === 1);
         $('obNextBtn').textContent = n === 3 ? 'Los geht’s! 🎉' : 'Weiter';
     }
+    function markThemeSeg() {
+        document.querySelectorAll('#obThemeSeg button').forEach(b =>
+            b.classList.toggle('active', b.dataset.theme === themePref()));
+    }
+    document.querySelectorAll('#obThemeSeg button').forEach(b => {
+        b.addEventListener('click', () => { setTheme(b.dataset.theme); markThemeSeg(); });
+    });
+
     function openOnboarding() {
         $('obName').value = settings.displayName || '';
         $('obField1').value = settings.field1Enabled ? settings.field1Label : '';
@@ -1795,6 +1971,7 @@
         $('obReminderTime').value = settings.reminderTime || '20:00';
         obAccentChoice = settings.accent || 'blue';
         buildAccentRow();
+        markThemeSeg();
         showObStep(1);
         $('onboardingModal').classList.remove('hidden');
     }
@@ -2351,6 +2528,7 @@
               renderOnThisDay();
               renderMonthCard();
               renderMoodTrend();
+              renderInsights();
           } catch(e) {
               localStorage.removeItem(cacheKey);
               elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade Einträge...</div>';
@@ -2377,6 +2555,7 @@
           renderOnThisDay();
           renderMonthCard();
           renderMoodTrend();
+          renderInsights();
       } catch(err) {
           if (err.message === 'network-timeout') {
               if (!allEntriesCache.length) {
@@ -2486,7 +2665,7 @@
 
       if (!append) {
           if (!entries.length) {
-              const hasFilter = elements.searchInput.value.trim() || filterDateFrom.value || filterDateTo.value;
+              const hasFilter = elements.searchInput.value.trim() || filterDateFrom.value || filterDateTo.value || selectedMoodFilter || selectedPerson;
               const emptyContent = hasFilter
                   ? `<div style="font-size:40px; margin-bottom:10px; opacity:0.3;">📭</div>Keine Einträge gefunden.`
                   : `<div style="font-size:48px; margin-bottom:16px; opacity:0.5;">✍️</div><div style="font-weight:600; margin-bottom:8px; color:var(--text-main);">Noch keine Einträge</div><div style="font-size:15px;">Schreib deinen ersten Eintrag oben!</div>`;
@@ -2512,20 +2691,22 @@
           const borderColor = moodBorder[entry.mood] || 'var(--border)';
 
           const photoHtml = entry.photo_path
-              ? `<img class="entry-photo" loading="lazy" data-path="${escapeHtml(entry.photo_path)}" alt="Foto">`
+              ? `<img class="entry-thumb" loading="lazy" data-path="${escapeHtml(entry.photo_path)}" alt="Foto">`
               : '';
-          const bestHtml  = entry.best_of_day
-              ? `<div style="margin-bottom:20px;"><div class="entry-text">${escapeHtml(entry.best_of_day)}</div></div>`
-              : '';
-          const lottaHtml = entry.lotta
-              ? `<div style="flex:1; min-width:120px;"><div class="entry-label">${escapeHtml(settings.field1Label)}</div><div class="entry-text" style="font-size:15px;">${escapeHtml(entry.lotta)}</div></div>`
-              : '';
-          const theaHtml  = entry.thea
-              ? `<div style="flex:1; min-width:120px;"><div class="entry-label">${escapeHtml(settings.field2Label)}</div><div class="entry-text" style="font-size:15px;">${escapeHtml(entry.thea)}</div></div>`
+
+          // Ruhige Vorschau: Haupttext gekürzt, Details erst beim Antippen
+          const preview = entry.best_of_day || entry.lotta || entry.thea || '';
+          const extras = [];
+          if (entry.lotta) extras.push(settings.field1Label);
+          if (entry.thea) extras.push(settings.field2Label);
+          if (entry.photo_path) extras.push('📷');
+          const metaHtml = extras.length
+              ? `<div class="entry-meta">${extras.map(escapeHtml).join(' · ')}</div>`
               : '';
 
           const card = document.createElement('div');
-          card.className = 'card entry-card';
+          card.className = 'card entry-card tappable';
+          card.dataset.id = entry.id;
           card.style.cssText = `animation-delay:${animDelay}; border-left-color:${borderColor};`;
           card.innerHTML = `
               <div class="entry-header">
@@ -2534,13 +2715,8 @@
               </div>
               <div class="entry-content">
                   ${photoHtml}
-                  ${bestHtml}
-                  <div style="display:flex; gap:20px; flex-wrap:wrap;">${lottaHtml}${theaHtml}</div>
-              </div>
-              <div class="entry-footer">
-                  <button class="txt-btn" style="color:var(--text-secondary); margin-right:auto;" onclick="window.shareEntry('${entry.id}')">Teilen</button>
-                  <button class="txt-btn" style="color:var(--accent);" onclick="window.editEntry('${entry.id}')">Bearbeiten</button>
-                  <button class="txt-btn" style="color:var(--danger);" onclick="window.deleteEntry('${entry.id}')">Löschen</button>
+                  <div class="entry-text entry-preview">${richText(preview)}</div>
+                  ${metaHtml}
               </div>`;
           fragment.appendChild(card);
       });
@@ -2567,7 +2743,15 @@
         const term     = elements.searchInput.value.trim();
         const fromDate = filterDateFrom.value;
         const toDate   = filterDateTo.value;
-        if (!term && !fromDate && !toDate) return;
+
+        // Anzahl aktiver Filter am Filter-Knopf anzeigen (ohne Suchbegriff – der ist ja sichtbar)
+        const activeCount = (fromDate || toDate ? 1 : 0) + (selectedMoodFilter ? 1 : 0) + (selectedPerson ? 1 : 0);
+        const countEl = $('filterCount');
+        countEl.textContent = activeCount;
+        countEl.classList.toggle('hidden', activeCount === 0);
+        $('filterToggleBtn').classList.toggle('active', activeCount > 0);
+
+        if (!term && !activeCount) return;
 
         const fragment = document.createDocumentFragment();
 
@@ -2588,8 +2772,29 @@
                 renderFilteredEntries();
             }));
         }
+        if (selectedMoodFilter) {
+            const labels = { happy: '🙂 Gut', neutral: '😐 Neutral', sad: '😞 Schwierig' };
+            fragment.appendChild(makePill(labels[selectedMoodFilter] || selectedMoodFilter, () => {
+                selectedMoodFilter = null;
+                document.querySelectorAll('#moodFilterRow .mood-filter-btn').forEach(b => b.classList.toggle('active', !b.dataset.mood));
+                renderFilteredEntries();
+            }));
+        }
+        if (selectedPerson) {
+            const label = selectedPerson === 'lotta' ? settings.field1Label : settings.field2Label;
+            fragment.appendChild(makePill(label, () => {
+                selectedPerson = null;
+                document.querySelectorAll('#personFilterRow .mood-filter-btn').forEach(b => b.classList.toggle('active', !b.dataset.person));
+                renderFilteredEntries();
+            }));
+        }
         container.appendChild(fragment);
     }
+
+    // Filter-Panel auf-/zuklappen
+    $('filterToggleBtn').addEventListener('click', () => {
+        $('filterPanel').classList.toggle('open');
+    });
 
     function makePill(text, onRemove) {
         const pill = document.createElement('div');
@@ -2882,7 +3087,7 @@
 
     // --- ENTRY PHOTOS (Supabase Storage, signierte URLs im Batch) ---
     async function loadEntryPhotos(root) {
-        const imgs = Array.from(root.querySelectorAll('.entry-photo[data-path]:not([src])'));
+        const imgs = Array.from(root.querySelectorAll('img[data-path]:not([src])'));
         if (!imgs.length) return;
         try {
             const paths = imgs.map(img => img.dataset.path);
@@ -3215,6 +3420,147 @@
             if (err.name !== 'AbortError') showToast('Teilen fehlgeschlagen: ' + err.message, true);
         }
     };
+
+    // --- TEXT-AUFBEREITUNG: Schlagwörter (#) + Suchtreffer hervorheben ---
+    function richText(text) {
+        let html = escapeHtml(text || '');
+        const term = elements.searchInput.value.trim().replace(/^#/, '');
+        if (term.length >= 2) {
+            const rx = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+            html = html.replace(rx, '<mark>$1</mark>');
+        }
+        return html.replace(/(^|\s)#([A-Za-z0-9ÄÖÜäöüß_-]{2,30})/g,
+            (m, pre, tag) => `${pre}<span class="tag" data-tag="${tag}">#${tag}</span>`);
+    }
+
+    // Tippen auf ein Schlagwort sucht danach – kein zusätzlicher Filter nötig
+    document.addEventListener('click', (e) => {
+        const tag = e.target.closest('.tag');
+        if (!tag) return;
+        e.stopPropagation();
+        closeDetail();
+        elements.searchInput.value = '#' + tag.dataset.tag;
+        switchTab('verlauf');
+        renderFilteredEntries();
+    });
+
+    // --- DETAIL-ANSICHT ---
+    let detailEntryId = null;
+    function openDetail(id) {
+        const e = allEntriesCache.find(x => x.id === id);
+        if (!e) return;
+        detailEntryId = id;
+        const d = new Date(e.entry_date);
+        $('detailDate').textContent = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        $('detailMood').textContent = { happy: '🙂', neutral: '😐', sad: '😞' }[e.mood] || '';
+
+        const blocks = [];
+        if (e.photo_path) blocks.push(`<img class="entry-photo" style="max-height:none; margin-bottom:22px;" data-path="${escapeHtml(e.photo_path)}" alt="Foto">`);
+        if (e.best_of_day) blocks.push(`<div class="detail-block"><div class="detail-text">${richText(e.best_of_day)}</div></div>`);
+        if (e.lotta) blocks.push(`<div class="detail-block"><div class="entry-label">${escapeHtml(settings.field1Label)}</div><div class="detail-text" style="font-size:16px;">${richText(e.lotta)}</div></div>`);
+        if (e.thea) blocks.push(`<div class="detail-block"><div class="entry-label">${escapeHtml(settings.field2Label)}</div><div class="detail-text" style="font-size:16px;">${richText(e.thea)}</div></div>`);
+        $('detailBody').innerHTML = blocks.join('') || '<div style="color:var(--text-secondary);">Kein Text zu diesem Tag.</div>';
+        loadEntryPhotos($('detailBody'));
+
+        $('detailSheet').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeDetail() {
+        $('detailSheet').classList.remove('open');
+        document.body.style.overflow = '';
+        detailEntryId = null;
+    }
+    $('detailCloseBtn').addEventListener('click', closeDetail);
+    $('detailShareBtn').addEventListener('click', () => { if (detailEntryId) window.shareEntry(detailEntryId); });
+    $('detailEditBtn').addEventListener('click', () => { const id = detailEntryId; closeDetail(); window.editEntry(id); });
+    $('detailDeleteBtn').addEventListener('click', () => { const id = detailEntryId; closeDetail(); window.deleteEntry(id); });
+
+    elements.entriesContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.tag')) return;
+        const card = e.target.closest('.entry-card.tappable');
+        if (card?.dataset.id) openDetail(card.dataset.id);
+    });
+
+    // --- WAS AUFFÄLLT (kompakte Erkenntnisse, maximal drei) ---
+    function renderInsights() {
+        const wrap = $('insightsWrap');
+        const entries = allEntriesCache;
+        const items = [];
+
+        if (entries.length >= 10) {
+            const dayNames = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+            const score = { happy: 3, neutral: 2, sad: 1 };
+            const sums = Array(7).fill(0), counts = Array(7).fill(0);
+            entries.forEach(e => {
+                const wd = new Date(e.entry_date).getDay();
+                sums[wd] += score[e.mood] || 2;
+                counts[wd]++;
+            });
+            let bestDay = -1, bestAvg = 0;
+            for (let i = 0; i < 7; i++) {
+                if (counts[i] < 3) continue;
+                const avg = sums[i] / counts[i];
+                if (avg > bestAvg) { bestAvg = avg; bestDay = i; }
+            }
+            if (bestDay >= 0 && bestAvg >= 2.4) {
+                items.push(['🌞', `Am <strong>${dayNames[bestDay]}</strong> ist deine Stimmung im Schnitt am besten.`]);
+            }
+
+            const topWrite = counts.indexOf(Math.max(...counts));
+            if (counts[topWrite] >= 3 && topWrite !== bestDay) {
+                items.push(['✍️', `Du schreibst am häufigsten am <strong>${dayNames[topWrite]}</strong>.`]);
+            }
+        }
+
+        const withPhoto = entries.filter(e => e.photo_path).length;
+        if (entries.length >= 10 && withPhoto >= 3) {
+            const pct = Math.round((withPhoto / entries.length) * 100);
+            items.push(['📷', `Zu <strong>${pct}%</strong> deiner Einträge gibt es ein Foto.`]);
+        }
+
+        if (entries.length >= 5) {
+            const words = entries.reduce((s, e) =>
+                s + [e.best_of_day, e.lotta, e.thea].filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length, 0);
+            items.push(['📖', `Im Schnitt <strong>${Math.round(words / entries.length)} Wörter</strong> pro Eintrag – insgesamt schon ${words}.`]);
+        }
+
+        if (!items.length) { wrap.classList.add('hidden'); return; }
+        $('insightsCard').innerHTML = items.slice(0, 3)
+            .map(([ico, txt]) => `<div class="insight-row"><span class="ico">${ico}</span><span>${txt}</span></div>`)
+            .join('');
+        wrap.classList.remove('hidden');
+    }
+
+    // --- ALS PDF SICHERN (über die Druckfunktion von iOS) ---
+    function exportPdf() {
+        const hasFilter = elements.searchInput.value.trim() || filterDateFrom.value || filterDateTo.value || selectedMoodFilter || selectedPerson;
+        const source = hasFilter ? currentFilteredEntries : allEntriesCache;
+        if (!source.length) return showToast('Keine Einträge zum Sichern.', true);
+
+        const list = [...source].sort((a, b) => a.entry_date.localeCompare(b.entry_date));
+        const moodMap = { happy: '🙂', neutral: '😐', sad: '😞' };
+        const fmt = iso => new Date(iso).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const range = list.length > 1 ? `${fmt(list[0].entry_date)} – ${fmt(list[list.length - 1].entry_date)}` : fmt(list[0].entry_date);
+
+        const body = list.map(e => {
+            const parts = [`<h2>${fmt(e.entry_date)} ${moodMap[e.mood] || ''}</h2>`];
+            if (e.best_of_day) parts.push(`<p>${escapeHtml(e.best_of_day)}</p>`);
+            if (e.lotta) parts.push(`<div class="pl">${escapeHtml(settings.field1Label)}</div><p>${escapeHtml(e.lotta)}</p>`);
+            if (e.thea) parts.push(`<div class="pl">${escapeHtml(settings.field2Label)}</div><p>${escapeHtml(e.thea)}</p>`);
+            return `<div class="print-entry">${parts.join('')}</div>`;
+        }).join('');
+
+        $('printRoot').innerHTML = `
+            <div class="print-cover">
+                <h1>Das Beste des Tages</h1>
+                <p>${escapeHtml(settings.displayName ? settings.displayName + ' · ' : '')}${list.length} ${list.length === 1 ? 'Eintrag' : 'Einträge'}</p>
+                <p>${range}</p>
+            </div>${body}`;
+
+        showToast('Druckansicht wird geöffnet – dort „PDF sichern" wählen.');
+        setTimeout(() => window.print(), 400);
+    }
+    $('exportPdfBtn').addEventListener('click', () => { popover.style.display = 'none'; exportPdf(); });
 
     // --- ERROR TRACKING ---
     const _loggedErrors = new Set();
