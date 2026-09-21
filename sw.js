@@ -1,9 +1,21 @@
-const CACHE_NAME = 'das-beste-des-tages-v8';
+const CACHE_NAME = 'das-beste-des-tages-v9';
+
+// Ohne diese beiden Dateien startet die App nicht. Sie liegen auf einem
+// fremden Server (jsDelivr), deshalb werden sie gleich bei der Installation
+// mitgesichert – sonst bleibt die App beim ersten Start ohne Netz leer.
+const EXTERNAL_ASSETS = [
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+  'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0'
+];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(['./index.html', './icon.svg']))
+    caches.open(CACHE_NAME).then(async cache => {
+      await cache.addAll(['./index.html', './icon.svg', './manifest.json']);
+      // Fehlschläge hier dürfen die Installation nicht verhindern
+      await Promise.all(EXTERNAL_ASSETS.map(url => cache.add(url).catch(() => {})));
+    })
   );
 });
 
@@ -36,13 +48,15 @@ self.addEventListener('fetch', event => {
   if (url.hostname === 'cdn.jsdelivr.net') {
     event.respondWith(
       caches.match(event.request).then(cached => {
-        if (cached) return cached;
-        return fetch(event.request).then(response => {
+        const network = fetch(event.request).then(response => {
           if (response.ok) {
             caches.open(CACHE_NAME).then(c => c.put(event.request, response.clone()));
           }
           return response;
         });
+        // Sofort aus dem Cache antworten, die Kopie im Hintergrund auffrischen
+        if (cached) { network.catch(() => {}); return cached; }
+        return network;
       })
     );
   }

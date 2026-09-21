@@ -2,18 +2,16 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" id="themeColorMeta" content="#F2F2F7">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.svg">
 
   <title>Das Beste des Tages</title>
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
 
   <style>
@@ -34,7 +32,7 @@
       --bg-button-secondary: #E5E5EA; /* System Gray 5 */
       
       --text-main: #000000;
-      --text-secondary: #8E8E93;
+      --text-secondary: #636366;
       --text-tertiary: #C7C7CC;
       
       --border: rgba(0,0,0,0.08);
@@ -77,6 +75,16 @@
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    /* --- FOKUS: Tastaturbedienung muss sichtbar sein --- */
+    :focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 8px;
+    }
+    /* Text- und Eingabefelder haben bereits einen eigenen Fokusring */
+    textarea:focus-visible, input:focus-visible { outline: none; }
+
     
     html { scroll-behavior: smooth; }
     
@@ -434,7 +442,7 @@
         cursor: pointer;
     }
     .clear-filter-btn {
-        background: rgba(0,122,255,0.1);
+        background: rgba(var(--accent-rgb), 0.1);
         border: none;
         color: var(--accent);
         font-size: 13px;
@@ -447,7 +455,7 @@
         text-align: center;
         width: 100%;
     }
-    .clear-filter-btn:hover { background: rgba(0,122,255,0.18); }
+    .clear-filter-btn:hover { background: rgba(var(--accent-rgb), 0.18); }
     .clear-filter-btn:active { transform: scale(0.96); }
 
     /* FILTER PILLS */
@@ -461,7 +469,7 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        background: rgba(0,122,255,0.1);
+        background: rgba(var(--accent-rgb), 0.1);
         color: var(--accent);
         border-radius: 50px;
         padding: 5px 8px 5px 14px;
@@ -469,7 +477,7 @@
         font-weight: 600;
     }
     .filter-pill-remove {
-        background: rgba(0,122,255,0.2);
+        background: rgba(var(--accent-rgb), 0.2);
         border: none;
         color: var(--accent);
         border-radius: 50%;
@@ -480,7 +488,7 @@
         line-height: 1;
         transition: background 0.15s;
     }
-    .filter-pill-remove:hover { background: rgba(0,122,255,0.35); }
+    .filter-pill-remove:hover { background: rgba(var(--accent-rgb), 0.35); }
 
     /* RESULT COUNT */
     .result-count {
@@ -501,7 +509,7 @@
     /* EDIT MODE */
     #editorCard.editing {
         border: 2px solid var(--accent) !important;
-        box-shadow: 0 0 0 5px rgba(0,122,255,0.08), var(--shadow-card) !important;
+        box-shadow: 0 0 0 5px rgba(var(--accent-rgb), 0.08), var(--shadow-card) !important;
         transition: border 0.2s, box-shadow 0.2s;
     }
 
@@ -1063,6 +1071,27 @@
     .month-row:last-child { border-bottom: none; }
     .month-row strong { font-weight: 700; }
 
+    /* --- BEWEGUNG REDUZIEREN (iOS-Einstellung respektieren) --- */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .entry-card { opacity: 1 !important; }
+    }
+
+    /* --- START-FEHLER (wenn externe Bibliotheken fehlen) --- */
+    .boot-error {
+      max-width: 420px;
+      margin: 18vh auto 0;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .boot-error h1 { font-size: 22px; font-weight: 800; margin: 18px 0 10px; }
+    .boot-error p { color: var(--text-secondary); font-size: 15px; line-height: 1.55; margin: 0 0 24px; }
+
     /* --- PULL TO REFRESH --- */
     .ptr {
         position: fixed;
@@ -1086,7 +1115,14 @@
 </head>
 <body>
 
-  <div id="toast" class="toast">Nachricht</div>
+  <div id="bootError" class="boot-error hidden">
+    <div style="font-size:44px;">📡</div>
+    <h1>App konnte nicht laden</h1>
+    <p>Ein benötigter Teil der App ist gerade nicht erreichbar. Prüfe deine Internetverbindung und lade die Seite neu. Deine Einträge sind davon nicht betroffen.</p>
+    <button class="btn-primary" onclick="location.reload()">Neu laden</button>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite">Nachricht</div>
 
   <div id="deleteModal" class="modal-overlay hidden">
     <div class="card" style="width:100%;max-width:380px;padding:28px;">
@@ -1104,10 +1140,10 @@
     <div class="card" style="width:100%;max-width:400px;padding:28px;">
       <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;">Neues Passwort setzen</h2>
       <p style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;">Wähle ein neues Passwort für deinen Account.</p>
-      <label>Neues Passwort</label>
-      <input type="password" id="newPassword" placeholder="Mindestens 6 Zeichen" style="margin-bottom:16px;">
-      <label>Passwort bestätigen</label>
-      <input type="password" id="confirmPassword" placeholder="Passwort wiederholen">
+      <label for="newPassword">Neues Passwort</label>
+      <input type="password" id="newPassword" autocomplete="new-password" placeholder="Mindestens 6 Zeichen" style="margin-bottom:16px;">
+      <label for="confirmPassword">Passwort bestätigen</label>
+      <input type="password" id="confirmPassword" autocomplete="new-password" placeholder="Passwort wiederholen">
       <button id="setPasswordBtn" class="btn-primary" style="margin-top:24px;">Passwort setzen</button>
     </div>
   </div>
@@ -1177,18 +1213,18 @@
     <h1 style="font-size:32px; font-weight:800; margin-bottom:10px;">Das Beste des Tages</h1>
     <p style="color:var(--text-secondary); margin-bottom:40px;">Deine Gedanken. Sicher und schön.</p>
     
-    <div class="card" style="padding:24px;">
-      <label>E-Mail</label>
-      <input type="email" id="authEmail" placeholder="hallo@beispiel.de" style="margin-bottom:16px;">
-      <label>Passwort</label>
-      <input type="password" id="authPassword" placeholder="••••••••">
-      
+    <form id="authForm" class="card" style="padding:24px;">
+      <label for="authEmail">E-Mail</label>
+      <input type="email" id="authEmail" name="email" autocomplete="username email" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" placeholder="hallo@beispiel.de" style="margin-bottom:16px;">
+      <label for="authPassword">Passwort</label>
+      <input type="password" id="authPassword" name="password" autocomplete="current-password" placeholder="••••••••">
+
       <div style="margin-top:24px; display:flex; flex-direction:column; gap:12px;">
-        <button id="loginBtn" class="btn-primary">Anmelden</button>
-        <button id="signupBtn" class="txt-btn" style="color:var(--text-secondary); margin-top:10px;">Account erstellen</button>
-        <button id="forgotBtn" class="txt-btn" style="color:var(--accent); font-size:13px;">Passwort vergessen?</button>
+        <button id="loginBtn" type="submit" class="btn-primary">Anmelden</button>
+        <button id="signupBtn" type="button" class="txt-btn" style="color:var(--text-secondary); margin-top:10px;">Account erstellen</button>
+        <button id="forgotBtn" type="button" class="txt-btn" style="color:var(--accent); font-size:13px;">Passwort vergessen?</button>
       </div>
-    </div>
+    </form>
   </div>
 
   <div id="appSection" class="hidden">
@@ -1216,7 +1252,7 @@
           <button id="remindExportBtn" style="background:#FF9F0A; color:white; border:none; padding:6px 12px; border-radius:20px; font-weight:600; font-size:12px; cursor:pointer;">Exportieren</button>
       </div>
 
-      <div id="todayNudge" class="card hidden" style="background:rgba(0,122,255,0.08); border:1px solid rgba(0,122,255,0.2); padding:16px; display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:12px;">
+      <div id="todayNudge" class="card hidden" style="background:rgba(var(--accent-rgb), 0.08); border:1px solid rgba(var(--accent-rgb), 0.2); padding:16px; display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:12px;">
           <div style="color:var(--accent); font-weight:700; font-size:14px;">📝 Heute noch nichts geschrieben</div>
           <button id="nudgeWriteBtn" style="background:var(--accent); color:white; border:none; padding:6px 14px; border-radius:20px; font-weight:600; font-size:12px; cursor:pointer; white-space:nowrap;">Jetzt schreiben</button>
       </div>
@@ -1516,6 +1552,14 @@
     const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdhb3NiaXljY3dhd3V6ZmphZ3ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMDYzODAsImV4cCI6MjA3ODY4MjM4MH0.s30-UTEY1xR3DP521ewc03aMRsG3WLH_I5VTi4_xu-4';
     
+    // Ohne diese beiden Bibliotheken kann die App nicht arbeiten.
+    // Ein verständlicher Hinweis ist besser als eine weiße Seite.
+    if (!window.supabase || !window.Fuse) {
+        document.getElementById('bootError').classList.remove('hidden');
+        document.getElementById('authSection').classList.add('hidden');
+        throw new Error('Externe Bibliotheken konnten nicht geladen werden.');
+    }
+
     const { createClient } = window.supabase;
     const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1536,7 +1580,6 @@
     const VAPID_PUBLIC_KEY = 'BAQvAK4Ysgh3pVjZjqZuYwOOteBBmCNkyOiwtFQC8S6baQoGl7VxuZzyDbz4XRs7u4uz-b3yYQfQwtlzdfG6Kuk';
 
     let currentUser = null;
-    let currentSessionToken = null;
     let selectedMood = null;
     let selectedMoodFilter = null;
     let selectedPerson = null;
@@ -1574,6 +1617,12 @@
       }
     };
 
+    // Systemeinstellung "Bewegung reduzieren" (iOS: Bedienungshilfen > Bewegung)
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+    }
+
     let toastDismissTimer = null;
 
     function showToast(msg, isError = false) {
@@ -1604,7 +1653,7 @@
       const pref = themePref();
       const isDark = pref === 'dark' || (pref === 'system' && systemDark.matches);
       document.body.classList.toggle('dark-mode', isDark);
-      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      const metaTheme = document.getElementById('themeColorMeta');
       if (metaTheme) metaTheme.setAttribute('content', isDark ? '#000000' : '#F2F2F7');
       if (typeof applyAccent === 'function') applyAccent();
     }
@@ -1637,7 +1686,7 @@
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const alreadyActive = !$('tab-' + btn.dataset.tab).classList.contains('hidden');
-            if (alreadyActive) window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (alreadyActive) scrollToTop();
             else switchTab(btn.dataset.tab);
         });
     });
@@ -2067,6 +2116,7 @@
 
     // --- KONFETTI ---
     function confettiBurst(big = false) {
+        if (reduceMotion.matches) return;
         const canvas = document.createElement('canvas');
         canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:2000;pointer-events:none;';
         canvas.width = window.innerWidth;
@@ -2208,7 +2258,6 @@
     });
 
     db.auth.onAuthStateChange((event, session) => {
-      currentSessionToken = session?.access_token || null;
       if (event === 'PASSWORD_RECOVERY') showPasswordRecovery();
       else if (event === 'SIGNED_IN' && session) showApp(session.user);
       else if (event === 'SIGNED_OUT') showAuth();
@@ -2270,12 +2319,13 @@
     function handleLaunchParams() {
         const params = new URLSearchParams(window.location.search);
         if (params.get('action') === 'new') {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            scrollToTop();
             setTimeout(() => elements.fields.best.focus(), 300);
         }
     }
 
-    $('loginBtn').addEventListener('click', async () => {
+    $('authForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
       showToast('Anmelden...');
       const { error } = await db.auth.signInWithPassword({
         email: elements.email.value.trim(),
@@ -2366,7 +2416,7 @@
         $('editorCard').classList.add('editing');
         $('editorSectionTitle').textContent = 'Eintrag bearbeiten';
         switchTab('heute');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTop();
 
         elements.fields.date.value = entry.entry_date;
         const d = new Date(entry.entry_date);
@@ -2440,7 +2490,7 @@
     
     elements.cancelEditBtn.addEventListener('click', () => {
         resetEditor();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTop();
     });
 
     // --- SAVE ---
@@ -2514,21 +2564,31 @@
     });
 
     // --- LOAD & RENDER ---
+    // Alles neu zeichnen, was von allEntriesCache abhängt
+    function renderAll() {
+      fuse = new Fuse(allEntriesCache, FUSE_OPTIONS);
+      updateStats();
+      renderFilteredEntries();
+      renderHeatmap();
+      updateTodayNudge();
+      renderOnThisDay();
+      renderMonthCard();
+      renderMoodTrend();
+      renderInsights();
+    }
+
+    function writeEntriesCache() {
+      const key = CACHE_KEY_PREFIX + (currentUser?.id || 'guest');
+      try { localStorage.setItem(key, JSON.stringify(allEntriesCache)); } catch(e) {}
+    }
+
     async function loadEntries() {
       const cacheKey = CACHE_KEY_PREFIX + (currentUser?.id || 'guest');
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
           try {
               allEntriesCache = JSON.parse(cached);
-              fuse = new Fuse(allEntriesCache, FUSE_OPTIONS);
-              updateStats();
-              renderFilteredEntries();
-              renderHeatmap();
-              updateTodayNudge();
-              renderOnThisDay();
-              renderMonthCard();
-              renderMoodTrend();
-              renderInsights();
+              renderAll();
           } catch(e) {
               localStorage.removeItem(cacheKey);
               elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">Lade Einträge...</div>';
@@ -2547,15 +2607,7 @@
           if (error) { showToast('Ladefehler: ' + error.message, true); return; }
           allEntriesCache = data || [];
           try { localStorage.setItem(cacheKey, JSON.stringify(allEntriesCache)); } catch(e) {}
-          fuse = new Fuse(allEntriesCache, FUSE_OPTIONS);
-          updateStats();
-          renderFilteredEntries();
-          renderHeatmap();
-          updateTodayNudge();
-          renderOnThisDay();
-          renderMonthCard();
-          renderMoodTrend();
-          renderInsights();
+          renderAll();
       } catch(err) {
           if (err.message === 'network-timeout') {
               if (!allEntriesCache.length) {
@@ -2814,7 +2866,8 @@
         const el      = $('resultCount');
         const total   = allEntriesCache.length;
         const shown   = currentFilteredEntries.length;
-        const hasFilter = elements.searchInput.value.trim() || filterDateFrom.value || filterDateTo.value;
+        const hasFilter = elements.searchInput.value.trim() || filterDateFrom.value
+            || filterDateTo.value || selectedMoodFilter || selectedPerson;
         el.textContent = hasFilter
             ? `${shown} von ${total} ${total === 1 ? 'Eintrag' : 'Einträgen'}`
             : `${total} ${total === 1 ? 'Eintrag' : 'Einträge'}`;
@@ -2825,58 +2878,36 @@
         if (e) startEdit(e);
     };
 
-    let pendingDeleteTimer = null;
-    let pendingDeleteEntry = null;
+    // Der Eintrag wird sofort in der Datenbank gelöscht, "Rückgängig" legt ihn
+    // unverändert wieder an. Vorher wurde 5 Sekunden gewartet – wurde die App in
+    // dieser Zeit geschlossen, kam der gelöschte Eintrag später wieder zurück.
+    const PHOTO_CLEANUP_DELAY = 9000;   // etwas länger als die Rückgängig-Frist
 
-    async function executePendingDelete() {
-      const entry = pendingDeleteEntry;
-      pendingDeleteTimer = null;
-      pendingDeleteEntry = null;
-      if (!entry) return;
-      const { error } = await db.from('entries').delete().eq('id', entry.id);
-      if (!error && entry.photo_path) {
-        db.storage.from('entry-photos').remove([entry.photo_path]).catch(() => {});
-      }
-      if (error) {
-        allEntriesCache = [...allEntriesCache, entry].sort((a,b) => b.entry_date.localeCompare(a.entry_date));
-        const ck = CACHE_KEY_PREFIX + (currentUser?.id || 'guest');
-        try { localStorage.setItem(ck, JSON.stringify(allEntriesCache)); } catch(e) {}
-        fuse.setCollection(allEntriesCache);
-        renderFilteredEntries();
-        showToast('Löschen fehlgeschlagen: ' + error.message, true);
-      }
-    }
-
-    window.deleteEntry = (id) => {
+    window.deleteEntry = async (id) => {
       const entry = allEntriesCache.find(e => e.id === id);
       if (!entry) return;
 
-      if (pendingDeleteTimer) {
-        clearTimeout(pendingDeleteTimer);
-        executePendingDelete();
-      }
+      const { error } = await db.from('entries').delete().eq('id', id);
+      if (error) return showToast('Löschen fehlgeschlagen: ' + error.message, true);
 
       allEntriesCache = allEntriesCache.filter(e => e.id !== id);
-      const ck = CACHE_KEY_PREFIX + (currentUser?.id || 'guest');
-      try { localStorage.setItem(ck, JSON.stringify(allEntriesCache)); } catch(e) {}
-      fuse.setCollection(allEntriesCache);
-      renderFilteredEntries();
+      writeEntriesCache();
+      renderAll();
 
-      pendingDeleteEntry = entry;
+      // Foto erst entfernen, wenn "Rückgängig" nicht mehr möglich ist
+      const photoTimer = entry.photo_path
+          ? setTimeout(() => { db.storage.from('entry-photos').remove([entry.photo_path]).catch(() => {}); }, PHOTO_CLEANUP_DELAY)
+          : null;
 
-      showToastWithUndo('Eintrag gelöscht', () => {
-        clearTimeout(pendingDeleteTimer);
-        pendingDeleteTimer = null;
-        allEntriesCache = [...allEntriesCache, pendingDeleteEntry].sort((a,b) => b.entry_date.localeCompare(a.entry_date));
-        const ck2 = CACHE_KEY_PREFIX + (currentUser?.id || 'guest');
-        try { localStorage.setItem(ck2, JSON.stringify(allEntriesCache)); } catch(e) {}
-        fuse.setCollection(allEntriesCache);
-        pendingDeleteEntry = null;
-        renderFilteredEntries();
+      showToastWithUndo('Eintrag gelöscht', async () => {
+        if (photoTimer) clearTimeout(photoTimer);
+        const { error: undoError } = await db.from('entries').insert(entry);
+        if (undoError) return showToast('Wiederherstellen fehlgeschlagen: ' + undoError.message, true);
+        allEntriesCache = [...allEntriesCache, entry].sort((a, b) => b.entry_date.localeCompare(a.entry_date));
+        writeEntriesCache();
+        renderAll();
         showToast('Löschen rückgängig gemacht ↩️');
       });
-
-      pendingDeleteTimer = setTimeout(executePendingDelete, 5000);
     };
 
     // --- TOOLS ---
@@ -2916,7 +2947,32 @@
     $('exportCsvBtn').addEventListener('click', () => { popover.style.display='none'; exportData('csv'); });
     $('exportXlsxBtn').addEventListener('click', () => { popover.style.display='none'; exportData('xlsx'); });
 
+    // Die Excel-Bibliothek ist rund 1 MB groß und wird nur für Import/Export
+    // gebraucht. Sie wird deshalb erst beim ersten Klick nachgeladen.
+    const XLSX_URL = 'https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js';
+    let xlsxPromise = null;
+    function ensureXlsx() {
+        if (window.XLSX) return Promise.resolve();
+        if (!xlsxPromise) {
+            xlsxPromise = new Promise((resolve, reject) => {
+                const tag = document.createElement('script');
+                tag.src = XLSX_URL;
+                tag.onload = () => resolve();
+                tag.onerror = () => {
+                    xlsxPromise = null;
+                    reject(new Error('Excel-Funktion konnte nicht geladen werden. Bitte Internetverbindung prüfen.'));
+                };
+                document.head.appendChild(tag);
+            });
+        }
+        return xlsxPromise;
+    }
+
     async function exportData(type) {
+      if (type !== 'csv') {
+          try { await ensureXlsx(); }
+          catch (err) { return showToast(err.message, true); }
+      }
       showToast('Exportiere...');
       const data = allEntriesCache.map(r => ({
           entry_date: r.entry_date,
@@ -2978,6 +3034,7 @@
                      return o;
                  });
             } else {
+                await ensureXlsx();
                 const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
                 rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false });
             }
@@ -3028,23 +3085,6 @@
       const a = document.createElement('a'); a.href=u; a.download=n; a.click();
       URL.revokeObjectURL(u);
     }
-
-    window.addEventListener('beforeunload', () => {
-      if (pendingDeleteTimer && pendingDeleteEntry && currentSessionToken) {
-        clearTimeout(pendingDeleteTimer);
-        const entry = pendingDeleteEntry;
-        pendingDeleteTimer = null;
-        pendingDeleteEntry = null;
-        fetch(`${SUPABASE_URL}/rest/v1/entries?id=eq.${entry.id}`, {
-          method: 'DELETE',
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': 'Bearer ' + currentSessionToken
-          },
-          keepalive: true
-        });
-      }
-    });
 
     // --- KEYBOARD SHORTCUTS ---
     document.addEventListener('keydown', (e) => {
@@ -3124,7 +3164,7 @@
     $('nudgeWriteBtn').addEventListener('click', () => {
         resetEditor();
         switchTab('heute');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTop();
         setTimeout(() => elements.fields.best.focus(), 300);
     });
 
@@ -3199,7 +3239,7 @@
             elements.fields.date.value = date;
             elements.fields.date.dispatchEvent(new Event('change'));
             switchTab('heute');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            scrollToTop();
         }
     });
 
