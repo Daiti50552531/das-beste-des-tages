@@ -37,6 +37,15 @@
       
       --border: rgba(0,0,0,0.08);
       --glass: rgba(255, 255, 255, 0.85);
+
+      /* Stimmungen: wertungsfrei, auf einer Blau-Bernstein-Achse.
+         Rot/Grün wäre für rund 8 % der Männer nicht unterscheidbar. */
+      --mood-happy: #D99323;
+      --mood-neutral: #9E9EA8;
+      --mood-sad: #5E82A6;
+      --mood-happy-soft: rgba(217, 147, 35, 0.16);
+      --mood-neutral-soft: rgba(158, 158, 168, 0.18);
+      --mood-sad-soft: rgba(94, 130, 166, 0.16);
       
       --radius-l: 24px;  
       --radius-m: 16px;
@@ -69,6 +78,13 @@
 
       --border: rgba(255,255,255,0.09);
       --glass: rgba(13, 13, 15, 0.88);
+
+      --mood-happy: #EFB457;
+      --mood-neutral: #9A9AA4;
+      --mood-sad: #7FA4CC;
+      --mood-happy-soft: rgba(239, 180, 87, 0.20);
+      --mood-neutral-soft: rgba(154, 154, 164, 0.20);
+      --mood-sad-soft: rgba(127, 164, 204, 0.20);
 
       --shadow-card: 0 4px 24px rgba(0,0,0,0.45);
       --shadow-float: 0 12px 40px rgba(0,0,0,0.55);
@@ -103,6 +119,7 @@
     /* --- ICONS (SVG Styling) --- */
     .icon { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .icon-sm { width: 16px; height: 16px; }
+    .icon-lg { width: 38px; height: 38px; stroke-width: 1.5; }
     
     /* --- HEADER --- */
     .sticky-header-wrapper {
@@ -142,6 +159,7 @@
         transition: transform 0.2s;
     }
     .theme-btn:active { transform: scale(0.9); }
+    .theme-btn .icon { width: 18px; height: 18px; }
 
     /* --- LAYOUT --- */
     .container {
@@ -158,6 +176,8 @@
         font-weight: 600;
         margin: 24px 0 10px 4px;
     }
+    #tab-statistik .section-title { margin-top: 20px; }
+    #tab-statistik .card { margin-bottom: 0; }
 
     /* --- CARDS & SURFACES --- */
     .card {
@@ -609,10 +629,56 @@
         50% { box-shadow: 0 0 0 8px rgba(255,59,48,0); }
     }
 
-    /* NUDGE / ON-THIS-DAY CARDS */
-    #todayNudge, #onThisDayCard { margin-bottom: 16px; }
+    /* ON-THIS-DAY */
+    #onThisDayCard { margin-bottom: 16px; }
+
+    /* DEZENTE HINWEISZEILE (Backup) */
+    .quiet-note {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 4px 14px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.4;
+    }
+    .quiet-note button {
+        background: none;
+        border: none;
+        padding: 0;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 600;
+        font-family: var(--font-stack);
+        cursor: pointer;
+        white-space: nowrap;
+    }
 
     /* CALENDAR HEATMAP */
+    .heatmap-months {
+        display: grid;
+        grid-auto-flow: column;
+        gap: 3px;
+        width: max-content;
+        margin-bottom: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+    .heatmap-month { grid-row: 1; white-space: nowrap; }
+    .heatmap-legend {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: -6px 0 18px 2px;
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+    .heatmap-legend span { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
     .heatmap-wrap {
         overflow-x: auto;
         padding-bottom: 8px;
@@ -634,9 +700,9 @@
         transition: transform 0.15s;
     }
     .heatmap-cell:active { transform: scale(0.8); }
-    .heatmap-cell.happy { background: var(--success); }
-    .heatmap-cell.neutral { background: #FF9F0A; }
-    .heatmap-cell.sad { background: var(--danger); }
+    .heatmap-cell.happy { background: var(--mood-happy); }
+    .heatmap-cell.neutral { background: var(--mood-neutral); }
+    .heatmap-cell.sad { background: var(--mood-sad); }
     .heatmap-cell.future { visibility: hidden; cursor: default; }
 
     /* PHOTO ATTACHMENT */
@@ -925,7 +991,7 @@
         font-size: 14.5px; line-height: 1.5;
     }
     .insight-row:last-child { border-bottom: none; }
-    .insight-row .ico { font-size: 17px; line-height: 1.3; flex-shrink: 0; }
+    .insight-row .ico { color: var(--text-secondary); flex-shrink: 0; margin-top: 1px; }
 
     /* --- SEGMENTED CONTROL (Erscheinungsbild) --- */
     .seg { display: flex; background: var(--bg-input); border-radius: 12px; padding: 3px; gap: 3px; }
@@ -968,31 +1034,8 @@
         margin-top: 2px;
     }
 
-    /* --- PROMPT CARD (Impuls des Tages) --- */
-    .prompt-card {
-        padding: 14px 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 16px;
-        background: linear-gradient(135deg, rgba(var(--accent-rgb, 0,122,255), 0.09), rgba(var(--accent-rgb, 0,122,255), 0.03));
-        border: 1px solid rgba(var(--accent-rgb, 0,122,255), 0.15);
-    }
-    .prompt-label {
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 3px;
-    }
-    .prompt-text {
-        font-size: 15px;
-        font-weight: 600;
-        cursor: pointer;
-        line-height: 1.4;
-    }
 
+    /* --- ACCENT SWATCHES --- */
     /* --- ACCENT SWATCHES --- */
     .accent-row {
         display: flex;
@@ -1019,13 +1062,13 @@
     .ob-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bg-button-secondary); transition: background 0.2s; }
     .ob-dot.active { background: var(--accent); }
 
-    /* --- MOOD TREND CHART --- */
+    /* --- MONATS-DIAGRAMM (Anteil guter Tage) --- */
     .trend-grid {
         display: flex;
         align-items: flex-end;
         gap: 10px;
-        height: 130px;
-        padding-top: 20px;
+        height: 148px;
+        padding-top: 4px;
     }
     .trend-col {
         flex: 1;
@@ -1048,8 +1091,9 @@
     }
     .trend-bar {
         width: 100%;
+        background: var(--mood-happy);
         border-radius: 4px 4px 0 0;
-        min-height: 4px;
+        min-height: 3px;
         transition: height 0.4s ease;
     }
     .trend-month {
@@ -1057,17 +1101,27 @@
         font-weight: 600;
         color: var(--text-secondary);
     }
-    .trend-emoji { font-size: 15px; line-height: 1; }
+    .trend-value { font-size: 12px; font-weight: 700; color: var(--text-main); line-height: 1; }
+    .trend-value.empty { color: var(--text-tertiary); font-weight: 600; }
+    .trend-caption {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin: 12px 0 0;
+        line-height: 1.4;
+    }
 
     /* --- MONTH CARD ROWS --- */
     .month-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 9px 0;
+        gap: 12px;
+        padding: 10px 0;
         border-bottom: 1px solid var(--border);
         font-size: 15px;
     }
+    .month-row .label { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .row-icon { color: var(--text-secondary); flex-shrink: 0; }
     .month-row:last-child { border-bottom: none; }
     .month-row strong { font-weight: 700; }
 
@@ -1116,7 +1170,7 @@
 <body>
 
   <div id="bootError" class="boot-error hidden">
-    <div style="font-size:44px;">📡</div>
+    <div style="color:var(--text-secondary);"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg></div>
     <h1>App konnte nicht laden</h1>
     <p>Ein benötigter Teil der App ist gerade nicht erreichbar. Prüfe deine Internetverbindung und lade die Seite neu. Deine Einträge sind davon nicht betroffen.</p>
     <button class="btn-primary" onclick="location.reload()">Neu laden</button>
@@ -1126,7 +1180,7 @@
 
   <div id="deleteModal" class="modal-overlay hidden">
     <div class="card" style="width:100%;max-width:380px;padding:28px;">
-      <div style="font-size:40px;text-align:center;margin-bottom:16px;">🗑️</div>
+      <div style="text-align:center;margin-bottom:16px;color:var(--danger);"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></div>
       <h2 style="font-size:20px;font-weight:800;margin:0 0 10px;text-align:center;">Alle Einträge löschen?</h2>
       <p style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;text-align:center;line-height:1.5;">Diese Aktion kann nicht rückgängig gemacht werden. Stelle sicher, dass du ein Backup hast.</p>
       <div style="display:flex;gap:12px;">
@@ -1157,7 +1211,7 @@
       </div>
 
       <div id="obStep1">
-        <div style="font-size:44px;text-align:center;margin-bottom:12px;">👋</div>
+        <div style="text-align:center;margin-bottom:14px;color:var(--accent);"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="15"></line></svg></div>
         <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;text-align:center;">Willkommen!</h2>
         <p style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;text-align:center;line-height:1.5;">Lass uns die App in drei kurzen Schritten auf dich einstellen.</p>
         <label>Wie dürfen wir dich nennen? (optional)</label>
@@ -1165,7 +1219,7 @@
       </div>
 
       <div id="obStep2" class="hidden">
-        <div style="font-size:44px;text-align:center;margin-bottom:12px;">✍️</div>
+        <div style="text-align:center;margin-bottom:14px;color:var(--accent);"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></div>
         <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;text-align:center;">Deine Extra-Felder</h2>
         <p style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;text-align:center;line-height:1.5;">Neben deinem Haupt-Eintrag kannst du über bis zu zwei Menschen oder Themen schreiben – z.&nbsp;B. deine Kinder, Partner oder dein Haustier. Leer lassen blendet das Feld aus.</p>
         <label>Feld 1 (optional)</label>
@@ -1175,7 +1229,7 @@
       </div>
 
       <div id="obStep3" class="hidden">
-        <div style="font-size:44px;text-align:center;margin-bottom:12px;">🎨</div>
+        <div style="text-align:center;margin-bottom:14px;color:var(--accent);"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg></div>
         <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;text-align:center;">Dein Stil</h2>
         <p style="color:var(--text-secondary);margin:0 0 20px;font-size:15px;text-align:center;line-height:1.5;">Wähle deine Akzentfarbe und deine Wunschzeit für die tägliche Erinnerung.</p>
         <label>Erscheinungsbild</label>
@@ -1202,14 +1256,14 @@
 
   <div id="yearWrapModal" class="modal-overlay hidden">
     <div class="card" style="width:100%;max-width:400px;padding:28px;max-height:85vh;overflow-y:auto;">
-      <h2 style="font-size:22px;font-weight:800;margin:0 0 20px;text-align:center;">📊 Jahresrückblick</h2>
+      <h2 style="font-size:22px;font-weight:800;margin:0 0 20px;text-align:center;">Jahresrückblick</h2>
       <div id="yearWrapContent"></div>
       <button id="yearWrapCloseBtn" class="btn-secondary" style="margin-top:24px;">Schließen</button>
     </div>
   </div>
 
   <div id="authSection" class="auth-container">
-    <div style="width:80px; height:80px; background:var(--text-main); border-radius:24px; margin:0 auto 20px auto; display:flex; align-items:center; justify-content:center; color:var(--bg-body); font-size:40px;">✒️</div>
+    <div style="width:80px; height:80px; background:var(--text-main); border-radius:24px; margin:0 auto 20px auto; display:flex; align-items:center; justify-content:center; color:var(--bg-body);"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="15"></line></svg></div>
     <h1 style="font-size:32px; font-weight:800; margin-bottom:10px;">Das Beste des Tages</h1>
     <p style="color:var(--text-secondary); margin-bottom:40px;">Deine Gedanken. Sicher und schön.</p>
     
@@ -1232,12 +1286,7 @@
     <div class="sticky-header-wrapper">
         <div class="topbar">
             <span class="app-title">Das Beste des Tages</span>
-            <div style="display:flex; gap:12px;">
-                <button id="themeToggle" class="theme-btn">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                </button>
-                <button id="logoutBtn" class="txt-btn" style="color:var(--danger);">Logout</button>
-            </div>
+            <button id="themeToggle" class="theme-btn" aria-label="Erscheinungsbild wechseln"></button>
         </div>
     </div>
 
@@ -1247,32 +1296,11 @@
 
       <div id="greeting" class="greeting hidden"></div>
 
-      <div id="reminderBox" class="card" style="background:rgba(255, 159, 10, 0.1); border:1px solid rgba(255, 159, 10, 0.2); padding:16px; display:none; flex-direction:row; align-items:center; justify-content:space-between;">
-          <div style="color:#FF9F0A; font-weight:700; font-size:14px;">Backup empfohlen</div>
-          <button id="remindExportBtn" style="background:#FF9F0A; color:white; border:none; padding:6px 12px; border-radius:20px; font-weight:600; font-size:12px; cursor:pointer;">Exportieren</button>
+      <div id="reminderBox" class="quiet-note" style="display:none;">
+          <span>Dein letztes Backup ist eine Weile her.</span>
+          <button id="remindExportBtn" type="button">Jetzt sichern</button>
       </div>
 
-      <div id="todayNudge" class="card hidden" style="background:rgba(var(--accent-rgb), 0.08); border:1px solid rgba(var(--accent-rgb), 0.2); padding:16px; display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:12px;">
-          <div style="color:var(--accent); font-weight:700; font-size:14px;">📝 Heute noch nichts geschrieben</div>
-          <button id="nudgeWriteBtn" style="background:var(--accent); color:white; border:none; padding:6px 14px; border-radius:20px; font-weight:600; font-size:12px; cursor:pointer; white-space:nowrap;">Jetzt schreiben</button>
-      </div>
-
-      <div id="onThisDayCard" class="card hidden" style="padding:20px;">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-              <span style="font-size:20px;">🕰️</span>
-              <span style="font-weight:700; font-size:15px;">Vor X Jahren an diesem Tag</span>
-          </div>
-          <div id="onThisDayContent"></div>
-      </div>
-
-      <div id="promptCard" class="card prompt-card">
-          <span style="font-size:22px;">💡</span>
-          <div style="flex:1;">
-              <div class="prompt-label">Impuls des Tages</div>
-              <div id="promptText" class="prompt-text"></div>
-          </div>
-          <button id="promptShuffleBtn" class="mic-btn" title="Anderer Impuls" style="font-size:14px;">🔄</button>
-      </div>
 
       <div class="section-title" id="editorSectionTitle">Neuer Eintrag</div>
       <div class="card" id="editorCard">
@@ -1288,9 +1316,12 @@
         <div class="input-group">
             <div class="field-header">
                 <label>Das Beste des Tages</label>
+                <div style="display:flex; gap:8px;">
+                <button id="promptShuffleBtn" class="mic-btn" type="button" title="Anderer Impuls" aria-label="Anderer Impuls"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button>
                 <button class="mic-btn" data-target="bestOfDay" title="Spracheingabe">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                 </button>
+                </div>
             </div>
             <textarea id="bestOfDay" placeholder="Was war heute los?" rows="3"></textarea>
         </div>
@@ -1319,9 +1350,9 @@
         <div class="input-group" style="padding-top:0;">
             <label>Foto (optional)</label>
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                <label for="cameraInput" class="btn-tool photo-picker-label">📷 Kamera</label>
+                <label for="cameraInput" class="btn-tool photo-picker-label"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Kamera</label>
                 <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden-input">
-                <label for="photoInput" class="btn-tool photo-picker-label">🖼️ Galerie</label>
+                <label for="photoInput" class="btn-tool photo-picker-label"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Galerie</label>
                 <input type="file" id="photoInput" accept="image/*" class="hidden-input">
                 <img id="photoPreview" class="hidden" style="width:48px; height:48px; border-radius:10px; object-fit:cover;">
                 <button id="removePhotoBtn" class="txt-btn hidden" style="color:var(--danger);">Entfernen</button>
@@ -1344,16 +1375,24 @@
         </div>
       </div>
 
+      <div id="onThisDayCard" class="card hidden" style="padding:20px;">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px; color:var(--text-secondary);">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <span style="font-weight:700; font-size:15px; color:var(--text-main);">An diesem Tag</span>
+          </div>
+          <div id="onThisDayContent"></div>
+      </div>
+
       </div><!-- /tab-heute -->
 
       <div id="tab-mehr" class="tab-page hidden">
       <div class="section-title">Einstellungen</div>
-      <button id="openSettingsBtn" class="btn-secondary" style="margin-top:0; margin-bottom:8px;">⚙️ App anpassen (Name, Felder, Farbe)</button>
+      <button id="openSettingsBtn" class="btn-secondary" style="margin-top:0; margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg> App anpassen (Name, Felder, Farbe)</button>
 
       <div class="section-title">Sicherheit</div>
       <div class="setting-toggle-row">
           <div>
-              <div class="st-label">🔒 Mit Code sperren</div>
+              <div class="st-label" style="display:flex; align-items:center; gap:9px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Mit Code sperren</div>
               <div class="st-desc">Beim Öffnen der App werden deine Einträge erst nach Eingabe deines Codes sichtbar.</div>
           </div>
           <label class="switch">
@@ -1364,7 +1403,7 @@
 
       <div class="section-title">Werkzeuge</div>
       <div class="action-grid" style="position:relative;">
-          
+
           <button id="exportTriggerBtn" class="btn-tool">
               <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
               Export
@@ -1381,17 +1420,18 @@
               Erinnerung
           </button>
 
-          <button id="deleteAllBtn" class="btn-tool danger">
-              <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-              Alle Einträge löschen
-          </button>
-
           <div id="exportPopover" class="export-popover">
-            <button id="exportPdfBtn" class="popover-item">📕 Als PDF sichern</button>
-            <button id="exportCsvBtn" class="popover-item">📄 CSV Datei</button>
-            <button id="exportXlsxBtn" class="popover-item">📊 Excel Datei</button>
+            <button id="exportPdfBtn" class="popover-item"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Als PDF sichern</button>
+            <button id="exportCsvBtn" class="popover-item"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> CSV Datei</button>
+            <button id="exportXlsxBtn" class="popover-item"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg> Excel Datei</button>
           </div>
       </div>
+
+      <div class="section-title">Account</div>
+      <button id="logoutBtn" class="btn-secondary" style="margin-top:0; display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Abmelden</button>
+
+      <div class="section-title">Gefahrenzone</div>
+      <button id="deleteAllBtn" class="btn-secondary" style="margin-top:0; color:var(--danger); display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Alle Einträge löschen</button>
       </div><!-- /tab-mehr -->
 
       <div id="tab-statistik" class="tab-page hidden">
@@ -1420,15 +1460,25 @@
           <div class="card" id="insightsCard" style="padding:8px 20px;"></div>
       </div>
 
-      <div class="section-title">Stimmungs-Verlauf (6 Monate)</div>
-      <div class="card" style="padding:16px 20px 14px;">
+      <div class="section-title">Gute Tage pro Monat</div>
+      <div class="card" style="padding:16px 20px 16px;">
           <div id="moodTrend" class="trend-grid"></div>
+          <p class="trend-caption">Anteil der Tage mit der Stimmung „gut“ an allen Einträgen des Monats.</p>
       </div>
 
       <div class="section-title">Kalender</div>
-      <div class="heatmap-wrap"><div id="heatmapContainer" class="heatmap-grid"></div></div>
+      <div class="heatmap-wrap">
+          <div id="heatmapMonths" class="heatmap-months"></div>
+          <div id="heatmapContainer" class="heatmap-grid"></div>
+      </div>
+      <div class="heatmap-legend">
+          <span><i class="legend-dot" style="background:var(--mood-happy);"></i>Gut</span>
+          <span><i class="legend-dot" style="background:var(--mood-neutral);"></i>Neutral</span>
+          <span><i class="legend-dot" style="background:var(--mood-sad);"></i>Schwierig</span>
+          <span><i class="legend-dot" style="background:var(--bg-button-secondary);"></i>Kein Eintrag</span>
+      </div>
 
-      <button id="yearWrapBtn" class="btn-secondary" style="margin-top:8px;">📊 Jahresrückblick anzeigen</button>
+      <button id="yearWrapBtn" class="btn-secondary" style="margin-top:20px; display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg> Jahresrückblick anzeigen</button>
       </div><!-- /tab-statistik -->
 
       <div id="tab-verlauf" class="tab-page hidden">
@@ -1464,7 +1514,7 @@
               <button class="mood-filter-btn" data-mood="sad">😞 Schwierig</button>
           </div>
           <div class="mood-filter-row" id="personFilterRow">
-              <button class="mood-filter-btn active" data-person="">👨‍👩‍👧‍👧 Alle</button>
+              <button class="mood-filter-btn active" data-person="">Alle</button>
               <button class="mood-filter-btn" data-person="lotta">Lotta</button>
               <button class="mood-filter-btn" data-person="thea">Thea</button>
           </div>
@@ -1526,7 +1576,7 @@
   <div id="printRoot"></div>
 
   <div id="lockScreen" class="lock-screen">
-      <div class="lock-icon">🔒</div>
+      <div class="lock-icon"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
       <h2 class="lock-title">Tagebuch gesperrt</h2>
       <p id="lockSub" class="lock-sub">Gib deinen Code ein</p>
       <div id="lockDots" class="pin-dots"></div>
@@ -1536,7 +1586,7 @@
 
   <div id="pinModal" class="modal-overlay hidden">
       <div class="card" style="width:100%; max-width:360px; padding:28px 24px; text-align:center;">
-          <div class="lock-icon" style="margin:0 auto 14px;">🔒</div>
+          <div class="lock-icon" style="margin:0 auto 14px;"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
           <h2 id="pinTitle" style="font-size:21px; font-weight:800; margin:0 0 6px;">Code festlegen</h2>
           <p id="pinSub" style="color:var(--text-secondary); font-size:14px; margin:0 0 18px;">Wähle einen 4-stelligen Code</p>
           <div id="pinDots" class="pin-dots"></div>
@@ -1546,7 +1596,7 @@
   </div>
 
 <script>
-    console.log('🚀 Das Beste des Tages loaded (Search Optimized).');
+    console.log('Das Beste des Tages geladen.');
     
     // --- SUPABASE SETUP ---
     const SUPABASE_URL = 'https://gaosbiyccwawuzfjagvm.supabase.co';
@@ -1623,6 +1673,26 @@
         window.scrollTo({ top: 0, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
     }
 
+    // Strichsymbole (Feather-Stil) statt Emoji in erzeugtem Markup
+    const ICONS = {
+        calendar: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>',
+        edit: '<path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>',
+        camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle>',
+        book: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>',
+        sun: '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>',
+        moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>',
+        auto: '<circle cx="12" cy="12" r="9"></circle><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"></path>',
+        zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>',
+        award: '<circle cx="12" cy="8" r="6"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.85"></polyline>',
+        heart: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>',
+        message: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>',
+        type: '<polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line>'
+    };
+    function ic(name, cls = 'icon icon-sm') {
+        return `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+    }
+    const MOOD_FACE = { happy: '🙂', neutral: '😐', sad: '😞' };
+
     let toastDismissTimer = null;
 
     function showToast(msg, isError = false) {
@@ -1657,13 +1727,29 @@
       if (metaTheme) metaTheme.setAttribute('content', isDark ? '#000000' : '#F2F2F7');
       if (typeof applyAccent === 'function') applyAccent();
     }
-    function setTheme(pref) { localStorage.setItem('theme', pref); applyTheme(); }
-    function initTheme() { applyTheme(); }
+    function setTheme(pref) { localStorage.setItem('theme', pref); applyTheme(); renderThemeToggle(); }
+    function initTheme() { applyTheme(); renderThemeToggle(); }
+
+    // Ein Knopf, drei Zustaende: Automatisch -> Hell -> Dunkel
+    const THEME_ORDER = ['system', 'light', 'dark'];
+    const THEME_META = {
+        system: { icon: 'auto',  label: 'Erscheinungsbild: Automatisch' },
+        light:  { icon: 'sun',   label: 'Erscheinungsbild: Hell' },
+        dark:   { icon: 'moon',  label: 'Erscheinungsbild: Dunkel' }
+    };
+    function renderThemeToggle() {
+        const meta = THEME_META[themePref()] || THEME_META.system;
+        const btn = elements.themeToggle;
+        btn.innerHTML = ic(meta.icon, 'icon');
+        btn.setAttribute('aria-label', meta.label);
+        btn.setAttribute('title', meta.label);
+        if (typeof markThemeSeg === 'function') markThemeSeg();
+    }
     systemDark.addEventListener('change', () => { if (themePref() === 'system') applyTheme(); });
 
-    // Kopfzeilen-Knopf: schneller Wechsel hell/dunkel
     elements.themeToggle.addEventListener('click', () => {
-      setTheme(document.body.classList.contains('dark-mode') ? 'light' : 'dark');
+      const next = THEME_ORDER[(THEME_ORDER.indexOf(themePref()) + 1) % THEME_ORDER.length];
+      setTheme(next);
     });
 
     // --- LOCAL DATE (deutsche Zeitzone statt UTC – Mitternachts-Bugfix) ---
@@ -1897,7 +1983,7 @@
                 $('pinModal').classList.add('hidden');
                 activePinInput = null;
                 $('pinLockToggle').checked = true;
-                showToast('Code-Sperre aktiviert 🔒');
+                showToast('Code-Sperre aktiviert');
             } else {
                 firstPin = null;
                 $('pinTitle').textContent = 'Code festlegen';
@@ -1949,7 +2035,7 @@
         const part = h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend';
         const name = settings.displayName ? `, ${escapeHtml(settings.displayName)}` : '';
         const dateStr = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-        $('greeting').innerHTML = `${part}${name} ✨<small>${dateStr}</small>`;
+        $('greeting').innerHTML = `${part}${name}<small>${dateStr}</small>`;
         $('greeting').classList.remove('hidden');
     }
 
@@ -2003,7 +2089,7 @@
         [1, 2, 3].forEach(i => $('obStep' + i).classList.toggle('hidden', i !== n));
         document.querySelectorAll('.ob-dot').forEach(d => d.classList.toggle('active', Number(d.dataset.step) <= n));
         $('obBackBtn').classList.toggle('hidden', n === 1);
-        $('obNextBtn').textContent = n === 3 ? 'Los geht’s! 🎉' : 'Weiter';
+        $('obNextBtn').textContent = n === 3 ? 'Los geht’s!' : 'Weiter';
     }
     function markThemeSeg() {
         document.querySelectorAll('#obThemeSeg button').forEach(b =>
@@ -2042,8 +2128,8 @@
         applySettings();
         renderFilteredEntries();
         $('onboardingModal').classList.add('hidden');
-        if (firstTime) { confettiBurst(true); showToast('Alles eingerichtet – viel Freude! ✨'); }
-        else showToast('Einstellungen gespeichert ✅');
+        if (firstTime) { confettiBurst(true); showToast('Alles eingerichtet. Viel Freude!'); }
+        else showToast('Einstellungen gespeichert');
     });
     $('openSettingsBtn').addEventListener('click', openOnboarding);
 
@@ -2097,21 +2183,14 @@
         const now = new Date();
         return Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
     }
+    // Der Impuls steht als Platzhalter im leeren Feld, nicht mehr als eigene Karte
     function renderDailyPrompt() {
-        $('promptText').textContent = PROMPTS[(dayOfYear() + promptOffset) % PROMPTS.length];
+        elements.fields.best.placeholder = PROMPTS[(dayOfYear() + promptOffset) % PROMPTS.length];
     }
-    $('promptShuffleBtn').addEventListener('click', () => { promptOffset++; renderDailyPrompt(); });
-    $('promptText').addEventListener('click', () => {
-        const q = $('promptText').textContent;
-        const ta = elements.fields.best;
-        if (!ta.value.trim()) {
-            ta.value = q + '\n';
-            autoResize(ta);
-            saveDraft();
-        }
-        ta.focus();
-        const len = ta.value.length;
-        ta.setSelectionRange(len, len);
+    $('promptShuffleBtn').addEventListener('click', () => {
+        promptOffset++;
+        renderDailyPrompt();
+        elements.fields.best.focus();
     });
 
     // --- KONFETTI ---
@@ -2247,7 +2326,7 @@
                 document.querySelectorAll('.mood-btn').forEach(b => b.classList.toggle('selected', b.dataset.mood === draft.mood));
             }
             ['best', 'lotta', 'thea'].forEach(id => autoResize(elements.fields[id]));
-            if (draft.best || draft.lotta || draft.thea) showToast('Entwurf wiederhergestellt 📝');
+            if (draft.best || draft.lotta || draft.thea) showToast('Entwurf wiederhergestellt');
         } catch(e) {}
     }
 
@@ -2293,7 +2372,7 @@
         $('setPasswordBtn').textContent = 'Passwort setzen';
       } else {
         $('recoveryModal').classList.add('hidden');
-        showToast('Passwort erfolgreich gesetzt ✅');
+        showToast('Passwort gesetzt');
         const { data: { session } } = await db.auth.getSession();
         if (session) showApp(session.user);
       }
@@ -2351,7 +2430,7 @@
         redirectTo: window.location.href
       });
       if (error) showToast('Fehler: ' + error.message, true);
-      else showToast('Reset-Link gesendet! Bitte E-Mails checken. 📬');
+      else showToast('Reset-Link gesendet. Bitte E-Mails prüfen.');
     });
 
     $('logoutBtn').addEventListener('click', () => db.auth.signOut());
@@ -2495,7 +2574,7 @@
 
     // --- SAVE ---
     elements.saveBtn.addEventListener('click', async () => {
-      if (!selectedMood) return showToast('Wie war die Stimmung? 🤔', true);
+      if (!selectedMood) return showToast('Bitte wähle noch die Stimmung aus.', true);
       if (!currentUser) return showToast('Nicht eingeloggt.', true);
 
       if (!currentEditingId) {
@@ -2503,7 +2582,7 @@
           if (duplicate) {
               currentEditingId = duplicate.id;
               elements.saveBtn.innerHTML = "<span>Update speichern</span>";
-              showToast('Datum bereits vorhanden – Eintrag wird aktualisiert.');
+              showToast('Für dieses Datum gibt es schon einen Eintrag, er wird aktualisiert.');
           }
       }
 
@@ -2546,7 +2625,7 @@
           }
 
           const wasNewEntry = !currentEditingId;
-          showToast(currentEditingId ? 'Eintrag aktualisiert ✨' : 'Gespeichert ✅');
+          showToast(currentEditingId ? 'Eintrag aktualisiert' : 'Gespeichert');
           clearDraft();
           resetEditor();
           await loadEntries();
@@ -2570,7 +2649,6 @@
       updateStats();
       renderFilteredEntries();
       renderHeatmap();
-      updateTodayNudge();
       renderOnThisDay();
       renderMonthCard();
       renderMoodTrend();
@@ -2611,10 +2689,10 @@
       } catch(err) {
           if (err.message === 'network-timeout') {
               if (!allEntriesCache.length) {
-                  showToast('Server nicht erreichbar – bitte Verbindung prüfen.', true);
-                  elements.entriesContainer.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--text-secondary);"><div style="font-size:40px; margin-bottom:10px; opacity:0.4;">📡</div>Keine Verbindung</div>';
+                  showToast('Server nicht erreichbar. Bitte Verbindung prüfen.', true);
+                  elements.entriesContainer.innerHTML = `<div style="text-align:center; padding:60px 20px; color:var(--text-secondary);"><div style="margin-bottom:12px; opacity:0.5;">${ic('moon', 'icon icon-lg')}</div>Keine Verbindung</div>`;
               } else {
-                  showToast('Aktualisierung fehlgeschlagen – Offline-Daten werden angezeigt.');
+                  showToast('Aktualisierung fehlgeschlagen, es werden gespeicherte Daten angezeigt.');
               }
           } else {
               showToast('Verbindungsfehler: ' + err.message, true);
@@ -2719,16 +2797,15 @@
           if (!entries.length) {
               const hasFilter = elements.searchInput.value.trim() || filterDateFrom.value || filterDateTo.value || selectedMoodFilter || selectedPerson;
               const emptyContent = hasFilter
-                  ? `<div style="font-size:40px; margin-bottom:10px; opacity:0.3;">📭</div>Keine Einträge gefunden.`
-                  : `<div style="font-size:48px; margin-bottom:16px; opacity:0.5;">✍️</div><div style="font-weight:600; margin-bottom:8px; color:var(--text-main);">Noch keine Einträge</div><div style="font-size:15px;">Schreib deinen ersten Eintrag oben!</div>`;
+                  ? `<div style="margin-bottom:12px; opacity:0.4;">${ic('book', 'icon icon-lg')}</div>Keine Einträge gefunden.`
+                  : `<div style="margin-bottom:14px; opacity:0.5;">${ic('edit', 'icon icon-lg')}</div><div style="font-weight:600; margin-bottom:8px; color:var(--text-main);">Noch keine Einträge</div><div style="font-size:15px;">Schreib deinen ersten Eintrag oben!</div>`;
               elements.entriesContainer.innerHTML = `<div style="text-align:center; padding:60px 20px; color:var(--text-secondary);">${emptyContent}</div>`;
               return;
           }
           elements.entriesContainer.innerHTML = '';
       }
 
-      const moodMap    = { happy: '🙂', neutral: '😐', sad: '😞' };
-      const moodBorder = { happy: 'var(--success)', neutral: 'var(--text-tertiary)', sad: 'var(--danger)' };
+      const moodBorder = { happy: 'var(--mood-happy)', neutral: 'var(--mood-neutral)', sad: 'var(--mood-sad)' };
 
       const start = currentPage * PAGE_SIZE;
       const slice = entries.slice(start, start + PAGE_SIZE);
@@ -2748,13 +2825,13 @@
 
           // Ruhige Vorschau: Haupttext gekürzt, Details erst beim Antippen
           const preview = entry.best_of_day || entry.lotta || entry.thea || '';
-          const extras = [];
-          if (entry.lotta) extras.push(settings.field1Label);
-          if (entry.thea) extras.push(settings.field2Label);
-          if (entry.photo_path) extras.push('📷');
-          const metaHtml = extras.length
-              ? `<div class="entry-meta">${extras.map(escapeHtml).join(' · ')}</div>`
-              : '';
+          const names = [];
+          if (entry.lotta) names.push(settings.field1Label);
+          if (entry.thea) names.push(settings.field2Label);
+          const metaParts = [];
+          if (names.length) metaParts.push(`<span>${names.map(escapeHtml).join(' · ')}</span>`);
+          if (entry.photo_path) metaParts.push(`<span style="display:flex; align-items:center; gap:5px;">${ic('camera')}Foto</span>`);
+          const metaHtml = metaParts.length ? `<div class="entry-meta">${metaParts.join('')}</div>` : '';
 
           const card = document.createElement('div');
           card.className = 'card entry-card tappable';
@@ -2763,7 +2840,7 @@
           card.innerHTML = `
               <div class="entry-header">
                   <span class="entry-date">${dateStr}</span>
-                  <span style="font-size:20px;">${moodMap[entry.mood] || ''}</span>
+                  <span style="font-size:20px;">${MOOD_FACE[entry.mood] || ''}</span>
               </div>
               <div class="entry-content">
                   ${photoHtml}
@@ -2906,7 +2983,7 @@
         allEntriesCache = [...allEntriesCache, entry].sort((a, b) => b.entry_date.localeCompare(a.entry_date));
         writeEntriesCache();
         renderAll();
-        showToast('Löschen rückgängig gemacht ↩️');
+        showToast('Löschen rückgängig gemacht');
       });
     };
 
@@ -2993,7 +3070,7 @@
         XLSX.utils.book_append_sheet(wb, ws, "Journal");
         XLSX.writeFile(wb, fname);
       }
-      showToast('Erledigt! 📂');
+      showToast('Export erstellt');
       dismissReminder();
     }
 
@@ -3073,7 +3150,7 @@
             const { error } = await db.from('entries').insert(newRows);
             if (error) throw error;
             if (dupCount > 0) showToast(`${newRows.length} importiert, ${dupCount} Duplikat(e) übersprungen.`);
-            else showToast(`${newRows.length} Einträge importiert ✅`);
+            else showToast(`${newRows.length} Einträge importiert`);
             loadEntries();
         } catch(err) { showToast('Fehler: '+err.message, true); }
         $('importFile').value = '';
@@ -3113,7 +3190,7 @@
         const total = allEntriesCache.length;
         const streak = calcStreak();
         $('statTotal').textContent = total;
-        $('statStreak').textContent = streak > 0 ? `${streak} 🔥` : '–';
+        $('statStreak').textContent = streak > 0 ? streak : '–';
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
         const weekStr = localISODate(weekAgo);
@@ -3122,7 +3199,7 @@
         const counts = { happy: 0, neutral: 0, sad: 0 };
         recent.forEach(e => { if (counts[e.mood] !== undefined) counts[e.mood]++; });
         const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
-        $('statMood').textContent = { happy: '🙂', neutral: '😐', sad: '😞' }[top];
+        $('statMood').textContent = MOOD_FACE[top];
     }
 
     // --- ENTRY PHOTOS (Supabase Storage, signierte URLs im Batch) ---
@@ -3155,19 +3232,6 @@
         $('lightboxImg').src = '';
     });
 
-    // --- TODAY NUDGE ---
-    function updateTodayNudge() {
-        const today = localISODate();
-        const hasToday = allEntriesCache.some(e => e.entry_date === today);
-        $('todayNudge').classList.toggle('hidden', hasToday);
-    }
-    $('nudgeWriteBtn').addEventListener('click', () => {
-        resetEditor();
-        switchTab('heute');
-        scrollToTop();
-        setTimeout(() => elements.fields.best.focus(), 300);
-    });
-
     // --- ON THIS DAY (Vor X Jahren) ---
     function renderOnThisDay() {
         const card = $('onThisDayCard');
@@ -3175,8 +3239,6 @@
         const today = new Date();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
-        const moodMap = { happy: '🙂', neutral: '😐', sad: '😞' };
-
         const matches = allEntriesCache
             .filter(e => {
                 const p = e.entry_date.split('-');
@@ -3190,7 +3252,7 @@
             const years = today.getFullYear() - Number(e.entry_date.split('-')[0]);
             const text = e.best_of_day || e.lotta || e.thea || '';
             return `<div style="padding:10px 0; border-top:1px solid var(--border);">
-                <div style="font-size:12px; color:var(--text-secondary); font-weight:600; margin-bottom:4px;">Vor ${years} ${years === 1 ? 'Jahr' : 'Jahren'} ${moodMap[e.mood] || ''}</div>
+                <div style="font-size:12px; color:var(--text-secondary); font-weight:600; margin-bottom:4px;">Vor ${years} ${years === 1 ? 'Jahr' : 'Jahren'} ${MOOD_FACE[e.mood] || ''}</div>
                 <div style="font-size:14px; color:var(--text-main);">${escapeHtml(text)}</div>
             </div>`;
         }).join('');
@@ -3200,31 +3262,44 @@
     // --- CALENDAR HEATMAP ---
     function renderHeatmap() {
         const container = $('heatmapContainer');
-        const DAYS = 119; // ~17 weeks
+        const monthsEl = $('heatmapMonths');
+        const DAYS = 119; // rund 17 Wochen
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const start = new Date(today);
         start.setDate(start.getDate() - (DAYS - 1));
-        start.setDate(start.getDate() - start.getDay()); // align to Sunday
+        start.setDate(start.getDate() - ((start.getDay() + 6) % 7)); // auf Montag ausrichten
 
         const entryByDate = {};
         allEntriesCache.forEach(e => { entryByDate[e.entry_date] = e; });
 
-        const moodClass = { happy: 'happy', neutral: 'neutral', sad: 'sad' };
-        let html = '';
+        const MONTH_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+        let cells = '', labels = '';
+        let col = 1, dayInCol = 0, lastMonth = -1, lastLabelCol = -9;
         const cursor = new Date(start);
         while (cursor <= today) {
+            if (dayInCol === 0 && cursor.getMonth() !== lastMonth) {
+                lastMonth = cursor.getMonth();
+                // Beschriftung nur setzen, wenn sie nicht in die vorige läuft
+                if (col - lastLabelCol >= 3) {
+                    labels += `<span class="heatmap-month" style="grid-column:${col};">${MONTH_SHORT[lastMonth]}</span>`;
+                    lastLabelCol = col;
+                }
+            }
             const iso = localISODate(cursor);
             const entry = entryByDate[iso];
-            const cls = entry ? (moodClass[entry.mood] || '') : '';
-            html += `<div class="heatmap-cell ${cls}" data-date="${iso}" title="${iso}"></div>`;
+            const title = cursor.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+            cells += `<div class="heatmap-cell ${entry ? (entry.mood || '') : ''}" data-date="${iso}" title="${title}"></div>`;
             cursor.setDate(cursor.getDate() + 1);
+            if (++dayInCol === 7) { dayInCol = 0; col++; }
         }
-        // pad remaining cells of current week so columns stay aligned, but keep them invisible/non-interactive
-        const padDays = (7 - ((new Date(today).getDay()) + 1)) ;
-        for (let i = 0; i < padDays; i++) {
-            html += `<div class="heatmap-cell future"></div>`;
-        }
-        container.innerHTML = html;
+        // Restliche Zellen der laufenden Woche auffüllen, damit die Spalten stimmen
+        const pad = (7 - dayInCol) % 7;
+        for (let i = 0; i < pad; i++) cells += '<div class="heatmap-cell future"></div>';
+
+        const cols = col - (dayInCol === 0 ? 1 : 0);
+        monthsEl.style.gridTemplateColumns = `repeat(${cols}, 13px)`;
+        monthsEl.innerHTML = labels;
+        container.innerHTML = cells;
     }
 
     $('heatmapContainer').addEventListener('click', (e) => {
@@ -3283,6 +3358,11 @@
         const w = computeYearWrap(year);
         if (!w.total) { showToast(`Noch keine Einträge für ${year}.`, true); return; }
         const pct = m => w.total ? Math.round((w.moodCounts[m] / w.total) * 100) : 0;
+        const wrapRow = (icon, label, value) =>
+            `<div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px; display:flex; align-items:center; gap:10px;">
+                <span style="color:var(--text-secondary); display:flex;">${ic(icon)}</span>
+                <span style="flex:1;">${label}</span><strong>${value}</strong>
+            </div>`;
         $('yearWrapContent').innerHTML = `
             <div style="text-align:center; margin-bottom:24px;">
                 <div style="font-size:48px; font-weight:800;">${w.total}</div>
@@ -3294,11 +3374,11 @@
                 <div style="text-align:center;"><div style="font-size:28px;">😞</div><div style="font-weight:700;">${pct('sad')}%</div></div>
             </div>
             <div style="display:flex; flex-direction:column; gap:10px;">
-                <div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">🔥 Längste Serie: <strong>${w.longestStreak} Tage</strong></div>
-                <div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">📅 Aktivster Monat: <strong>${w.topMonth}</strong> (${w.topMonthCount})</div>
-                <div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">✍️ Geschriebene Wörter: <strong>${w.words}</strong></div>
-                ${settings.field1Enabled ? `<div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">💬 ${escapeHtml(settings.field1Label)} erwähnt: <strong>${w.lottaCount}×</strong></div>` : ''}
-                ${settings.field2Enabled ? `<div style="background:var(--bg-input); border-radius:var(--radius-m); padding:14px;">💬 ${escapeHtml(settings.field2Label)} erwähnt: <strong>${w.theaCount}×</strong></div>` : ''}
+                ${wrapRow('zap', 'Längste Serie', `${w.longestStreak} Tage`)}
+                ${wrapRow('calendar', 'Aktivster Monat', `${w.topMonth} (${w.topMonthCount})`)}
+                ${wrapRow('edit', 'Geschriebene Wörter', w.words)}
+                ${settings.field1Enabled ? wrapRow('message', `${escapeHtml(settings.field1Label)} erwähnt`, `${w.lottaCount}×`) : ''}
+                ${settings.field2Enabled ? wrapRow('message', `${escapeHtml(settings.field2Label)} erwähnt`, `${w.theaCount}×`) : ''}
             </div>`;
         $('yearWrapModal').classList.remove('hidden');
     }
@@ -3314,7 +3394,6 @@
             el.innerHTML = '<div style="padding:12px 0; color:var(--text-secondary); font-size:14px;">Noch keine Einträge in diesem Monat.</div>';
             return;
         }
-        const moodMap = { happy: '🙂', neutral: '😐', sad: '😞' };
         const counts = { happy: 0, neutral: 0, sad: 0 };
         monthEntries.forEach(e => { if (counts[e.mood] !== undefined) counts[e.mood]++; });
         const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
@@ -3322,20 +3401,21 @@
         const words = monthEntries.reduce((sum, e) =>
             sum + [e.best_of_day, e.lotta, e.thea].filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length, 0);
         const monthName = new Date().toLocaleDateString('de-DE', { month: 'long' });
-        el.innerHTML = `
-            <div class="month-row"><span>📅 Einträge im ${monthName}</span><strong>${monthEntries.length}</strong></div>
-            <div class="month-row"><span>💛 Häufigste Stimmung</span><strong>${moodMap[top]}</strong></div>
-            <div class="month-row"><span>✍️ Geschriebene Wörter</span><strong>${words}</strong></div>
-            <div class="month-row"><span>📷 Fotos</span><strong>${photos}</strong></div>`;
+        const row = (icon, label, value) =>
+            `<div class="month-row"><span class="label">${ic(icon, 'icon icon-sm row-icon')}${label}</span><strong>${value}</strong></div>`;
+        el.innerHTML =
+            row('calendar', `Einträge im ${monthName}`, monthEntries.length) +
+            row('heart', 'Häufigste Stimmung', MOOD_FACE[top] || '–') +
+            row('edit', 'Geschriebene Wörter', words) +
+            row('camera', 'Fotos', photos);
     }
 
-    // --- STIMMUNGS-VERLAUF (letzte 6 Monate) ---
+    // --- GUTE TAGE PRO MONAT (letzte 6 Monate) ---
+    // Der frühere Durchschnittsbalken lag immer bei fast demselben Wert und
+    // zeigte deshalb nichts. Der Anteil guter Tage schwankt sichtbar.
     function renderMoodTrend() {
         const el = $('moodTrend');
         const now = new Date();
-        const moodScore = { happy: 3, neutral: 2, sad: 1 };
-        const moodColor = { happy: 'var(--success)', neutral: '#FF9F0A', sad: 'var(--danger)' };
-        const moodEmoji = { happy: '🙂', neutral: '😐', sad: '😞' };
         let html = '';
         for (let i = 5; i >= 0; i--) {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -3343,15 +3423,14 @@
             const monthEntries = allEntriesCache.filter(e => e.entry_date.startsWith(prefix));
             const label = d.toLocaleDateString('de-DE', { month: 'short' });
             if (!monthEntries.length) {
-                html += `<div class="trend-col"><div class="trend-emoji" style="opacity:0.3;">·</div><div class="trend-track"></div><div class="trend-month">${label}</div></div>`;
+                html += `<div class="trend-col"><div class="trend-value empty">–</div><div class="trend-track"></div><div class="trend-month">${label}</div></div>`;
                 continue;
             }
-            const avg = monthEntries.reduce((s, e) => s + (moodScore[e.mood] || 2), 0) / monthEntries.length;
-            const dominant = avg >= 2.4 ? 'happy' : avg >= 1.7 ? 'neutral' : 'sad';
-            const pct = Math.round(((avg - 0.6) / 2.4) * 100);
-            html += `<div class="trend-col" title="${monthEntries.length} Einträge">
-                <div class="trend-emoji">${moodEmoji[dominant]}</div>
-                <div class="trend-track"><div class="trend-bar" style="height:${pct}%; background:${moodColor[dominant]};"></div></div>
+            const good = monthEntries.filter(e => e.mood === 'happy').length;
+            const pct = Math.round((good / monthEntries.length) * 100);
+            html += `<div class="trend-col" title="${good} von ${monthEntries.length} Einträgen">
+                <div class="trend-value">${pct}%</div>
+                <div class="trend-track"><div class="trend-bar" style="height:${Math.max(pct, 2)}%;"></div></div>
                 <div class="trend-month">${label}</div>
             </div>`;
         }
@@ -3419,7 +3498,6 @@
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        const moodMap = { happy: '🙂', neutral: '😐', sad: '😞' };
         const d = new Date(entry.entry_date);
         ctx.textAlign = 'center';
         ctx.fillStyle = '#8E8E93';
@@ -3427,7 +3505,7 @@
         ctx.fillText(d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), W / 2, cardY + 110);
 
         ctx.font = '86px -apple-system, "Helvetica Neue", Arial, sans-serif';
-        ctx.fillText(moodMap[entry.mood] || '✨', W / 2, cardY + 235);
+        ctx.fillText(MOOD_FACE[entry.mood] || '', W / 2, cardY + 235);
 
         const text = entry.best_of_day || entry.lotta || entry.thea || '';
         ctx.fillStyle = '#1C1C1E';
@@ -3436,7 +3514,7 @@
 
         ctx.fillStyle = 'rgba(255,255,255,0.92)';
         ctx.font = '700 38px -apple-system, "Helvetica Neue", Arial, sans-serif';
-        ctx.fillText('✒️ Das Beste des Tages', W / 2, H - 92);
+        ctx.fillText('Das Beste des Tages', W / 2, H - 92);
 
         return new Promise(res => canvas.toBlob(res, 'image/png'));
     }
@@ -3444,7 +3522,7 @@
     window.shareEntry = async (id) => {
         const entry = allEntriesCache.find(e => e.id === id);
         if (!entry) return;
-        showToast('Karte wird erstellt…');
+        showToast('Karte wird erstellt …');
         try {
             const blob = await renderShareCard(entry);
             const file = new File([blob], 'das-beste-des-tages.png', { type: 'image/png' });
@@ -3492,7 +3570,7 @@
         detailEntryId = id;
         const d = new Date(e.entry_date);
         $('detailDate').textContent = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-        $('detailMood').textContent = { happy: '🙂', neutral: '😐', sad: '😞' }[e.mood] || '';
+        $('detailMood').textContent = MOOD_FACE[e.mood] || '';
 
         const blocks = [];
         if (e.photo_path) blocks.push(`<img class="entry-photo" style="max-height:none; margin-bottom:22px;" data-path="${escapeHtml(e.photo_path)}" alt="Foto">`);
@@ -3543,30 +3621,30 @@
                 if (avg > bestAvg) { bestAvg = avg; bestDay = i; }
             }
             if (bestDay >= 0 && bestAvg >= 2.4) {
-                items.push(['🌞', `Am <strong>${dayNames[bestDay]}</strong> ist deine Stimmung im Schnitt am besten.`]);
+                items.push(['sun', `Am <strong>${dayNames[bestDay]}</strong> ist deine Stimmung im Schnitt am besten.`]);
             }
 
             const topWrite = counts.indexOf(Math.max(...counts));
             if (counts[topWrite] >= 3 && topWrite !== bestDay) {
-                items.push(['✍️', `Du schreibst am häufigsten am <strong>${dayNames[topWrite]}</strong>.`]);
+                items.push(['edit', `Du schreibst am häufigsten am <strong>${dayNames[topWrite]}</strong>.`]);
             }
         }
 
         const withPhoto = entries.filter(e => e.photo_path).length;
         if (entries.length >= 10 && withPhoto >= 3) {
             const pct = Math.round((withPhoto / entries.length) * 100);
-            items.push(['📷', `Zu <strong>${pct}%</strong> deiner Einträge gibt es ein Foto.`]);
+            items.push(['camera', `Zu <strong>${pct}%</strong> deiner Einträge gibt es ein Foto.`]);
         }
 
         if (entries.length >= 5) {
             const words = entries.reduce((s, e) =>
                 s + [e.best_of_day, e.lotta, e.thea].filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length, 0);
-            items.push(['📖', `Im Schnitt <strong>${Math.round(words / entries.length)} Wörter</strong> pro Eintrag – insgesamt schon ${words}.`]);
+            items.push(['book', `Im Schnitt <strong>${Math.round(words / entries.length)} Wörter</strong> pro Eintrag, insgesamt schon ${words}.`]);
         }
 
         if (!items.length) { wrap.classList.add('hidden'); return; }
         $('insightsCard').innerHTML = items.slice(0, 3)
-            .map(([ico, txt]) => `<div class="insight-row"><span class="ico">${ico}</span><span>${txt}</span></div>`)
+            .map(([name, txt]) => `<div class="insight-row"><span class="ico">${ic(name)}</span><span>${txt}</span></div>`)
             .join('');
         wrap.classList.remove('hidden');
     }
@@ -3578,12 +3656,11 @@
         if (!source.length) return showToast('Keine Einträge zum Sichern.', true);
 
         const list = [...source].sort((a, b) => a.entry_date.localeCompare(b.entry_date));
-        const moodMap = { happy: '🙂', neutral: '😐', sad: '😞' };
         const fmt = iso => new Date(iso).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         const range = list.length > 1 ? `${fmt(list[0].entry_date)} – ${fmt(list[list.length - 1].entry_date)}` : fmt(list[0].entry_date);
 
         const body = list.map(e => {
-            const parts = [`<h2>${fmt(e.entry_date)} ${moodMap[e.mood] || ''}</h2>`];
+            const parts = [`<h2>${fmt(e.entry_date)} ${MOOD_FACE[e.mood] || ''}</h2>`];
             if (e.best_of_day) parts.push(`<p>${escapeHtml(e.best_of_day)}</p>`);
             if (e.lotta) parts.push(`<div class="pl">${escapeHtml(settings.field1Label)}</div><p>${escapeHtml(e.lotta)}</p>`);
             if (e.thea) parts.push(`<div class="pl">${escapeHtml(settings.field2Label)}</div><p>${escapeHtml(e.thea)}</p>`);
@@ -3658,7 +3735,7 @@
                 auth: keys.auth
             }, { onConflict: 'endpoint' });
             if (error) throw error;
-            showToast('Tägliche Erinnerung aktiviert 🔔');
+            showToast('Tägliche Erinnerung aktiviert');
         } catch (err) {
             showToast('Fehler: ' + err.message, true);
         }
@@ -3668,13 +3745,13 @@
     function setupSpeechRecognition() {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) {
-            document.querySelectorAll('.mic-btn').forEach(b => b.classList.add('hidden'));
+            document.querySelectorAll('.mic-btn[data-target]').forEach(b => b.classList.add('hidden'));
             return;
         }
 
         const stopSvg = `<svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"></rect></svg>`;
 
-        document.querySelectorAll('.mic-btn').forEach(btn => {
+        document.querySelectorAll('.mic-btn[data-target]').forEach(btn => {
             const micHtml = btn.innerHTML;
             let recognition = null;
             let baseText = '';
@@ -3764,7 +3841,7 @@
                 try { await loadEntries(); } catch(e) {}
                 ptr.classList.remove('refreshing');
                 refreshing = false;
-                showToast('Aktualisiert ✓');
+                showToast('Aktualisiert');
             }
             ptr.style.transform = '';
             armed = false;
