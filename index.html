@@ -46,6 +46,7 @@
       --mood-neutral: #9E9EA8;
       --mood-sad: #5E82A6;
       --mood-happy-soft: rgba(217, 147, 35, 0.16);
+      --glow-rgb: 222, 164, 72;   /* warmes Licht hinter der Begrüßung */
       --mood-neutral-soft: rgba(158, 158, 168, 0.18);
       --mood-sad-soft: rgba(94, 130, 166, 0.16);
       
@@ -57,9 +58,6 @@
       --shadow-float: 0 12px 30px rgba(72, 56, 34, 0.12);
       
       --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-      /* Bedienelemente bleiben serifenlos, der eigene Text bekommt Serifen.
-         Das macht aus dem Formular ein Notizbuch. */
-      --font-serif: ui-serif, "New York", Georgia, "Iowan Old Style", "Palatino Linotype", serif;
     }
 
     .dark-mode {
@@ -88,6 +86,7 @@
       --mood-neutral: #9A9AA4;
       --mood-sad: #7FA4CC;
       --mood-happy-soft: rgba(239, 180, 87, 0.20);
+      --glow-rgb: 196, 142, 62;
       --mood-neutral-soft: rgba(154, 154, 164, 0.20);
       --mood-sad-soft: rgba(127, 164, 204, 0.20);
 
@@ -166,6 +165,27 @@
     .theme-btn:active { transform: scale(0.9); }
     .theme-btn .icon { width: 18px; height: 18px; }
 
+    /* --- FARBAKZENT AUF DER ERSTEN SEITE ---
+       Weicher Schimmer in der Akzentfarbe, der oben am Bildschirm sitzt und
+       hinter der Kopfzeile durchscheint. z-index -1 legt ihn über die
+       Seitenfarbe, aber unter allen Inhalt. */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: 460px;
+        background: linear-gradient(180deg,
+            rgba(var(--glow-rgb), 0) 0px,
+            rgba(var(--glow-rgb), 0.20) 120px,
+            rgba(var(--glow-rgb), 0.07) 280px,
+            rgba(var(--glow-rgb), 0) 100%);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        z-index: -1;
+    }
+    body.tab-heute::before { opacity: 1; }
+
     /* --- LAYOUT --- */
     .container {
       max-width: 600px;
@@ -197,7 +217,7 @@
     /* --- DATE PICKER HACK --- */
     .date-wrapper {
         position: relative;
-        background: var(--bg-button-secondary);
+        background: rgba(var(--accent-rgb), 0.10);
         border-radius: var(--radius-m);
         padding: 12px;
         display: flex;
@@ -206,10 +226,11 @@
         gap: 8px;
         cursor: pointer;
         margin-bottom: 20px;
+        color: var(--accent);
         transition: background 0.2s;
     }
-    .date-wrapper:hover { background: var(--bg-input); }
-    .date-display { font-weight: 600; color: var(--text-main); font-size: 16px; }
+    .date-wrapper:hover { background: rgba(var(--accent-rgb), 0.16); }
+    .date-display { font-weight: 600; color: var(--accent); font-size: 16px; }
     #entryDate {
         position: absolute;
         top: 0; left: 0; width: 100%; height: 100%;
@@ -239,13 +260,8 @@
         resize: none;
         transition: box-shadow 0.2s, background 0.2s;
     }
-    /* Was du selbst schreibst, steht in Serifen */
-    textarea {
-        font-family: var(--font-serif);
-        font-size: 17.5px;
-        line-height: 1.62;
-    }
-    textarea::placeholder { font-style: italic; color: var(--text-secondary); opacity: 0.75; }
+    textarea { line-height: 1.55; }
+    textarea::placeholder { color: var(--text-secondary); opacity: 0.7; }
     textarea:focus, input:focus {
         outline: none;
         box-shadow: 0 0 0 2px var(--accent);
@@ -360,9 +376,9 @@
         align-items: center;
         border-bottom: 1px solid var(--border);
     }
-    .entry-date { font-weight: 600; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
+    .entry-date { font-weight: 700; font-size: 15px; }
     .entry-content { padding: 20px; }
-    .entry-text { font-family: var(--font-serif); font-size: 16.5px; line-height: 1.62; color: var(--text-main); white-space: pre-wrap; }
+    .entry-text { font-size: 16px; line-height: 1.6; color: var(--text-main); white-space: pre-wrap; }
     .entry-label { 
         font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; 
         color: var(--text-secondary); margin-bottom: 4px; font-weight: 700; 
@@ -791,80 +807,97 @@
         position: fixed; inset: 0;
         z-index: 1500;
         background: var(--bg-body);
+        background-image: radial-gradient(120% 320px at 50% -60px,
+            rgba(var(--accent-rgb), 0.16), rgba(var(--accent-rgb), 0) 70%);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 22px;
-        padding: 40px 30px calc(40px + env(safe-area-inset-bottom));
+        gap: 54px;
+        padding: calc(40px + env(safe-area-inset-top)) 30px calc(76px + env(safe-area-inset-bottom));
         text-align: center;
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
         transition: opacity 0.26s ease, visibility 0.26s;
     }
+    /* Kopf, Tastenfeld und Fußzeile als drei feste Blöcke statt lose zentriert */
+    .lock-head { display: flex; flex-direction: column; align-items: center; }
+    #lockLogoutBtn {
+        position: absolute;
+        bottom: calc(22px + env(safe-area-inset-bottom));
+        color: var(--text-secondary);
+        padding: 12px 16px;
+    }
     .lock-screen.is-open {
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
     }
-    .lock-screen .lock-icon,
-    .lock-screen .lock-title,
-    .lock-screen .lock-sub,
-    .lock-screen .pin-dots,
-    .lock-screen .pin-pad,
-    .lock-screen .txt-btn { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
     .lock-screen.is-open .lock-icon { animation: lockPop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    @keyframes lockPop { from { transform: scale(0.86); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
+    @keyframes lockPop { from { transform: scale(0.9); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
     .lock-sub.error { color: var(--danger); font-weight: 600; }
+
+    /* Runder Akzent-Chip statt schwarzem Kachel-Klotz */
     .lock-icon {
-        width: 84px; height: 84px;
-        background: var(--text-main);
-        color: var(--bg-body);
-        border-radius: 26px;
+        width: 64px; height: 64px;
+        background: rgba(var(--accent-rgb), 0.12);
+        color: var(--accent);
+        border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        font-size: 42px;
+        margin-bottom: 20px;
     }
-    .lock-title { font-size: 22px; font-weight: 800; margin: 0; }
-    .lock-sub { font-size: 15px; color: var(--text-secondary); margin: -12px 0 4px; max-width: 300px; line-height: 1.5; }
+    .lock-icon .icon-lg { width: 28px; height: 28px; stroke-width: 1.9; }
+    .lock-title { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }
+    .lock-sub {
+        font-size: 14.5px; color: var(--text-secondary);
+        margin: 0; max-width: 280px; line-height: 1.45;
+        min-height: 21px;   /* Höhe bleibt gleich, wenn die Fehlermeldung erscheint */
+    }
 
     /* --- PIN PAD --- */
-    .pin-dots { display: flex; gap: 18px; justify-content: center; margin: 6px 0 10px; }
+    .pin-dots { display: flex; gap: 20px; justify-content: center; margin: 26px 0 0; }
     .pin-dot {
-        width: 15px; height: 15px; border-radius: 50%;
-        border: 2px solid var(--text-tertiary);
+        width: 13px; height: 13px; border-radius: 50%;
+        border: 1.5px solid var(--text-tertiary);
         transition: background 0.2s ease, border-color 0.2s ease,
                     transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .pin-dot.filled {
         background: var(--accent);
         border-color: var(--accent);
-        transform: scale(1.22);
+        transform: scale(1.2);
     }
+    /* Feste Breite pro Taste: vorher dehnte das Raster die Kreise zu Ovalen */
     .pin-pad {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-        width: 100%;
-        max-width: 260px;
-        margin: 6px auto 0;
+        grid-template-columns: repeat(3, 74px);
+        justify-content: center;
+        gap: 22px 26px;
+        margin: 0 auto;
     }
     .pin-key {
-        height: 62px;
-        border: none;
+        width: 74px; height: 74px;
+        border: 1px solid var(--border);
         border-radius: 50%;
-        background: var(--bg-button-secondary);
-        font-size: 26px;
-        font-weight: 600;
+        background: var(--bg-card);
+        box-shadow: var(--shadow-card);
+        font-size: 27px;
+        font-weight: 500;
         color: var(--text-main);
         font-family: var(--font-stack);
+        font-variant-numeric: tabular-nums;
         cursor: pointer;
         display: flex; align-items: center; justify-content: center;
         transition: transform 0.1s, background 0.15s;
     }
     .pin-key:active { transform: scale(0.92); background: var(--bg-input); }
-    .pin-key.blank { background: transparent; pointer-events: none; }
-    .pin-key.del { background: transparent; font-size: 24px; color: var(--text-secondary); }
+    .pin-key.blank { background: transparent; border-color: transparent; box-shadow: none; pointer-events: none; }
+    .pin-key.del {
+        background: transparent; border-color: transparent; box-shadow: none;
+        color: var(--text-secondary);
+    }
+    .pin-key.del .icon { width: 28px; height: 28px; stroke-width: 1.7; }
     .shake { animation: shake 0.4s; }
     @keyframes shake {
         0%, 100% { transform: translateX(0); }
@@ -978,9 +1011,9 @@
         display: flex; align-items: center; justify-content: center;
     }
     .detail-close:active { transform: scale(0.9); }
-    .detail-date { font-family: var(--font-serif); font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
+    .detail-date { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
     .detail-body { padding: 0 20px; }
-    .detail-text { font-family: var(--font-serif); font-size: 18px; line-height: 1.68; white-space: pre-wrap; }
+    .detail-text { font-size: 17px; line-height: 1.65; white-space: pre-wrap; }
     .detail-block { margin-bottom: 26px; }
     .detail-actions { display: flex; gap: 10px; padding: 8px 20px 0; }
     .detail-actions button { flex: 1; margin-top: 0; }
@@ -1031,21 +1064,17 @@
 
     /* --- GREETING --- */
     .greeting {
-        font-family: var(--font-serif);
-        font-size: 27px;
-        font-weight: 700;
-        letter-spacing: -0.01em;
-        margin: 4px 4px 18px;
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin: 4px 4px 16px;
     }
     .greeting small {
         display: block;
-        font-family: var(--font-stack);
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--text-secondary);
-        margin-top: 6px;
+        color: var(--accent);
+        margin-top: 3px;
     }
 
 
@@ -1181,7 +1210,7 @@
 
   </style>
 </head>
-<body>
+<body class="tab-heute">
 
   <div id="bootError" class="boot-error hidden">
     <div style="color:var(--text-secondary);"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg></div>
@@ -1590,12 +1619,14 @@
   <div id="printRoot"></div>
 
   <div id="lockScreen" class="lock-screen">
-      <div class="lock-icon"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
-      <h2 class="lock-title">Tagebuch gesperrt</h2>
-      <p id="lockSub" class="lock-sub">Gib deinen Code ein</p>
-      <div id="lockDots" class="pin-dots"></div>
+      <div class="lock-head">
+          <div class="lock-icon"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
+          <h2 class="lock-title">Tagebuch gesperrt</h2>
+          <p id="lockSub" class="lock-sub">Gib deinen Code ein</p>
+          <div id="lockDots" class="pin-dots"></div>
+      </div>
       <div id="lockPad" class="pin-pad"></div>
-      <button id="lockLogoutBtn" class="txt-btn" style="color:var(--text-secondary); margin-top:8px;">Stattdessen abmelden</button>
+      <button id="lockLogoutBtn" class="txt-btn">Stattdessen abmelden</button>
   </div>
 
   <div id="pinModal" class="modal-overlay hidden">
@@ -1700,7 +1731,8 @@
         award: '<circle cx="12" cy="8" r="6"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.85"></polyline>',
         heart: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>',
         message: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>',
-        type: '<polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line>'
+        type: '<polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line>',
+        backspace: '<path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line>'
     };
     function ic(name, cls = 'icon icon-sm') {
         return `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -1777,6 +1809,7 @@
     // --- TAB NAVIGATION ---
     const TABS = ['heute', 'verlauf', 'statistik', 'mehr'];
     function switchTab(name) {
+        document.body.classList.toggle('tab-heute', name === 'heute');
         TABS.forEach(t => {
             $('tab-' + t).classList.toggle('hidden', t !== name);
             $('tabbtn-' + t).classList.toggle('active', t === name);
@@ -1851,7 +1884,12 @@
             const b = document.createElement('button');
             b.type = 'button';
             if (k === '') { b.className = 'pin-key blank'; b.disabled = true; }
-            else if (k === 'del') { b.className = 'pin-key del'; b.dataset.key = 'del'; b.innerHTML = '⌫'; }
+            else if (k === 'del') {
+                b.className = 'pin-key del';
+                b.dataset.key = 'del';
+                b.setAttribute('aria-label', 'Letzte Ziffer löschen');
+                b.innerHTML = ic('backspace', 'icon');
+            }
             else { b.className = 'pin-key'; b.dataset.key = k; b.textContent = k; }
             padEl.appendChild(b);
         });
