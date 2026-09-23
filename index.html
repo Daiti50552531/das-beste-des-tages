@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" id="themeColorMeta" content="#F2F2F7">
+  <meta name="theme-color" id="themeColorMeta" content="#F4F1EA">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.svg">
 
@@ -20,23 +20,25 @@
       --primary: #000000; 
       --primary-rgb: 0,0,0;
       
-      --accent: #007AFF; /* iOS Blue */
-      --accent-rgb: 0,122,255;
+      --accent: #0A6DD8; /* etwas tiefer als iOS-Blau, passt zum warmen Papier */
+      --accent-rgb: 10,109,216;
       --success: #34C759; /* iOS Green */
-      --danger: #FF3B30;  /* iOS Red */
+      --danger: #BF3325;  /* wärmeres Rot, erreicht auf Papierton 5:1 */
       
-      --bg-body: #F2F2F7; /* System Grouped Background */
-      --bg-card: #FFFFFF;
-      --bg-surface: #FFFFFF;
-      --bg-input: #F2F2F7;
-      --bg-button-secondary: #E5E5EA; /* System Gray 5 */
-      
-      --text-main: #000000;
-      --text-secondary: #636366;
-      --text-tertiary: #C7C7CC;
-      
-      --border: rgba(0,0,0,0.08);
-      --glass: rgba(255, 255, 255, 0.85);
+      /* Warme Papiertöne. Die kühlen Systemgraus von iOS lassen ein
+         Tagebuch wie ein Formular aussehen. */
+      --bg-body: #F4F1EA;
+      --bg-card: #FFFDF9;
+      --bg-surface: #FFFDF9;
+      --bg-input: #EFEAE0;
+      --bg-button-secondary: #E7E1D5;
+
+      --text-main: #23201B;      /* warmes Fast-Schwarz statt reinem Schwarz */
+      --text-secondary: #6B635A;
+      --text-tertiary: #B8AE9F;
+
+      --border: rgba(60, 48, 30, 0.10);
+      --glass: rgba(244, 241, 234, 0.86);
 
       /* Stimmungen: wertungsfrei, auf einer Blau-Bernstein-Achse.
          Rot/Grün wäre für rund 8 % der Männer nicht unterscheidbar. */
@@ -51,10 +53,13 @@
       --radius-m: 16px;
       --radius-s: 12px;
       
-      --shadow-card: 0 4px 20px rgba(0,0,0,0.03);
-      --shadow-float: 0 12px 30px rgba(0,0,0,0.08);
+      --shadow-card: 0 2px 14px rgba(72, 56, 34, 0.06);
+      --shadow-float: 0 12px 30px rgba(72, 56, 34, 0.12);
       
       --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      /* Bedienelemente bleiben serifenlos, der eigene Text bekommt Serifen.
+         Das macht aus dem Formular ein Notizbuch. */
+      --font-serif: ui-serif, "New York", Georgia, "Iowan Old Style", "Palatino Linotype", serif;
     }
 
     .dark-mode {
@@ -64,20 +69,20 @@
       --accent: #0A84FF;         /* iOS Dark Mode Blue  — lebendiger als #007AFF */
       --accent-rgb: 10,132,255;
       --success: #30D158;        /* iOS Dark Mode Green */
-      --danger: #FF453A;         /* iOS Dark Mode Red   */
+      --danger: #F2705F;         /* wärmeres Rot für den Dunkelmodus */
 
-      --bg-body: #0D0D0F;        /* Fast-Schwarz mit kühlem Unterton – Tiefe auf OLED */
-      --bg-card: #1C1C1E;
-      --bg-surface: #252527;
-      --bg-input: #141416;       /* Dunkler als Card → Felder sichtbar */
-      --bg-button-secondary: #3A3A3C;
+      --bg-body: #121009;        /* warmes Fast-Schwarz, Tiefe auf OLED */
+      --bg-card: #1D1A15;
+      --bg-surface: #252119;
+      --bg-input: #17140F;       /* dunkler als die Karte, damit Felder sichtbar sind */
+      --bg-button-secondary: #38332B;
 
-      --text-main: #F2F2F7;      /* Apples Off-White – weniger grell beim Lesen */
-      --text-secondary: #AEAEB2; /* Etwas heller als vorher: besser lesbar */
-      --text-tertiary: #636366;
+      --text-main: #F4EFE5;      /* warmes Off-White, weniger grell beim Lesen */
+      --text-secondary: #B3A99A;
+      --text-tertiary: #6E665A;
 
-      --border: rgba(255,255,255,0.09);
-      --glass: rgba(13, 13, 15, 0.88);
+      --border: rgba(255, 245, 225, 0.10);
+      --glass: rgba(18, 16, 9, 0.88);
 
       --mood-happy: #EFB457;
       --mood-neutral: #9A9AA4;
@@ -234,6 +239,13 @@
         resize: none;
         transition: box-shadow 0.2s, background 0.2s;
     }
+    /* Was du selbst schreibst, steht in Serifen */
+    textarea {
+        font-family: var(--font-serif);
+        font-size: 17.5px;
+        line-height: 1.62;
+    }
+    textarea::placeholder { font-style: italic; color: var(--text-secondary); opacity: 0.75; }
     textarea:focus, input:focus {
         outline: none;
         box-shadow: 0 0 0 2px var(--accent);
@@ -258,14 +270,12 @@
         font-size: 24px;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        opacity: 0.4;
-        filter: grayscale(100%);
+        opacity: 0.45;
     }
     .mood-btn.selected {
         background: var(--bg-card);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(60, 48, 30, 0.14);
         opacity: 1;
-        filter: grayscale(0%);
         transform: scale(1.05);
     }
 
@@ -350,9 +360,9 @@
         align-items: center;
         border-bottom: 1px solid var(--border);
     }
-    .entry-date { font-weight: 700; font-size: 15px; }
+    .entry-date { font-weight: 600; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
     .entry-content { padding: 20px; }
-    .entry-text { font-size: 16px; line-height: 1.6; color: var(--text-main); white-space: pre-wrap; }
+    .entry-text { font-family: var(--font-serif); font-size: 16.5px; line-height: 1.62; color: var(--text-main); white-space: pre-wrap; }
     .entry-label { 
         font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; 
         color: var(--text-secondary); margin-bottom: 4px; font-weight: 700; 
@@ -968,9 +978,9 @@
         display: flex; align-items: center; justify-content: center;
     }
     .detail-close:active { transform: scale(0.9); }
-    .detail-date { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+    .detail-date { font-family: var(--font-serif); font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
     .detail-body { padding: 0 20px; }
-    .detail-text { font-size: 17px; line-height: 1.65; white-space: pre-wrap; }
+    .detail-text { font-family: var(--font-serif); font-size: 18px; line-height: 1.68; white-space: pre-wrap; }
     .detail-block { margin-bottom: 26px; }
     .detail-actions { display: flex; gap: 10px; padding: 8px 20px 0; }
     .detail-actions button { flex: 1; margin-top: 0; }
@@ -1021,17 +1031,21 @@
 
     /* --- GREETING --- */
     .greeting {
-        font-size: 26px;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        margin: 4px 4px 16px;
+        font-family: var(--font-serif);
+        font-size: 27px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin: 4px 4px 18px;
     }
     .greeting small {
         display: block;
-        font-size: 14px;
+        font-family: var(--font-stack);
+        font-size: 12px;
         font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
         color: var(--text-secondary);
-        margin-top: 2px;
+        margin-top: 6px;
     }
 
 
@@ -1724,7 +1738,7 @@
       const isDark = pref === 'dark' || (pref === 'system' && systemDark.matches);
       document.body.classList.toggle('dark-mode', isDark);
       const metaTheme = document.getElementById('themeColorMeta');
-      if (metaTheme) metaTheme.setAttribute('content', isDark ? '#000000' : '#F2F2F7');
+      if (metaTheme) metaTheme.setAttribute('content', isDark ? '#121009' : '#F4F1EA');
       if (typeof applyAccent === 'function') applyAccent();
     }
     function setTheme(pref) { localStorage.setItem('theme', pref); applyTheme(); renderThemeToggle(); }
@@ -2014,7 +2028,7 @@
 
     // --- AKZENTFARBEN ---
     const ACCENTS = {
-        blue:   { light: '#007AFF', dark: '#0A84FF' },
+        blue:   { light: '#0A6DD8', dark: '#4DA3FF' },
         purple: { light: '#AF52DE', dark: '#BF5AF2' },
         pink:   { light: '#FF2D55', dark: '#FF375F' },
         green:  { light: '#34C759', dark: '#30D158' },
