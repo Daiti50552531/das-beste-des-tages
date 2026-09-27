@@ -4,6 +4,27 @@
 -- Sicher für mehrfaches Ausführen (idempotent wo möglich).
 -- ============================================================
 
+-- 0) Zugriffsschutz für die Einträge (Row Level Security)
+-- Die App lädt Einträge ohne eigenen Filter auf den Nutzer. Dass jede Person
+-- nur ihre eigenen Einträge sieht, stellt allein diese Regel sicher.
+-- Einschalten und Regel gehören zusammen: RLS ohne Regel sperrt alle aus.
+--
+-- Prüfen, ob es schon aktiv ist (separat ausführen):
+--   select relname, relrowsecurity from pg_class where relname = 'entries';
+--   select policyname, cmd, qual from pg_policies where tablename = 'entries';
+-- In einer Transaktion: entweder beides gelingt oder nichts ändert sich.
+-- Der Vergleich über ::text funktioniert unabhängig davon, ob user_id als
+-- uuid oder als Text angelegt wurde.
+begin;
+alter table entries enable row level security;
+
+drop policy if exists "Users manage own entries" on entries;
+create policy "Users manage own entries" on entries
+  for all to authenticated
+  using (auth.uid()::text = user_id::text)
+  with check (auth.uid()::text = user_id::text);
+commit;
+
 -- 1) Foto-Anhänge: Spalte auf der entries-Tabelle
 alter table entries add column if not exists photo_path text;
 

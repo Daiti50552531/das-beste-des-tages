@@ -1235,8 +1235,8 @@
 
   <div id="recoveryModal" class="modal-overlay hidden">
     <div class="card" style="width:100%;max-width:400px;padding:28px;">
-      <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;">Neues Passwort setzen</h2>
-      <p style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;">Wähle ein neues Passwort für deinen Account.</p>
+      <h2 id="recoveryTitle" style="font-size:22px;font-weight:800;margin:0 0 8px;">Neues Passwort setzen</h2>
+      <p id="recoveryText" style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;">Wähle ein neues Passwort für deinen Account.</p>
       <label for="newPassword">Neues Passwort</label>
       <input type="password" id="newPassword" autocomplete="new-password" placeholder="Mindestens 6 Zeichen" style="margin-bottom:16px;">
       <label for="confirmPassword">Passwort bestätigen</label>
@@ -1266,15 +1266,15 @@
         <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;text-align:center;">Deine Extra-Felder</h2>
         <p style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;text-align:center;line-height:1.5;">Neben deinem Haupt-Eintrag kannst du über bis zu zwei Menschen oder Themen schreiben – z.&nbsp;B. deine Kinder, Partner oder dein Haustier. Leer lassen blendet das Feld aus.</p>
         <label>Feld 1 (optional)</label>
-        <input type="text" id="obField1" placeholder="z. B. Lotta" style="margin-bottom:16px;">
+        <input type="text" id="obField1" placeholder="Name oder Thema" style="margin-bottom:16px;">
         <label>Feld 2 (optional)</label>
-        <input type="text" id="obField2" placeholder="z. B. Thea">
+        <input type="text" id="obField2" placeholder="Name oder Thema">
       </div>
 
       <div id="obStep3" class="hidden">
         <div style="text-align:center;margin-bottom:14px;color:var(--accent);"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg></div>
         <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;text-align:center;">Dein Stil</h2>
-        <p style="color:var(--text-secondary);margin:0 0 20px;font-size:15px;text-align:center;line-height:1.5;">Wähle deine Akzentfarbe und deine Wunschzeit für die tägliche Erinnerung.</p>
+        <p style="color:var(--text-secondary);margin:0 0 20px;font-size:15px;text-align:center;line-height:1.5;">Wähle Erscheinungsbild und Akzentfarbe.</p>
         <label>Erscheinungsbild</label>
         <div id="obThemeSeg" class="seg" style="margin-bottom:18px;">
             <button type="button" data-theme="system">Automatisch</button>
@@ -1283,11 +1283,7 @@
         </div>
         <label>Akzentfarbe</label>
         <div id="obAccentRow" class="accent-row"></div>
-        <label style="margin-top:16px;">Erinnerungszeit</label>
-        <div class="date-filter-field" style="margin-top:8px;">
-            <input type="time" id="obReminderTime" class="date-filter-input" value="20:00">
-        </div>
-        <p style="color:var(--text-secondary);font-size:13px;margin:10px 0 0;line-height:1.4;">Aktivieren kannst du die Erinnerung jederzeit unter <strong>Mehr → Erinnerung</strong>.</p>
+        <p style="color:var(--text-secondary);font-size:13px;margin:18px 0 0;line-height:1.4;">Eine tägliche Erinnerung kannst du jederzeit unter <strong>Mehr → Erinnerung</strong> einschalten.</p>
       </div>
 
       <div style="display:flex;gap:12px;margin-top:26px;">
@@ -1372,21 +1368,21 @@
         <div class="input-group" id="extraFieldsRow" style="padding-top:0; display:flex; gap:12px;">
             <div style="flex:1;" id="field1Wrap">
                 <div class="field-header">
-                    <label id="field1EditorLabel">Lotta</label>
+                    <label id="field1EditorLabel">Feld 1</label>
                     <button class="mic-btn" data-target="lotta" title="Spracheingabe">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                     </button>
                 </div>
-                <textarea id="lotta" placeholder="Was hat Lotta heute erlebt?" rows="2"></textarea>
+                <textarea id="lotta" rows="2"></textarea>
             </div>
             <div style="flex:1;" id="field2Wrap">
                 <div class="field-header">
-                    <label id="field2EditorLabel">Thea</label>
+                    <label id="field2EditorLabel">Feld 2</label>
                     <button class="mic-btn" data-target="thea" title="Spracheingabe">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                     </button>
                 </div>
-                <textarea id="thea" placeholder="Was hat Thea heute erlebt?" rows="2"></textarea>
+                <textarea id="thea" rows="2"></textarea>
             </div>
         </div>
 
@@ -1558,8 +1554,8 @@
           </div>
           <div class="mood-filter-row" id="personFilterRow">
               <button class="mood-filter-btn active" data-person="">Alle</button>
-              <button class="mood-filter-btn" data-person="lotta">Lotta</button>
-              <button class="mood-filter-btn" data-person="thea">Thea</button>
+              <button class="mood-filter-btn" data-person="lotta">Feld 1</button>
+              <button class="mood-filter-btn" data-person="thea">Feld 2</button>
           </div>
       </div>
 
@@ -1654,6 +1650,12 @@
         document.getElementById('authSection').classList.add('hidden');
         throw new Error('Externe Bibliotheken konnten nicht geladen werden.');
     }
+
+    // Wer über einen Einladungslink kommt, hat noch kein Passwort. Supabase
+    // schreibt die Art des Links in die Adresse (#…&type=invite) und entfernt
+    // sie beim Anmelden wieder. Deshalb wird sie vorher gelesen.
+    const AUTH_LINK_TYPE = new URLSearchParams(location.hash.slice(1)).get('type');
+    let pendingPasswordSetup = AUTH_LINK_TYPE === 'invite';
 
     const { createClient } = window.supabase;
     const db = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1827,12 +1829,12 @@
     // --- EINSTELLUNGEN (pro Account, lokal gespeichert) ---
     const DEFAULT_SETTINGS = {
         displayName: '',
-        field1Label: 'Lotta',
-        field2Label: 'Thea',
-        field1Enabled: true,
-        field2Enabled: true,
+        // Neutrale Vorgaben: jede Person benennt ihre Extra-Felder selbst
+        field1Label: 'Feld 1',
+        field2Label: 'Feld 2',
+        field1Enabled: false,
+        field2Enabled: false,
         accent: 'blue',
-        reminderTime: '20:00',
         pinLock: false,
         onboarded: false
     };
@@ -2155,7 +2157,6 @@
         $('obName').value = settings.displayName || '';
         $('obField1').value = settings.field1Enabled ? settings.field1Label : '';
         $('obField2').value = settings.field2Enabled ? settings.field2Label : '';
-        $('obReminderTime').value = settings.reminderTime || '20:00';
         obAccentChoice = settings.accent || 'blue';
         buildAccentRow();
         markThemeSeg();
@@ -2173,7 +2174,6 @@
         if (l1) settings.field1Label = l1;
         if (l2) settings.field2Label = l2;
         settings.accent = obAccentChoice;
-        settings.reminderTime = $('obReminderTime').value || '20:00';
         const firstTime = !settings.onboarded;
         settings.onboarded = true;
         saveSettings();
@@ -2402,7 +2402,11 @@
       currentUser = null;
     }
 
-    function showPasswordRecovery() {
+    function showPasswordRecovery(invite = false) {
+      $('recoveryTitle').textContent = invite ? 'Willkommen!' : 'Neues Passwort setzen';
+      $('recoveryText').textContent = invite
+        ? 'Du wurdest eingeladen. Lege ein Passwort fest, damit du dich später wieder anmelden kannst.'
+        : 'Wähle ein neues Passwort für deinen Account.';
       $('recoveryModal').classList.remove('hidden');
       elements.authSection.classList.add('hidden');
       elements.appSection.classList.add('hidden');
@@ -2418,11 +2422,12 @@
       $('setPasswordBtn').disabled = true;
       $('setPasswordBtn').textContent = 'Wird gesetzt...';
       const { error } = await db.auth.updateUser({ password: pwd });
+      $('setPasswordBtn').disabled = false;
+      $('setPasswordBtn').textContent = 'Passwort setzen';
       if (error) {
         showToast('Fehler: ' + error.message, true);
-        $('setPasswordBtn').disabled = false;
-        $('setPasswordBtn').textContent = 'Passwort setzen';
       } else {
+        pendingPasswordSetup = false;
         $('recoveryModal').classList.add('hidden');
         showToast('Passwort gesetzt');
         const { data: { session } } = await db.auth.getSession();
@@ -2442,6 +2447,7 @@
       loadEntries();
       checkMonthlyReminder();
       handleLaunchParams();
+      if (pendingPasswordSetup) { showPasswordRecovery(true); return; }
       if (!settings.onboarded) openOnboarding();
       maybeLockOnOpen();
     }
@@ -2466,12 +2472,26 @@
     });
 
     $('signupBtn').addEventListener('click', async () => {
-      showToast('Account wird erstellt...');
-      const { error } = await db.auth.signUp({
-        email: elements.email.value.trim(),
-        password: elements.password.value
-      });
-      if (error) showToast(error ? error.message : 'Check deine Mails!', !!error);
+      const email = elements.email.value.trim();
+      const password = elements.password.value;
+      if (!email || !password) return showToast('Bitte E-Mail und Passwort eingeben.', true);
+      showToast('Account wird erstellt …');
+      const { data, error } = await db.auth.signUp({ email, password });
+      if (error) {
+        // Ist die Registrierung in Supabase abgeschaltet, kommt man nur per Einladung rein
+        if (/signups? not allowed/i.test(error.message)) {
+          return showToast('Die Registrierung ist geschlossen. Bitte lass dich einladen.', true);
+        }
+        return showToast('Fehler: ' + error.message, true);
+      }
+      // Ohne E-Mail-Bestätigung gibt es sofort eine Sitzung, onAuthStateChange übernimmt
+      if (data?.session) return;
+      // Supabase meldet bei schon registrierter Adresse keinen Fehler, sondern
+      // einen Nutzer ohne Identitäten (Schutz vor dem Ausspähen von Adressen)
+      if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        return showToast('Diese E-Mail ist bereits registriert. Bitte melde dich an.', true);
+      }
+      showToast('Fast geschafft: Bitte bestätige deine E-Mail über den Link in deinem Postfach.');
     });
 
     $('forgotBtn').addEventListener('click', async () => {
@@ -2773,7 +2793,7 @@
             filtered = filtered.filter(e => e.mood === selectedMoodFilter);
         }
 
-        // 2b. Person filter (Lotta / Thea Rückblick)
+        // 2b. Filter auf die Extra-Felder
         if (selectedPerson) {
             filtered = filtered.filter(e => e[selectedPerson] && e[selectedPerson].trim());
         }
@@ -2821,7 +2841,7 @@
         });
     });
 
-    // Person filter pills (Lotta / Thea Rückblick)
+    // Filter-Knöpfe für die Extra-Felder
     document.querySelectorAll('#personFilterRow .mood-filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             selectedPerson = btn.dataset.person || null;
