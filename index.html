@@ -1235,8 +1235,8 @@
 
   <div id="recoveryModal" class="modal-overlay hidden">
     <div class="card" style="width:100%;max-width:400px;padding:28px;">
-      <h2 id="recoveryTitle" style="font-size:22px;font-weight:800;margin:0 0 8px;">Neues Passwort setzen</h2>
-      <p id="recoveryText" style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;">Wähle ein neues Passwort für deinen Account.</p>
+      <h2 style="font-size:22px;font-weight:800;margin:0 0 8px;">Neues Passwort setzen</h2>
+      <p style="color:var(--text-secondary);margin:0 0 24px;font-size:15px;">Wähle ein neues Passwort für deinen Account.</p>
       <label for="newPassword">Neues Passwort</label>
       <input type="password" id="newPassword" autocomplete="new-password" placeholder="Mindestens 6 Zeichen" style="margin-bottom:16px;">
       <label for="confirmPassword">Passwort bestätigen</label>
@@ -1314,7 +1314,6 @@
 
       <div style="margin-top:24px; display:flex; flex-direction:column; gap:12px;">
         <button id="loginBtn" type="submit" class="btn-primary">Anmelden</button>
-        <button id="signupBtn" type="button" class="txt-btn" style="color:var(--text-secondary); margin-top:10px;">Account erstellen</button>
         <button id="forgotBtn" type="button" class="txt-btn" style="color:var(--accent); font-size:13px;">Passwort vergessen?</button>
       </div>
     </form>
@@ -1650,12 +1649,6 @@
         document.getElementById('authSection').classList.add('hidden');
         throw new Error('Externe Bibliotheken konnten nicht geladen werden.');
     }
-
-    // Wer über einen Einladungslink kommt, hat noch kein Passwort. Supabase
-    // schreibt die Art des Links in die Adresse (#…&type=invite) und entfernt
-    // sie beim Anmelden wieder. Deshalb wird sie vorher gelesen.
-    const AUTH_LINK_TYPE = new URLSearchParams(location.hash.slice(1)).get('type');
-    let pendingPasswordSetup = AUTH_LINK_TYPE === 'invite';
 
     const { createClient } = window.supabase;
     const db = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2402,11 +2395,7 @@
       currentUser = null;
     }
 
-    function showPasswordRecovery(invite = false) {
-      $('recoveryTitle').textContent = invite ? 'Willkommen!' : 'Neues Passwort setzen';
-      $('recoveryText').textContent = invite
-        ? 'Du wurdest eingeladen. Lege ein Passwort fest, damit du dich später wieder anmelden kannst.'
-        : 'Wähle ein neues Passwort für deinen Account.';
+    function showPasswordRecovery() {
       $('recoveryModal').classList.remove('hidden');
       elements.authSection.classList.add('hidden');
       elements.appSection.classList.add('hidden');
@@ -2427,7 +2416,6 @@
       if (error) {
         showToast('Fehler: ' + error.message, true);
       } else {
-        pendingPasswordSetup = false;
         $('recoveryModal').classList.add('hidden');
         showToast('Passwort gesetzt');
         const { data: { session } } = await db.auth.getSession();
@@ -2447,7 +2435,6 @@
       loadEntries();
       checkMonthlyReminder();
       handleLaunchParams();
-      if (pendingPasswordSetup) { showPasswordRecovery(true); return; }
       if (!settings.onboarded) openOnboarding();
       maybeLockOnOpen();
     }
@@ -2469,29 +2456,6 @@
         password: elements.password.value
       });
       if (error) showToast('Fehler: ' + error.message, true);
-    });
-
-    $('signupBtn').addEventListener('click', async () => {
-      const email = elements.email.value.trim();
-      const password = elements.password.value;
-      if (!email || !password) return showToast('Bitte E-Mail und Passwort eingeben.', true);
-      showToast('Account wird erstellt …');
-      const { data, error } = await db.auth.signUp({ email, password });
-      if (error) {
-        // Ist die Registrierung in Supabase abgeschaltet, kommt man nur per Einladung rein
-        if (/signups? not allowed/i.test(error.message)) {
-          return showToast('Die Registrierung ist geschlossen. Bitte lass dich einladen.', true);
-        }
-        return showToast('Fehler: ' + error.message, true);
-      }
-      // Ohne E-Mail-Bestätigung gibt es sofort eine Sitzung, onAuthStateChange übernimmt
-      if (data?.session) return;
-      // Supabase meldet bei schon registrierter Adresse keinen Fehler, sondern
-      // einen Nutzer ohne Identitäten (Schutz vor dem Ausspähen von Adressen)
-      if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-        return showToast('Diese E-Mail ist bereits registriert. Bitte melde dich an.', true);
-      }
-      showToast('Fast geschafft: Bitte bestätige deine E-Mail über den Link in deinem Postfach.');
     });
 
     $('forgotBtn').addEventListener('click', async () => {

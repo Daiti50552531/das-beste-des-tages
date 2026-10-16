@@ -5,25 +5,41 @@
 -- ============================================================
 
 -- 0) Zugriffsschutz für die Einträge (Row Level Security)
--- Die App lädt Einträge ohne eigenen Filter auf den Nutzer. Dass jede Person
--- nur ihre eigenen Einträge sieht, stellt allein diese Regel sicher.
--- Einschalten und Regel gehören zusammen: RLS ohne Regel sperrt alle aus.
+-- Die App lädt Einträge ohne eigenen Filter auf den Nutzer. Dass nur der
+-- eigene Account seine Einträge sieht, stellt allein RLS sicher.
+-- Entspricht dem Stand im Projekt (geprüft am 16.10.2026).
+-- (select auth.uid()) statt auth.uid(): wird einmal pro Abfrage statt für
+-- jede Zeile ausgewertet (Supabase-Empfehlung, Linter 0003).
 --
--- Prüfen, ob es schon aktiv ist (separat ausführen):
+-- Prüfen:
 --   select relname, relrowsecurity from pg_class where relname = 'entries';
---   select policyname, cmd, qual from pg_policies where tablename = 'entries';
--- In einer Transaktion: entweder beides gelingt oder nichts ändert sich.
--- Der Vergleich über ::text funktioniert unabhängig davon, ob user_id als
--- uuid oder als Text angelegt wurde.
+--   select policyname, cmd, qual, with_check from pg_policies where tablename = 'entries';
 begin;
 alter table entries enable row level security;
 
-drop policy if exists "Users manage own entries" on entries;
-create policy "Users manage own entries" on entries
-  for all to authenticated
-  using (auth.uid()::text = user_id::text)
-  with check (auth.uid()::text = user_id::text);
+drop policy if exists "Users can select own entries" on entries;
+create policy "Users can select own entries" on entries for select
+  using ((select auth.uid()) = user_id);
+drop policy if exists "Users can insert own entries" on entries;
+create policy "Users can insert own entries" on entries for insert
+  with check ((select auth.uid()) = user_id);
+drop policy if exists "Users can update own entries" on entries;
+create policy "Users can update own entries" on entries for update
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+drop policy if exists "Users can delete own entries" on entries;
+create policy "Users can delete own entries" on entries for delete
+  using ((select auth.uid()) = user_id);
 commit;
+
+-- 0b) Hinweise des Supabase-Sicherheitschecks (angewendet am 16.10.2026)
+-- Trigger-Funktionen mit festem search_path; handle_new_user nicht über die
+-- API aufrufbar. Der Trigger auf auth.users feuert trotzdem, das Aufrufrecht
+-- wird nur beim Anlegen des Triggers geprüft.
+alter function public.handle_new_user() set search_path = '';
+alter function public.set_updated_at() set search_path = '';
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+create index if not exists idx_error_logs_user_id on public.error_logs (user_id);
+create index if not exists idx_push_subscriptions_user_id on public.push_subscriptions (user_id);
 
 -- 1) Foto-Anhänge: Spalte auf der entries-Tabelle
 alter table entries add column if not exists photo_path text;
