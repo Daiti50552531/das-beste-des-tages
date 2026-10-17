@@ -2346,11 +2346,52 @@
         if ((settings.design || 1) < 2) {
             settings.accent = 'red';
             settings.design = 2;
-            saveSettings();
+            try { localStorage.setItem(settingsKey(), JSON.stringify(settings)); } catch(e) {}
         }
     }
     function saveSettings() {
         try { localStorage.setItem(settingsKey(), JSON.stringify(settings)); } catch(e) {}
+        pushSettingsSoon();
+    }
+
+    // Einstellungen zusätzlich in Supabase (profiles.settings), damit sie eine
+    // Neuinstallation überleben. Die Code-Sperre bleibt bewusst nur auf dem Gerät.
+    const LOCAL_ONLY_SETTINGS = ['pinLock'];
+    let settingsPushTimer = null;
+    let settingsSynced = false;   // erst nach dem Abgleich hochladen, sonst überschreiben Vorgaben die gespeicherten Werte
+    function syncableSettings() {
+        const out = { ...settings };
+        LOCAL_ONLY_SETTINGS.forEach(k => delete out[k]);
+        return out;
+    }
+    function pushSettingsSoon() {
+        if (!currentUser || !settingsSynced) return;
+        clearTimeout(settingsPushTimer);
+        const uid = currentUser.id;
+        settingsPushTimer = setTimeout(() => {
+            db.from('profiles').update({ settings: syncableSettings() }).eq('id', uid).then(() => {}, () => {});
+        }, 600);
+    }
+    async function syncSettingsFromServer() {
+        settingsSynced = false;
+        if (!currentUser) return;
+        const uid = currentUser.id;
+        const { data, error } = await db.from('profiles').select('settings').eq('id', uid).maybeSingle();
+        if (!currentUser || currentUser.id !== uid) return;
+        settingsSynced = true;
+        if (error) return;
+        const remote = data?.settings || {};
+        if (Object.keys(remote).length === 0) {
+            if (settings.onboarded) pushSettingsSoon();   // bestehende Einstellungen einmalig hochladen
+            return;
+        }
+        const local = {};
+        LOCAL_ONLY_SETTINGS.forEach(k => { local[k] = settings[k]; });
+        const merged = { ...DEFAULT_SETTINGS, ...remote, ...local };
+        if (JSON.stringify(merged) === JSON.stringify(settings)) return;
+        settings = merged;
+        try { localStorage.setItem(settingsKey(), JSON.stringify(settings)); } catch(e) {}
+        applySettings();
     }
 
     // --- CODE-SPERRE (PIN, lokal & gehasht) ---
@@ -2973,7 +3014,7 @@
       checkMonthlyReminder();
       handleLaunchParams();
       // Erst wenn klar ist, ob nur "Wir zwei" sichtbar ist, über das Onboarding entscheiden
-      loadWirZwei().catch(() => {}).finally(() => {
+      Promise.all([loadWirZwei().catch(() => {}), syncSettingsFromServer().catch(() => {})]).finally(() => {
         document.body.classList.remove('wir-pending');
         if (currentUser !== user) return;
         if (!settings.onboarded && !wir.sharedOnly) openOnboarding();

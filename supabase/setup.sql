@@ -124,6 +124,11 @@ create trigger on_auth_user_link_wir_zwei
   after insert or update of email_confirmed_at on auth.users
   for each row execute function public.link_wir_zwei_partner();
 
+-- 0d) App-Einstellungen pro Person (angewendet am 17.10.2026): Feldnamen, Farbe, Name.
+-- Liegen zusätzlich zum Gerät in profiles.settings, damit sie eine Neuinstallation
+-- der App überleben. Die Code-Sperre bleibt nur auf dem Gerät.
+alter table public.profiles add column if not exists settings jsonb not null default '{}'::jsonb;
+
 -- 1) Foto-Anhänge: Spalte auf der entries-Tabelle
 alter table entries add column if not exists photo_path text;
 
