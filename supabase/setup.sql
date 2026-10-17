@@ -41,6 +41,60 @@ revoke execute on function public.handle_new_user() from public, anon, authentic
 create index if not exists idx_error_logs_user_id on public.error_logs (user_id);
 create index if not exists idx_push_subscriptions_user_id on public.push_subscriptions (user_id);
 
+-- 0c) "Wir zwei" (angewendet am 17.10.2026)
+-- Geteilte Einträge zwischen zwei fest verbundenen Personen. Eigene Tabellen,
+-- die private Tabelle entries ist davon nicht betroffen. Die Verknüpfung
+-- (partnerships) legt der Projektbesitzer an, je eine Zeile pro Person:
+--   insert into public.partnerships (user_id, partner_id, partner_name, shared_only)
+--   values ('<deine id>', '<ihre id>', 'Hanna', false),
+--          ('<ihre id>', '<deine id>', 'David', true);
+
+-- Verknüpfung: pro Person eine Zeile, die auf die andere zeigt.
+-- partner_name = wie die Partnerin/der Partner in der App heißt,
+-- shared_only = nur den Reiter "Wir zwei" anzeigen.
+-- Nutzer können ihre Zeile nur lesen; angelegt wird sie vom Projektbesitzer.
+create table if not exists public.partnerships (
+  user_id      uuid primary key references auth.users(id) on delete cascade,
+  partner_id   uuid not null references auth.users(id) on delete cascade,
+  partner_name text not null,
+  shared_only  boolean not null default false,
+  created_at   timestamptz not null default now(),
+  constraint partnerships_not_self check (user_id <> partner_id)
+);
+create index if not exists idx_partnerships_partner_id on public.partnerships (partner_id);
+alter table public.partnerships enable row level security;
+create policy "Users read own partnership" on public.partnerships
+  for select to authenticated using ((select auth.uid()) = user_id);
+
+-- Geteilte Einträge: pro Person und Tag genau einer.
+create table if not exists public.shared_entries (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  entry_date  date not null,
+  text        text not null constraint shared_entries_text_length check (char_length(text) between 1 and 5000),
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  constraint shared_entries_user_date_unique unique (user_id, entry_date)
+);
+alter table public.shared_entries enable row level security;
+
+-- Lesen: eigene Einträge und die der verbundenen Person.
+create policy "Read own and partner shared entries" on public.shared_entries
+  for select to authenticated using (
+    user_id = (select auth.uid())
+    or user_id in (select p.partner_id from public.partnerships p where p.user_id = (select auth.uid()))
+  );
+-- Schreiben, ändern, löschen: nur eigene.
+create policy "Insert own shared entries" on public.shared_entries
+  for insert to authenticated with check (user_id = (select auth.uid()));
+create policy "Update own shared entries" on public.shared_entries
+  for update to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+create policy "Delete own shared entries" on public.shared_entries
+  for delete to authenticated using (user_id = (select auth.uid()));
+
+create trigger tr_shared_entries_updated_at before update on public.shared_entries
+  for each row execute function public.set_updated_at();
+
 -- 1) Foto-Anhänge: Spalte auf der entries-Tabelle
 alter table entries add column if not exists photo_path text;
 
