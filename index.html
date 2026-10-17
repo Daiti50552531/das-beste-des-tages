@@ -428,7 +428,8 @@
     .toast {
         position: fixed; top: calc(20px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%) translateY(-100%);
         background: rgba(0,0,0,0.8); backdrop-filter: blur(12px); color: white;
-        padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 14px;
+        padding: 12px 22px; border-radius: 24px; font-weight: 600; font-size: 14px;
+        width: max-content; max-width: calc(100vw - 32px); text-align: center; line-height: 1.4;
         z-index: 9999; opacity: 0; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     }
@@ -439,6 +440,45 @@
     .auth-container { max-width: 400px; margin: 10vh auto; text-align: center; padding: 20px; }
     #authForm { text-align: left; }
     #authForm .txt-btn { text-align: center; }
+    .auth-title { font-size: 34px; font-weight: 800; letter-spacing: -0.025em; margin: 0 0 8px; }
+    .auth-sub { color: var(--text-secondary); margin: 0 0 32px; font-size: 16px; }
+    .auth-card { padding: 24px; }
+    .pw-wrap { position: relative; }
+    .pw-wrap input { padding-right: 84px; }
+    .pw-toggle {
+        position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+        height: 36px; padding: 0 12px; border: none; border-radius: 12px;
+        background: transparent; color: var(--accent);
+        font-family: var(--font-stack); font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .auth-hint { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin: 8px 2px 0; }
+    .auth-actions { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+    .auth-link { color: var(--accent); font-size: 14px; padding: 6px; }
+    .auth-switch {
+        margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        font-size: 15px; color: var(--text-secondary);
+    }
+    .auth-switch .txt-btn { color: var(--accent); font-size: 15px; font-weight: 700; padding: 6px 2px; }
+    .auth-sent { text-align: center; }
+    .auth-sent h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 14px 0 10px; }
+    .auth-sent p { font-size: 16px; line-height: 1.5; margin: 0 0 10px; overflow-wrap: anywhere; }
+    .auth-sent .auth-hint { margin-bottom: 22px; }
+    .auth-sent .btn-secondary { margin-top: 10px; }
+    .auth-sent .auth-link { margin-top: 12px; }
+    .auth-sent-icon, .wir-welcome-icon {
+        width: 64px; height: 64px; margin: 0 auto; border-radius: 20px;
+        background: rgba(var(--accent-rgb), 0.12); color: var(--accent);
+        display: flex; align-items: center; justify-content: center;
+    }
+    .auth-sent-icon .icon-lg, .wir-welcome-icon .icon-lg { width: 30px; height: 30px; stroke-width: 1.9; }
+    .wir-welcome { width: 100%; max-width: 400px; padding: 28px 24px 24px; text-align: center; }
+    .wir-welcome h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin: 16px 0 14px; }
+    .wir-welcome ul { list-style: none; padding: 0; margin: 0 0 24px; text-align: left; }
+    .wir-welcome li { font-size: 16px; line-height: 1.45; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .wir-welcome li:last-child { border-bottom: none; }
+    /* Erste Anmeldung auf einem Gerät: nichts zeigen, bis klar ist, welche Reiter dazugehören */
+    body.wir-pending #appSection { visibility: hidden; }
     
     /* UTILS */
     .hidden { display: none !important; }
@@ -1648,21 +1688,38 @@
 
   <div id="authSection" class="auth-container">
     <div style="width:80px; height:80px; background:var(--accent); border-radius:24px; margin:0 auto 20px auto; display:flex; align-items:center; justify-content:center; color:#FFFFFF; box-shadow:0 8px 20px rgba(var(--accent-rgb),0.28);"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="15"></line></svg></div>
-    <h1 style="font-size:32px; font-weight:800; margin-bottom:10px;">Das Beste des Tages</h1>
-    <p style="color:var(--text-secondary); margin-bottom:40px;">Deine Gedanken. Sicher und schön.</p>
+    <h1 class="auth-title">Das Beste des Tages</h1>
+    <p id="authSub" class="auth-sub">Deine Gedanken. Sicher und schön.</p>
     
-    <form id="authForm" class="card" style="padding:24px;">
+    <form id="authForm" class="card auth-card" novalidate>
       <label for="authEmail">E-Mail</label>
       <input type="email" id="authEmail" name="email" autocomplete="username email" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" placeholder="hallo@beispiel.de" style="margin-bottom:16px;">
       <label for="authPassword">Passwort</label>
-      <input type="password" id="authPassword" name="password" autocomplete="current-password" placeholder="••••••••">
+      <div class="pw-wrap">
+        <input type="password" id="authPassword" name="password" autocomplete="current-password" placeholder="••••••••">
+        <button type="button" id="pwToggle" class="pw-toggle" aria-label="Passwort anzeigen" aria-pressed="false">Zeigen</button>
+      </div>
+      <p id="pwHint" class="auth-hint hidden">Mindestens 6 Zeichen. Du legst es selbst fest.</p>
 
-      <div style="margin-top:24px; display:flex; flex-direction:column; gap:12px;">
+      <div class="auth-actions">
         <button id="loginBtn" type="submit" class="btn-primary">Anmelden</button>
-        <button id="signupBtn" type="button" class="txt-btn" style="color:var(--text-secondary); margin-top:10px;">Account erstellen</button>
-        <button id="forgotBtn" type="button" class="txt-btn" style="color:var(--accent); font-size:13px;">Passwort vergessen?</button>
+        <button id="forgotBtn" type="button" class="txt-btn auth-link">Passwort vergessen?</button>
+      </div>
+      <div class="auth-switch">
+        <span id="authSwitchText">Neu hier?</span>
+        <button id="authSwitchBtn" type="button" class="txt-btn">Account erstellen</button>
       </div>
     </form>
+
+    <div id="authSent" class="card auth-card auth-sent hidden" aria-live="polite">
+      <div class="auth-sent-icon"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg></div>
+      <h2>Fast geschafft!</h2>
+      <p>Wir haben dir eine E-Mail an <strong id="authSentEmail"></strong> geschickt. Tippe auf den Link darin, um deine Adresse zu bestätigen.</p>
+      <p class="auth-hint">Keine E-Mail da? Schau auch im Spam-Ordner nach. Das kann ein, zwei Minuten dauern.</p>
+      <button id="authConfirmedBtn" type="button" class="btn-primary">Bestätigt? Jetzt anmelden</button>
+      <button id="authResendBtn" type="button" class="btn-secondary">E-Mail erneut senden</button>
+      <button id="authBackBtn" type="button" class="txt-btn auth-link">Zurück</button>
+    </div>
   </div>
 
   <div id="appSection" class="hidden">
@@ -1971,6 +2028,19 @@
     </nav>
   </div>
 
+  <div id="wirWelcome" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="wirWelcomeTitle">
+    <div class="card wir-welcome">
+      <div class="wir-welcome-icon"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></div>
+      <h2 id="wirWelcomeTitle">Willkommen bei „Wir zwei“</h2>
+      <ul>
+        <li><strong>Jeden Tag ein Moment.</strong> Halte fest, was heute das Schönste war.</li>
+        <li id="wirWelcomePartner"></li>
+        <li><strong>„Verlauf“</strong> oben rechts zeigt alles, was ihr geschrieben habt.</li>
+      </ul>
+      <button type="button" id="wirWelcomeBtn" class="btn-primary">Los geht’s</button>
+    </div>
+  </div>
+
   <div id="lightbox" class="lightbox hidden"><img id="lightboxImg" alt="Foto"></div>
 
   <div id="wirWrite" class="wir-sheet" role="dialog" aria-modal="true" aria-labelledby="wirWriteLabel">
@@ -2070,6 +2140,14 @@
         throw new Error('Externe Bibliotheken konnten nicht geladen werden.');
     }
 
+    // Fehler aus einem Bestätigungslink (z. B. abgelaufen) merken, bevor supabase-js die Adresse liest
+    const authLinkError = (() => {
+        const h = new URLSearchParams(window.location.hash.slice(1));
+        if (!h.get('error') && !h.get('error_code')) return null;
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+        return h.get('error_code') || h.get('error');
+    })();
+
     const { createClient } = window.supabase;
     const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -2155,12 +2233,12 @@
 
     let toastDismissTimer = null;
 
-    function showToast(msg, isError = false) {
+    function showToast(msg, isError = false, ms = 3000) {
       const el = $('toast');
       el.textContent = msg;
       el.className = 'toast visible' + (isError ? ' error' : '');
       if (toastDismissTimer) clearTimeout(toastDismissTimer);
-      toastDismissTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+      toastDismissTimer = setTimeout(() => el.classList.remove('visible'), ms);
     }
 
     function showToastWithUndo(msg, onUndo) {
@@ -2819,7 +2897,15 @@
       else if (event === 'SIGNED_OUT') showAuth();
     });
 
+    let authLinkErrorShown = false;
     function showAuth() {
+      if (authLinkError && !authLinkErrorShown) {
+        authLinkErrorShown = true;
+        showToast(authLinkError === 'otp_expired'
+          ? 'Der Link ist abgelaufen oder wurde schon benutzt. Melde dich einfach an.'
+          : 'Der Link hat nicht funktioniert. Melde dich einfach an.', true, 6000);
+        setAuthMode('login');
+      }
       elements.authSection.classList.remove('hidden');
       elements.appSection.classList.add('hidden');
       $('recoveryModal').classList.add('hidden');
@@ -2862,7 +2948,8 @@
       elements.appSection.classList.remove('hidden');
       loadSettings();
       applySettings();
-      wirLoadCache();
+      const firstOnDevice = !wirLoadCache();
+      if (firstOnDevice) document.body.classList.add('wir-pending');
       applySharedOnly();
       renderDailyPrompt();
       resetEditor();
@@ -2872,7 +2959,10 @@
       handleLaunchParams();
       // Erst wenn klar ist, ob nur "Wir zwei" sichtbar ist, über das Onboarding entscheiden
       loadWirZwei().catch(() => {}).finally(() => {
-        if (currentUser === user && !settings.onboarded && !wir.sharedOnly) openOnboarding();
+        document.body.classList.remove('wir-pending');
+        if (currentUser !== user) return;
+        if (!settings.onboarded && !wir.sharedOnly) openOnboarding();
+        maybeShowWirWelcome();
       });
       maybeLockOnOpen();
     }
@@ -2886,15 +2976,117 @@
         }
     }
 
+    // --- ANMELDEN / REGISTRIEREN ---
+    let authMode = 'login';
+    let pendingAuth = null;   // E-Mail und Passwort bis zur Bestätigung, nur im Speicher
+    const authRedirect = () => window.location.origin + window.location.pathname;
+
+    function setAuthMode(mode) {
+        authMode = mode;
+        const signup = mode === 'signup';
+        $('loginBtn').textContent = signup ? 'Account erstellen' : 'Anmelden';
+        $('authSub').textContent = signup ? 'Leg deinen Account an. Das dauert nur einen Moment.' : 'Deine Gedanken. Sicher und schön.';
+        $('authSwitchText').textContent = signup ? 'Schon einen Account?' : 'Neu hier?';
+        $('authSwitchBtn').textContent = signup ? 'Anmelden' : 'Account erstellen';
+        $('forgotBtn').classList.toggle('hidden', signup);
+        $('pwHint').classList.toggle('hidden', !signup);
+        elements.password.setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
+        elements.password.placeholder = signup ? 'Mindestens 6 Zeichen' : '••••••••';
+        $('authForm').classList.remove('hidden');
+        $('authSent').classList.add('hidden');
+    }
+    function showAuthSent(email) {
+        $('authSentEmail').textContent = email;
+        $('authSub').textContent = 'Nur noch ein Schritt.';
+        $('authForm').classList.add('hidden');
+        $('authSent').classList.remove('hidden');
+    }
+    function authErrorText(error) {
+        const m = (error?.message || '').toLowerCase();
+        const code = error?.code || '';
+        if (code === 'invalid_credentials' || m.includes('invalid login')) return 'E-Mail oder Passwort stimmt nicht.';
+        if (code === 'email_not_confirmed' || m.includes('email not confirmed')) return 'Bitte bestätige zuerst deine E-Mail über den Link in deinem Postfach.';
+        if (code === 'user_already_exists' || m.includes('already registered')) return 'Diese E-Mail ist schon registriert. Bitte melde dich an.';
+        if (code === 'weak_password' || m.includes('password should')) return 'Das Passwort ist zu kurz oder zu einfach. Nimm mindestens 6 Zeichen.';
+        if (code.startsWith('over_') || m.includes('rate limit')) return 'Gerade wurden zu viele Anfragen verschickt. Bitte versuch es später noch einmal.';
+        if (code === 'email_address_invalid' || (m.includes('email') && m.includes('invalid'))) return 'Diese E-Mail-Adresse sieht nicht richtig aus.';
+        if (code === 'signup_disabled' || /signups? not allowed/.test(m)) return 'Die Registrierung ist gerade geschlossen.';
+        if (m.includes('failed to fetch') || m.includes('network')) return 'Keine Verbindung. Bitte prüfe dein Internet.';
+        return 'Das hat nicht geklappt: ' + (error?.message || 'unbekannter Fehler');
+    }
+    async function withBusy(btn, label, fn) {
+        const text = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = label;
+        try { return await fn(); } finally { btn.disabled = false; btn.textContent = text; }
+    }
+
+    $('authSwitchBtn').addEventListener('click', () => setAuthMode(authMode === 'signup' ? 'login' : 'signup'));
+    $('pwToggle').addEventListener('click', () => {
+        const show = elements.password.type === 'password';
+        elements.password.type = show ? 'text' : 'password';
+        $('pwToggle').textContent = show ? 'Verbergen' : 'Zeigen';
+        $('pwToggle').setAttribute('aria-pressed', String(show));
+        $('pwToggle').setAttribute('aria-label', show ? 'Passwort verbergen' : 'Passwort anzeigen');
+    });
+
     $('authForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      showToast('Anmelden...');
-      const { error } = await db.auth.signInWithPassword({
-        email: elements.email.value.trim(),
-        password: elements.password.value
+      const email = elements.email.value.trim();
+      const password = elements.password.value;
+      if (!email || !password) return showToast('Bitte E-Mail und Passwort eingeben.', true);
+      if (authMode === 'signup') return doSignup(email, password);
+      await withBusy($('loginBtn'), 'Moment …', async () => {
+        const { error } = await db.auth.signInWithPassword({ email, password });
+        if (!error) return;
+        if (error.code === 'email_not_confirmed' || /email not confirmed/i.test(error.message)) {
+          pendingAuth = { email, password };
+          showAuthSent(email);
+        }
+        showToast(authErrorText(error), true, 5000);
       });
-      if (error) showToast('Fehler: ' + error.message, true);
     });
+
+    async function doSignup(email, password) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Diese E-Mail-Adresse sieht nicht richtig aus.', true, 5000);
+      if (password.length < 6) return showToast('Das Passwort braucht mindestens 6 Zeichen.', true, 5000);
+      await withBusy($('loginBtn'), 'Account wird erstellt …', async () => {
+        const { data, error } = await db.auth.signUp({ email, password, options: { emailRedirectTo: authRedirect() } });
+        if (error) return showToast(authErrorText(error), true, 5000);
+        if (data?.session) return;   // ohne Bestätigungspflicht direkt angemeldet
+        if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          setAuthMode('login');
+          return showToast('Diese E-Mail ist schon registriert. Bitte melde dich an.', true, 5000);
+        }
+        pendingAuth = { email, password };
+        showAuthSent(email);
+      });
+    }
+
+    $('authConfirmedBtn').addEventListener('click', async () => {
+      if (!pendingAuth) { setAuthMode('login'); return; }
+      await withBusy($('authConfirmedBtn'), 'Moment …', async () => {
+        const { error } = await db.auth.signInWithPassword(pendingAuth);
+        if (!error) return;
+        if (error.code === 'email_not_confirmed' || /email not confirmed/i.test(error.message)) {
+          return showToast('Noch nicht bestätigt. Tippe zuerst auf den Link in der E-Mail.', true, 5000);
+        }
+        showToast(authErrorText(error), true, 5000);
+      });
+    });
+    $('authResendBtn').addEventListener('click', async () => {
+      const email = pendingAuth?.email || elements.email.value.trim();
+      if (!email) return;
+      await withBusy($('authResendBtn'), 'Wird gesendet …', async () => {
+        const { error } = await db.auth.resend({ type: 'signup', email, options: { emailRedirectTo: authRedirect() } });
+        if (error) showToast(authErrorText(error), true, 5000);
+        else showToast('Neue E-Mail ist unterwegs.');
+      });
+    });
+    $('authBackBtn').addEventListener('click', () => setAuthMode(authMode));
+
+    // Link mit ?registrieren öffnet direkt die Registrierung
+    if (new URLSearchParams(window.location.search).has('registrieren')) setAuthMode('signup');
 
     $('forgotBtn').addEventListener('click', async () => {
       const email = elements.email.value.trim();
@@ -2907,26 +3099,6 @@
       else showToast('Reset-Link gesendet. Bitte E-Mails prüfen.');
     });
 
-
-    $('signupBtn').addEventListener('click', async () => {
-      const email = elements.email.value.trim();
-      const password = elements.password.value;
-      if (!email || !password) return showToast('Bitte E-Mail und Passwort eingeben.', true);
-      if (password.length < 6) return showToast('Das Passwort braucht mindestens 6 Zeichen.', true);
-      showToast('Account wird erstellt …');
-      const { data, error } = await db.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + window.location.pathname } });
-      if (error) {
-        if (/signups? not allowed/i.test(error.message)) {
-          return showToast('Die Registrierung ist geschlossen.', true);
-        }
-        return showToast('Fehler: ' + error.message, true);
-      }
-      if (data?.session) return;
-      if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-        return showToast('Diese E-Mail ist bereits registriert. Bitte melde dich an.', true);
-      }
-      showToast('Fast geschafft: Bitte bestätige deine E-Mail über den Link in deinem Postfach.');
-    });
 
     $('logoutBtn').addEventListener('click', () => db.auth.signOut());
 
@@ -4373,12 +4545,29 @@
     function wirLoadCache() {
         try {
             const c = JSON.parse(localStorage.getItem(WIR_CACHE_PREFIX + currentUser.id) || 'null');
-            if (!c) return;
+            if (!c) return false;
             wir.partner = c.partner || null;
             wir.sharedOnly = !!c.sharedOnly;
             wirSetEntries(c.entries);
-        } catch (e) {}
+            return true;
+        } catch (e) { return false; }
     }
+
+    // Kurze Begrüßung beim ersten Öffnen, nur für wer ausschließlich "Wir zwei" nutzt
+    function maybeShowWirWelcome() {
+        if (!wir.sharedOnly || !currentUser) return;
+        const key = 'wir_welcome_v1_' + currentUser.id;
+        try { if (localStorage.getItem(key)) return; } catch (e) { return; }
+        const name = wir.partner?.name;
+        $('wirWelcomePartner').innerHTML = name
+            ? `<strong>Oben umschalten.</strong> Bei „${escapeHtml(name)}“ siehst du, was ${escapeHtml(name)} geschrieben hat.`
+            : '<strong>Oben umschalten.</strong> Sobald ihr verbunden seid, siehst du dort auch die Einträge deines Partners.';
+        $('wirWelcome').classList.remove('hidden');
+    }
+    $('wirWelcomeBtn').addEventListener('click', () => {
+        try { localStorage.setItem('wir_welcome_v1_' + currentUser.id, '1'); } catch (e) {}
+        $('wirWelcome').classList.add('hidden');
+    });
     function wirReset() {
         wir.partner = null;
         wir.sharedOnly = false;
@@ -4389,7 +4578,8 @@
         wir.loadedAt = 0;
         closeWirSheet($('wirWrite'));
         closeWirSheet($('wirHistory'));
-        document.body.classList.remove('shared-only', 'wir-partner');
+        document.body.classList.remove('shared-only', 'wir-partner', 'wir-pending');
+        $('wirWelcome').classList.add('hidden');
         switchTab('heute');
     }
 
