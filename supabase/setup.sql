@@ -44,7 +44,7 @@ create index if not exists idx_push_subscriptions_user_id on public.push_subscri
 -- 0c) "Wir zwei" (angewendet am 17.10.2026)
 -- Geteilte Einträge zwischen zwei fest verbundenen Personen. Eigene Tabellen,
 -- die private Tabelle entries ist davon nicht betroffen. Die Verknüpfung
--- (partnerships) legt der Projektbesitzer an, je eine Zeile pro Person:
+-- (partnerships) entsteht automatisch per Trigger (siehe unten) oder von Hand:
 --   insert into public.partnerships (user_id, partner_id, partner_name, shared_only)
 --   values ('<deine id>', '<ihre id>', 'Hanna', false),
 --          ('<ihre id>', '<deine id>', 'David', true);
@@ -94,6 +94,35 @@ create policy "Delete own shared entries" on public.shared_entries
 
 create trigger tr_shared_entries_updated_at before update on public.shared_entries
   for each row execute function public.set_updated_at();
+
+-- Automatische Verknüpfung (angewendet am 17.10.2026): Sobald die Partnerin
+-- ihre E-Mail bestätigt hat, werden beide Zeilen in partnerships angelegt.
+-- Erst nach Bestätigung, damit niemand die Verknüpfung mit einer fremden,
+-- unbestätigten Adresse auslösen kann. Platzhalter vor dem Ausführen ersetzen.
+create or replace function public.link_wir_zwei_partner()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  owner_id constant uuid := '<deine user id>';
+begin
+  if lower(new.email) = '<ihre e-mail in kleinbuchstaben>'
+     and new.email_confirmed_at is not null
+     and new.id <> owner_id then
+    insert into public.partnerships (user_id, partner_id, partner_name, shared_only)
+    values (owner_id, new.id, 'Hanna', false),
+           (new.id, owner_id, 'David', true)
+    on conflict (user_id) do nothing;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.link_wir_zwei_partner() from public, anon, authenticated;
+create trigger on_auth_user_link_wir_zwei
+  after insert or update of email_confirmed_at on auth.users
+  for each row execute function public.link_wir_zwei_partner();
 
 -- 1) Foto-Anhänge: Spalte auf der entries-Tabelle
 alter table entries add column if not exists photo_path text;
