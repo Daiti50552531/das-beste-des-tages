@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" id="themeColorMeta" content="#F4F1EA">
+  <meta name="theme-color" id="themeColorMeta" content="#FCEEE6">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.svg">
 
@@ -16,29 +16,28 @@
 
   <style>
     :root {
-      /* --- COLOR PALETTE (Apple Human Interface Guidelines) --- */
+      /* --- FARBEN: warmes Pfirsich-Papier mit Ziegelrot, passend zu "Wir zwei" --- */
       --primary: #000000; 
       --primary-rgb: 0,0,0;
       
-      --accent: #0A6DD8; /* etwas tiefer als iOS-Blau, passt zum warmen Papier */
-      --accent-rgb: 10,109,216;
+      --accent: #C92F18;  /* Ziegelrot; dunkel genug für Text auf dem Pfirsichton */
+      --accent-rgb: 201,47,24;
       --success: #34C759; /* iOS Green */
-      --danger: #BF3325;  /* wärmeres Rot, erreicht auf Papierton 5:1 */
+      --danger: #BF3325;
       
-      /* Warme Papiertöne. Die kühlen Systemgraus von iOS lassen ein
-         Tagebuch wie ein Formular aussehen. */
-      --bg-body: #F4F1EA;
-      --bg-card: #FFFDF9;
-      --bg-surface: #FFFDF9;
-      --bg-input: #EFEAE0;
-      --bg-button-secondary: #E7E1D5;
+      --bg-body: #FCEEE6;
+      --bg-card: #FFFFFF;
+      --bg-surface: #FFFFFF;
+      --bg-input: #F7EFEA;
+      --bg-button-secondary: #F3E1D7;
 
-      --text-main: #23201B;      /* warmes Fast-Schwarz statt reinem Schwarz */
-      --text-secondary: #6B635A;
-      --text-tertiary: #B8AE9F;
+      --text-main: #171A26;
+      --text-secondary: #6A6168;
+      --text-tertiary: #B5A8A2;
 
-      --border: rgba(60, 48, 30, 0.10);
-      --glass: rgba(244, 241, 234, 0.86);
+      --border: rgba(90, 40, 25, 0.09);
+      --glass: rgba(252, 238, 230, 0.88);
+      --tabbar-bg: rgba(255, 255, 255, 0.92);
 
       /* Stimmungen: wertungsfrei, auf einer Blau-Bernstein-Achse.
          Rot/Grün wäre für rund 8 % der Männer nicht unterscheidbar. */
@@ -46,47 +45,48 @@
       --mood-neutral: #9E9EA8;
       --mood-sad: #5E82A6;
       --mood-happy-soft: rgba(217, 147, 35, 0.16);
-      --glow-rgb: 222, 164, 72;   /* warmes Licht hinter der Begrüßung */
+      --glow-rgb: 246, 168, 140;  /* warmes Licht hinter der Begrüßung */
       --mood-neutral-soft: rgba(158, 158, 168, 0.18);
       --mood-sad-soft: rgba(94, 130, 166, 0.16);
       
-      --radius-l: 24px;  
-      --radius-m: 16px;
-      --radius-s: 12px;
+      --radius-l: 26px;  
+      --radius-m: 18px;
+      --radius-s: 14px;
       
-      --shadow-card: 0 2px 14px rgba(72, 56, 34, 0.06);
-      --shadow-float: 0 12px 30px rgba(72, 56, 34, 0.12);
+      --shadow-card: 0 6px 22px rgba(120, 40, 20, 0.07);
+      --shadow-float: 0 12px 30px rgba(120, 40, 20, 0.12);
       
-      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      --font-stack: 'Schibsted Grotesk', -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     }
 
     .dark-mode {
       --primary: #F2F2F7;
       --primary-rgb: 242,242,247;
 
-      --accent: #0A84FF;         /* iOS Dark Mode Blue  — lebendiger als #007AFF */
-      --accent-rgb: 10,132,255;
+      --accent: #D63A22;
+      --accent-rgb: 214,58,34;
       --success: #30D158;        /* iOS Dark Mode Green */
-      --danger: #F2705F;         /* wärmeres Rot für den Dunkelmodus */
+      --danger: #F2705F;
 
-      --bg-body: #121009;        /* warmes Fast-Schwarz, Tiefe auf OLED */
-      --bg-card: #1D1A15;
-      --bg-surface: #252119;
-      --bg-input: #17140F;       /* dunkler als die Karte, damit Felder sichtbar sind */
-      --bg-button-secondary: #38332B;
+      --bg-body: #15110E;        /* warmes Fast-Schwarz, Tiefe auf OLED */
+      --bg-card: #221A17;
+      --bg-surface: #2A211D;
+      --bg-input: #1A1411;       /* dunkler als die Karte, damit Felder sichtbar sind */
+      --bg-button-secondary: #2F2521;
 
-      --text-main: #F4EFE5;      /* warmes Off-White, weniger grell beim Lesen */
-      --text-secondary: #B3A99A;
-      --text-tertiary: #6E665A;
+      --text-main: #F6EFEA;
+      --text-secondary: #BBAFA8;
+      --text-tertiary: #6F625C;
 
-      --border: rgba(255, 245, 225, 0.10);
-      --glass: rgba(18, 16, 9, 0.88);
+      --border: rgba(255, 235, 225, 0.09);
+      --glass: rgba(21, 17, 14, 0.88);
+      --tabbar-bg: rgba(21, 17, 14, 0.92);
 
       --mood-happy: #EFB457;
       --mood-neutral: #9A9AA4;
       --mood-sad: #7FA4CC;
       --mood-happy-soft: rgba(239, 180, 87, 0.20);
-      --glow-rgb: 196, 142, 62;
+      --glow-rgb: 190, 80, 55;
       --mood-neutral-soft: rgba(154, 154, 164, 0.20);
       --mood-sad-soft: rgba(127, 164, 204, 0.20);
 
@@ -194,12 +194,11 @@
     }
     
     .section-title {
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-secondary);
-        font-weight: 600;
-        margin: 24px 0 10px 4px;
+        font-size: 17px;
+        color: var(--text-main);
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        margin: 26px 0 12px 4px;
     }
     #tab-statistik .section-title { margin-top: 20px; }
     #tab-statistik .card { margin-bottom: 0; }
@@ -241,9 +240,9 @@
     /* --- INPUTS --- */
     .input-group { padding: 20px; }
     label {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-secondary);
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-main);
         margin-bottom: 8px;
         display: block;
     }
@@ -325,16 +324,17 @@
     
     /* --- MAIN BUTTONS --- */
     .btn-primary {
-        background: var(--text-main); 
-        color: var(--bg-body);
+        background: var(--accent); 
+        color: #FFFFFF;
         width: 100%;
-        padding: 18px;
-        border-radius: var(--radius-l);
+        padding: 17px;
+        border-radius: var(--radius-m);
         border: none;
+        font-family: var(--font-stack);
         font-size: 17px;
         font-weight: 700;
         cursor: pointer;
-        box-shadow: var(--shadow-float);
+        box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.28);
         transition: transform 0.2s, opacity 0.2s;
         display: flex; align-items: center; justify-content: center; gap: 8px;
     }
@@ -345,8 +345,9 @@
         color: var(--text-main);
         width: 100%;
         padding: 16px;
-        border-radius: var(--radius-l);
+        border-radius: var(--radius-m);
         border: none;
+        font-family: var(--font-stack);
         font-size: 16px;
         font-weight: 600;
         cursor: pointer;
@@ -363,24 +364,24 @@
     
     .entry-card {
         padding: 0;
-        border: 1px solid var(--border);
+        border: none;
+        border-radius: 22px;
+        margin-bottom: 12px;
         animation: fadeInUp 0.4s ease forwards;
         opacity: 0; 
     }
     
     .entry-header {
-        padding: 16px 20px;
-        background: var(--bg-surface);
+        padding: 16px 18px 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid var(--border);
     }
-    .entry-date { font-weight: 700; font-size: 15px; }
-    .entry-content { padding: 20px; }
+    .entry-date { font-weight: 700; font-size: 14px; }
+    .entry-content { padding: 8px 18px 16px; }
     .entry-text { font-size: 16px; line-height: 1.6; color: var(--text-main); white-space: pre-wrap; }
     .entry-label { 
-        font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; 
+        font-size: 13px;
         color: var(--text-secondary); margin-bottom: 4px; font-weight: 700; 
     }
     .entry-footer {
@@ -427,6 +428,8 @@
 
     /* --- AUTH SCREEN --- */
     .auth-container { max-width: 400px; margin: 10vh auto; text-align: center; padding: 20px; }
+    #authForm { text-align: left; }
+    #authForm .txt-btn { text-align: center; }
     
     /* UTILS */
     .hidden { display: none !important; }
@@ -434,8 +437,9 @@
     
     /* SEARCH */
     .search-bar {
-        background: var(--bg-button-secondary);
-        border-radius: 12px;
+        background: var(--bg-card);
+        border-radius: 16px;
+        min-height: 48px;
         display: flex; align-items: center;
         padding: 0 12px;
         margin-bottom: 10px;
@@ -547,7 +551,6 @@
     }
 
     /* MOOD BORDER ON ENTRY CARDS */
-    .entry-card { border-left-width: 4px !important; }
 
     /* LOAD MORE BUTTON */
     #loadMoreBtn { margin-bottom: 24px; }
@@ -588,9 +591,7 @@
     }
     .stat-label {
         display: block;
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        font-size: 12px;
         color: var(--text-secondary);
         font-weight: 600;
         margin-top: 4px;
@@ -609,19 +610,20 @@
     .mood-filter-row::-webkit-scrollbar { display: none; }
     .mood-filter-btn {
         border: none;
-        background: var(--bg-button-secondary);
-        border-radius: 50px;
-        padding: 7px 16px;
+        background: var(--bg-card);
+        border-radius: 18px;
+        height: 36px;
+        padding: 0 16px;
         font-size: 14px;
         font-weight: 600;
-        color: var(--text-secondary);
+        color: var(--text-main);
         cursor: pointer;
         white-space: nowrap;
         transition: all 0.2s;
         flex-shrink: 0;
         font-family: var(--font-stack);
     }
-    .mood-filter-btn.active { background: var(--accent); color: white; }
+    .mood-filter-btn.active { background: var(--accent); color: white; font-weight: 700; }
     .mood-filter-btn:active { transform: scale(0.95); }
 
 
@@ -753,7 +755,7 @@
         position: fixed;
         bottom: 0; left: 0; width: 100%;
         z-index: 100;
-        background: var(--glass);
+        background: var(--tabbar-bg);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-top: 1px solid var(--border);
@@ -774,7 +776,7 @@
         align-items: center;
         gap: 3px;
         color: var(--text-secondary);
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 600;
         cursor: pointer;
         font-family: var(--font-stack);
@@ -782,7 +784,7 @@
         -webkit-tap-highlight-color: transparent;
     }
     .tab-btn .icon { width: 23px; height: 23px; }
-    .tab-btn.active { color: var(--accent); }
+    .tab-btn.active { color: var(--accent); font-weight: 700; }
     .tab-btn:active { transform: scale(0.94); }
 
     /* --- PHOTO LIGHTBOX --- */
@@ -943,10 +945,10 @@
     .list-toolbar .search-bar { flex: 1; margin-bottom: 0; }
     .filter-toggle {
         position: relative;
-        width: 44px; height: 44px;
-        border: none; border-radius: 12px;
-        background: var(--bg-button-secondary);
-        color: var(--text-secondary);
+        width: 48px; height: 48px;
+        border: none; border-radius: 16px;
+        background: var(--bg-card);
+        color: var(--text-main);
         display: flex; align-items: center; justify-content: center;
         cursor: pointer; flex-shrink: 0;
         transition: background 0.2s, color 0.2s;
@@ -1064,17 +1066,18 @@
 
     /* --- GREETING --- */
     .greeting {
-        font-size: 26px;
+        font-size: 27px;
         font-weight: 800;
         letter-spacing: -0.02em;
         margin: 4px 4px 16px;
     }
     .greeting small {
         display: block;
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 600;
         color: var(--accent);
-        margin-top: 3px;
+        margin-top: 4px;
+        letter-spacing: 0;
     }
 
 
@@ -1220,7 +1223,7 @@
     }
     :root {
         --wir-font: 'Schibsted Grotesk', var(--font-stack);
-        --wir-accent: #D1311A;
+        --wir-accent: #C92F18;
         --wir-text: #171A26;
         --wir-muted: #6A6168;
         --wir-faint: #7A6E66;
@@ -1585,7 +1588,7 @@
   </div>
 
   <div id="authSection" class="auth-container">
-    <div style="width:80px; height:80px; background:var(--text-main); border-radius:24px; margin:0 auto 20px auto; display:flex; align-items:center; justify-content:center; color:var(--bg-body);"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="15"></line></svg></div>
+    <div style="width:80px; height:80px; background:var(--accent); border-radius:24px; margin:0 auto 20px auto; display:flex; align-items:center; justify-content:center; color:#FFFFFF; box-shadow:0 8px 20px rgba(var(--accent-rgb),0.28);"><svg class="icon icon-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="15"></line></svg></div>
     <h1 style="font-size:32px; font-weight:800; margin-bottom:10px;">Das Beste des Tages</h1>
     <p style="color:var(--text-secondary); margin-bottom:40px;">Deine Gedanken. Sicher und schön.</p>
     
@@ -1968,7 +1971,7 @@
       <div id="detailBody" class="detail-body"></div>
       <div class="detail-actions">
           <button id="detailShareBtn" class="btn-secondary">Teilen</button>
-          <button id="detailEditBtn" class="btn-secondary" style="color:var(--accent);">Bearbeiten</button>
+          <button id="detailEditBtn" class="btn-secondary">Bearbeiten</button>
           <button id="detailDeleteBtn" class="btn-secondary" style="color:var(--danger);">Löschen</button>
       </div>
   </div>
@@ -2134,7 +2137,7 @@
       const metaTheme = document.getElementById('themeColorMeta');
       if (!metaTheme) return;
       const body = document.body;
-      let color = body.classList.contains('dark-mode') ? '#121009' : '#F4F1EA';
+      let color = body.classList.contains('dark-mode') ? '#15110E' : '#FCEEE6';
       if (body.classList.contains('tab-wir')) {
         color = getComputedStyle(body).getPropertyValue(body.classList.contains('wir-partner') ? '--wir-partner-bg' : '--wir-me-bg').trim() || color;
       }
@@ -2202,7 +2205,7 @@
         field2Label: 'Feld 2',
         field1Enabled: false,
         field2Enabled: false,
-        accent: 'blue',
+        accent: 'red',
         pinLock: false,
         onboarded: false
     };
@@ -2211,6 +2214,12 @@
     function loadSettings() {
         try { settings = { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem(settingsKey())) || {}) }; }
         catch(e) { settings = { ...DEFAULT_SETTINGS }; }
+        // Neues Design (Okt. 2026): einmalig auf Ziegelrot umstellen, danach frei wählbar
+        if ((settings.design || 1) < 2) {
+            settings.accent = 'red';
+            settings.design = 2;
+            saveSettings();
+        }
     }
     function saveSettings() {
         try { localStorage.setItem(settingsKey(), JSON.stringify(settings)); } catch(e) {}
@@ -2436,6 +2445,7 @@
 
     // --- AKZENTFARBEN ---
     const ACCENTS = {
+        red:    { light: '#C92F18', dark: '#D63A22' },
         blue:   { light: '#0A6DD8', dark: '#4DA3FF' },
         purple: { light: '#AF52DE', dark: '#BF5AF2' },
         pink:   { light: '#FF2D55', dark: '#FF375F' },
@@ -2444,7 +2454,7 @@
         teal:   { light: '#30B0C7', dark: '#40C8E0' }
     };
     function applyAccent() {
-        const a = ACCENTS[settings.accent] || ACCENTS.blue;
+        const a = ACCENTS[settings.accent] || ACCENTS.red;
         const hex = document.body.classList.contains('dark-mode') ? a.dark : a.light;
         document.body.style.setProperty('--accent', hex);
         const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
@@ -2489,7 +2499,7 @@
 
     // --- ONBOARDING / EINSTELLUNGS-ASSISTENT ---
     let obStep = 1;
-    let obAccentChoice = 'blue';
+    let obAccentChoice = 'red';
     function buildAccentRow() {
         const row = $('obAccentRow');
         row.innerHTML = '';
@@ -2525,7 +2535,7 @@
         $('obName').value = settings.displayName || '';
         $('obField1').value = settings.field1Enabled ? settings.field1Label : '';
         $('obField2').value = settings.field2Enabled ? settings.field2Label : '';
-        obAccentChoice = settings.accent || 'blue';
+        obAccentChoice = settings.accent || 'red';
         buildAccentRow();
         markThemeSeg();
         showObStep(1);
