@@ -45,7 +45,7 @@
       --mood-neutral: #9E9EA8;
       --mood-sad: #5E82A6;
       --mood-happy-soft: rgba(217, 147, 35, 0.16);
-      --glow-rgb: 246, 168, 140;  /* warmes Licht hinter der Begrüßung */
+      --glow-rgb: 246, 185, 166;  /* Rosé wie "Ich" bei "Wir zwei", oben auf jeder Seite */
       --mood-neutral-soft: rgba(158, 158, 168, 0.18);
       --mood-sad-soft: rgba(94, 130, 166, 0.16);
       
@@ -86,7 +86,7 @@
       --mood-neutral: #9A9AA4;
       --mood-sad: #7FA4CC;
       --mood-happy-soft: rgba(239, 180, 87, 0.20);
-      --glow-rgb: 190, 80, 55;
+      --glow-rgb: 61, 33, 26;
       --mood-neutral-soft: rgba(154, 154, 164, 0.20);
       --mood-sad-soft: rgba(127, 164, 204, 0.20);
 
@@ -112,7 +112,7 @@
       background-color: var(--bg-body);
       color: var(--text-main);
       margin: 0;
-      padding-top: calc(80px + env(safe-area-inset-top));
+      padding-top: env(safe-area-inset-top);
       padding-bottom: calc(110px + env(safe-area-inset-bottom));
       min-height: 100vh;
       font-family: var(--font-stack);
@@ -173,18 +173,18 @@
         content: '';
         position: fixed;
         top: 0; left: 0; right: 0;
-        height: 460px;
+        height: 520px;
         background: linear-gradient(180deg,
-            rgba(var(--glow-rgb), 0) 0px,
-            rgba(var(--glow-rgb), 0.20) 120px,
-            rgba(var(--glow-rgb), 0.07) 280px,
+            rgba(var(--glow-rgb), 0.85) 0px,
+            rgba(var(--glow-rgb), 0.45) 200px,
             rgba(var(--glow-rgb), 0) 100%);
         pointer-events: none;
         opacity: 0;
         transition: opacity 0.4s ease;
         z-index: -1;
     }
-    body.tab-heute::before { opacity: 1; }
+    body::before { opacity: 1; }
+    body.tab-wir::before { opacity: 0; }
 
     /* --- LAYOUT --- */
     .container {
@@ -194,12 +194,21 @@
     }
     
     .section-title {
-        font-size: 17px;
+        font-size: 21px;
         color: var(--text-main);
         font-weight: 800;
-        letter-spacing: -0.01em;
-        margin: 26px 0 12px 4px;
+        letter-spacing: -0.015em;
+        margin: 30px 0 12px 4px;
     }
+    /* Große, plakative Seitentitel wie bei "Wir zwei" */
+    .page-title {
+        font-size: 38px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
+        margin: 26px 4px 20px;
+    }
+    .page-title + .section-title { margin-top: 8px; }
     #tab-statistik .section-title { margin-top: 20px; }
     #tab-statistik .card { margin-bottom: 0; }
 
@@ -584,7 +593,8 @@
     }
     .stat-value {
         display: block;
-        font-size: 20px;
+        font-size: 32px;
+        letter-spacing: -0.02em;
         font-weight: 800;
         color: var(--text-main);
         line-height: 1.1;
@@ -1039,15 +1049,15 @@
     .insight-row .ico { color: var(--text-secondary); flex-shrink: 0; margin-top: 1px; }
 
     /* --- SEGMENTED CONTROL (Erscheinungsbild) --- */
-    .seg { display: flex; background: var(--bg-input); border-radius: 12px; padding: 3px; gap: 3px; }
+    .seg { display: flex; background: var(--bg-card); border-radius: 22px; padding: 4px; gap: 4px; box-shadow: var(--shadow-card); }
     .seg button {
         flex: 1; border: none; background: transparent;
-        padding: 9px 0; border-radius: 9px;
+        padding: 9px 0; border-radius: 18px;
         font-size: 14px; font-weight: 600;
         color: var(--text-secondary); font-family: var(--font-stack);
         cursor: pointer; transition: background 0.2s, color 0.2s;
     }
-    .seg button.active { background: var(--bg-card); color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+    .seg button.active { background: var(--accent); color: #FFFFFF; font-weight: 700; }
 
     /* --- PDF / DRUCK --- */
     #printRoot { display: none; }
@@ -1066,10 +1076,10 @@
 
     /* --- GREETING --- */
     .greeting {
-        font-size: 27px;
+        font-size: 38px;
         font-weight: 800;
-        letter-spacing: -0.02em;
-        margin: 4px 4px 16px;
+        letter-spacing: -0.03em;
+        margin: 30px 4px 20px;
     }
     .greeting small {
         display: block;
@@ -1195,7 +1205,7 @@
     /* --- PULL TO REFRESH --- */
     .ptr {
         position: fixed;
-        top: calc(64px + env(safe-area-inset-top));
+        top: calc(16px + env(safe-area-inset-top));
         left: 50%;
         transform: translateX(-50%) translateY(-120px);
         width: 36px; height: 36px;
@@ -1210,6 +1220,56 @@
     }
     .ptr.refreshing svg { animation: ptr-spin 0.9s linear infinite; }
     @keyframes ptr-spin { to { transform: rotate(360deg); } }
+
+
+    /* --- DATUMSKACHELN IM TAGEBUCH (zugleich Datumswahl) --- */
+    .entry-date-tiles { position: relative; cursor: pointer; }
+    #reminderBox { padding-top: 16px; }
+    .entry-date-tiles .wir-tiles { padding-bottom: 0; }
+    .entry-date-tiles:active .wir-tiles { transform: scale(0.985); }
+    .entry-date-tiles .wir-tiles { transition: transform 0.15s; }
+    .today-pill {
+        display: block; margin: 12px auto 0;
+        height: 36px; padding: 0 16px; border-radius: 18px; border: none;
+        background: var(--bg-card); color: var(--accent);
+        font-family: var(--font-stack); font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    #editorSectionTitle { margin-top: 26px; }
+    #bestOfDay { font-size: 19px; line-height: 1.5; }
+
+    /* --- VERLAUF: Monate als große Überschrift, Tag als Kachel --- */
+    .month-head {
+        font-size: 26px; font-weight: 800; letter-spacing: -0.02em;
+        margin: 26px 4px 12px;
+    }
+    .month-head:first-child { margin-top: 6px; }
+    .entry-row { display: flex; gap: 14px; padding: 16px; align-items: flex-start; }
+    .entry-day {
+        width: 58px; height: 66px; flex-shrink: 0; border-radius: 14px;
+        background: linear-gradient(var(--wir-tile-top) 0 49%, var(--wir-tile-line) 49% 51%, var(--wir-tile-bottom) 51% 100%);
+        box-shadow: 0 3px 8px var(--wir-shadow);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        line-height: 1;
+    }
+    .entry-day-num { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+    .entry-day-sub { font-size: 11px; font-weight: 800; color: var(--text-secondary); margin-top: 5px; letter-spacing: 0.02em; }
+    .entry-main { flex: 1; min-width: 0; padding-top: 2px; }
+    .entry-main .entry-text { font-size: 17px; line-height: 1.45; }
+    .entry-main .entry-meta { margin-top: 8px; }
+    .entry-main .entry-thumb { height: 140px; margin-bottom: 10px; }
+    .entry-mood { font-size: 20px; flex-shrink: 0; line-height: 1; padding-top: 2px; }
+
+    /* --- DETAIL: Datum als Kacheln, Text groß --- */
+    .detail-tiles { padding: 0 20px 22px; }
+    .detail-text.is-main { font-size: 25px; font-weight: 700; line-height: 1.3; letter-spacing: -0.012em; }
+    /* Knöpfe direkt auf der Seite: weiß wie die Karten, damit sie sich vom Rosé abheben */
+    #tab-mehr .btn-secondary, #tab-mehr .btn-tool, #tab-statistik .btn-secondary,
+    #loadMoreBtn, .detail-actions .btn-secondary {
+        background: var(--bg-card);
+        box-shadow: var(--shadow-card);
+    }
+    #mehrThemeSeg { margin-bottom: 8px; }
+    #mehrThemeSeg button { padding: 12px 6px; font-size: 15px; }
 
     /* --- WIR ZWEI (geteiltes Tagebuch) ---
        Eigene, ruhige Fläche: eine Farbe pro Person, eine große Karte. */
@@ -1279,7 +1339,6 @@
         padding-bottom: calc(64px + env(safe-area-inset-bottom));
     }
     body.tab-wir.wir-partner { background-color: var(--wir-partner-bg); }
-    body.tab-wir .sticky-header-wrapper { display: none; }
     body.tab-wir .tab-btn.active { color: var(--wir-accent); }
 
     .wir-page {
@@ -1608,13 +1667,6 @@
 
   <div id="appSection" class="hidden">
     
-    <div class="sticky-header-wrapper">
-        <div class="topbar">
-            <span class="app-title">Das Beste des Tages</span>
-            <button id="themeToggle" class="theme-btn" aria-label="Erscheinungsbild wechseln"></button>
-        </div>
-    </div>
-
     <div class="container">
 
       <div id="tab-wir" class="tab-page hidden">
@@ -1649,7 +1701,13 @@
 
       <div id="tab-heute" class="tab-page">
 
-      <div id="greeting" class="greeting hidden"></div>
+      <h1 id="greeting" class="page-title greeting hidden"></h1>
+
+      <div class="entry-date-tiles">
+          <div id="editorTiles" class="wir-tiles"></div>
+          <input type="date" id="entryDate" aria-label="Datum des Eintrags ändern">
+      </div>
+      <button type="button" id="editorTodayBtn" class="today-pill hidden">Zurück zu heute</button>
 
       <div id="reminderBox" class="quiet-note" style="display:none;">
           <span>Dein letztes Backup ist eine Weile her.</span>
@@ -1660,14 +1718,6 @@
       <div class="section-title" id="editorSectionTitle">Neuer Eintrag</div>
       <div class="card" id="editorCard">
         
-        <div style="padding:20px 20px 0 20px;">
-            <div class="date-wrapper">
-                <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                <span id="dateDisplay" class="date-display">Heute</span>
-                <input type="date" id="entryDate">
-            </div>
-        </div>
-
         <div class="input-group">
             <div class="field-header">
                 <label>Das Beste des Tages</label>
@@ -1741,6 +1791,13 @@
       </div><!-- /tab-heute -->
 
       <div id="tab-mehr" class="tab-page hidden">
+      <h1 class="page-title">Mehr</h1>
+      <div class="section-title">Erscheinungsbild</div>
+      <div id="mehrThemeSeg" class="seg" role="group" aria-label="Erscheinungsbild">
+          <button type="button" data-theme="system">Automatisch</button>
+          <button type="button" data-theme="light">Hell</button>
+          <button type="button" data-theme="dark">Dunkel</button>
+      </div>
       <div class="section-title private-only">Einstellungen</div>
       <button id="openSettingsBtn" class="btn-secondary private-only" style="margin-top:0; margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg> App anpassen (Name, Felder, Farbe)</button>
 
@@ -1790,7 +1847,7 @@
       </div><!-- /tab-mehr -->
 
       <div id="tab-statistik" class="tab-page hidden">
-      <div class="section-title">Deine Zahlen</div>
+      <h1 class="page-title">Statistik</h1>
 
       <div class="stats-bar">
           <div class="stat-chip">
@@ -1837,7 +1894,7 @@
       </div><!-- /tab-statistik -->
 
       <div id="tab-verlauf" class="tab-page hidden">
-      <div class="section-title">Einträge</div>
+      <h1 class="page-title">Verlauf</h1>
 
       <div class="list-toolbar">
           <div class="search-bar">
@@ -1962,12 +2019,10 @@
 
   <div id="detailSheet" class="detail-sheet">
       <div class="detail-head">
-          <span id="detailDate" class="detail-date"></span>
-          <div style="display:flex; align-items:center; gap:12px;">
-              <span id="detailMood" style="font-size:24px;"></span>
-              <button id="detailCloseBtn" class="detail-close">✕</button>
-          </div>
+          <span id="detailMood" style="font-size:26px;"></span>
+          <button id="detailCloseBtn" class="detail-close" aria-label="Schließen">✕</button>
       </div>
+      <div id="detailTiles" class="wir-tiles detail-tiles"></div>
       <div id="detailBody" class="detail-body"></div>
       <div class="detail-actions">
           <button id="detailShareBtn" class="btn-secondary">Teilen</button>
@@ -2045,6 +2100,7 @@
     let filterDateFrom, filterDateTo, clearDateFilterBtn;
     let currentFilteredEntries = [];
     let currentPage = 0;
+    let lastRenderedMonth = null;   // für Monatsüberschriften beim Nachladen
     let pendingPhotoFile = null;
     let removeExistingPhoto = false;
     let draftTimeout = null;
@@ -2057,13 +2113,11 @@
       password: $('authPassword'),
       entriesContainer: $('entriesContainer'),
       searchInput: $('searchInput'),
-      themeToggle: $('themeToggle'),
       exportPopover: $('exportPopover'),
       saveBtn: $('saveBtn'),
       deleteAllBtn: $('deleteAllBtn'),
       cancelEditBtn: $('cancelEditBtn'),
       reminderBox: $('reminderBox'),
-      dateDisplay: $('dateDisplay'),
       fields: {
         date: $('entryDate'),
         best: $('bestOfDay'),
@@ -2147,26 +2201,11 @@
     function initTheme() { applyTheme(); renderThemeToggle(); }
 
     // Ein Knopf, drei Zustaende: Automatisch -> Hell -> Dunkel
-    const THEME_ORDER = ['system', 'light', 'dark'];
-    const THEME_META = {
-        system: { icon: 'auto',  label: 'Erscheinungsbild: Automatisch' },
-        light:  { icon: 'sun',   label: 'Erscheinungsbild: Hell' },
-        dark:   { icon: 'moon',  label: 'Erscheinungsbild: Dunkel' }
-    };
     function renderThemeToggle() {
-        const meta = THEME_META[themePref()] || THEME_META.system;
-        const btn = elements.themeToggle;
-        btn.innerHTML = ic(meta.icon, 'icon');
-        btn.setAttribute('aria-label', meta.label);
-        btn.setAttribute('title', meta.label);
         if (typeof markThemeSeg === 'function') markThemeSeg();
     }
     systemDark.addEventListener('change', () => { if (themePref() === 'system') applyTheme(); });
 
-    elements.themeToggle.addEventListener('click', () => {
-      const next = THEME_ORDER[(THEME_ORDER.indexOf(themePref()) + 1) % THEME_ORDER.length];
-      setTheme(next);
-    });
 
     // --- LOCAL DATE (deutsche Zeitzone statt UTC – Mitternachts-Bugfix) ---
     function localISODate(d = new Date()) {
@@ -2466,8 +2505,7 @@
         const h = new Date().getHours();
         const part = h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend';
         const name = settings.displayName ? `, ${escapeHtml(settings.displayName)}` : '';
-        const dateStr = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-        $('greeting').innerHTML = `${part}${name}<small>${dateStr}</small>`;
+        $('greeting').innerHTML = `${part}${name}`;
         $('greeting').classList.remove('hidden');
     }
 
@@ -2524,10 +2562,10 @@
         $('obNextBtn').textContent = n === 3 ? 'Los geht’s!' : 'Weiter';
     }
     function markThemeSeg() {
-        document.querySelectorAll('#obThemeSeg button').forEach(b =>
+        document.querySelectorAll('#obThemeSeg button, #mehrThemeSeg button').forEach(b =>
             b.classList.toggle('active', b.dataset.theme === themePref()));
     }
-    document.querySelectorAll('#obThemeSeg button').forEach(b => {
+    document.querySelectorAll('#obThemeSeg button, #mehrThemeSeg button').forEach(b => {
         b.addEventListener('click', () => { setTheme(b.dataset.theme); markThemeSeg(); });
     });
 
@@ -2697,10 +2735,20 @@
 
     // Date Picker UI Logic
     elements.fields.date.addEventListener('change', (e) => {
-        const d = new Date(e.target.value);
-        if(!isNaN(d.getTime())){
-            elements.dateDisplay.textContent = d.toLocaleDateString('de-DE', { day:'numeric', month:'long', year:'numeric' });
-        }
+        if (!e.target.value) e.target.value = localISODate();
+        renderEditorDate();
+        saveDraft();
+    });
+    // Datumskacheln über dem Editor; ein Tipp darauf öffnet die Datumswahl
+    function renderEditorDate() {
+        const iso = elements.fields.date.value || localISODate();
+        const tiles = $('editorTiles');
+        tiles.innerHTML = dateTilesHtml(iso);
+        $('editorTodayBtn').classList.toggle('hidden', iso === localISODate());
+    }
+    $('editorTodayBtn').addEventListener('click', () => {
+        elements.fields.date.value = localISODate();
+        renderEditorDate();
         saveDraft();
     });
 
@@ -2748,8 +2796,7 @@
             if (draft.thea) elements.fields.thea.value = draft.thea;
             if (draft.date) {
                 elements.fields.date.value = draft.date;
-                const d = new Date(draft.date);
-                if (!isNaN(d.getTime())) elements.dateDisplay.textContent = d.toLocaleDateString('de-DE', { day:'numeric', month:'long', year:'numeric' });
+                renderEditorDate();
             }
             if (draft.mood) {
                 selectedMood = draft.mood;
@@ -2925,7 +2972,7 @@
 
         const today = localISODate();
         elements.fields.date.value = today;
-        elements.dateDisplay.textContent = "Heute";
+        renderEditorDate();
 
         elements.fields.best.value = '';
         elements.fields.lotta.value = '';
@@ -2946,8 +2993,7 @@
         scrollToTop();
 
         elements.fields.date.value = entry.entry_date;
-        const d = new Date(entry.entry_date);
-        elements.dateDisplay.textContent = d.toLocaleDateString('de-DE', { day:'numeric', month:'long', year:'numeric' });
+        renderEditorDate();
 
         elements.fields.best.value = entry.best_of_day || '';
         elements.fields.lotta.value = entry.lotta || '';
@@ -3251,9 +3297,8 @@
               return;
           }
           elements.entriesContainer.innerHTML = '';
+          lastRenderedMonth = null;
       }
-
-      const moodBorder = { happy: 'var(--mood-happy)', neutral: 'var(--mood-neutral)', sad: 'var(--mood-sad)' };
 
       const start = currentPage * PAGE_SIZE;
       const slice = entries.slice(start, start + PAGE_SIZE);
@@ -3262,10 +3307,19 @@
 
       slice.forEach((entry, i) => {
           const globalIdx   = start + i;
-          const d           = new Date(entry.entry_date);
-          const dateStr     = d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+          const d           = isoToDate(entry.entry_date);
+          const dateStr     = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
           const animDelay   = !append && globalIdx < 10 ? `${globalIdx * 0.05}s` : '0s';
-          const borderColor = moodBorder[entry.mood] || 'var(--border)';
+
+          // Neuer Monat: große Überschrift
+          const monthKey = entry.entry_date.slice(0, 7);
+          if (monthKey !== lastRenderedMonth) {
+              lastRenderedMonth = monthKey;
+              const head = document.createElement('h2');
+              head.className = 'month-head';
+              head.textContent = `${MONTH_LONG[d.getMonth()]} ${d.getFullYear()}`;
+              fragment.appendChild(head);
+          }
 
           const photoHtml = entry.photo_path
               ? `<img class="entry-thumb" loading="lazy" data-path="${escapeHtml(entry.photo_path)}" alt="Foto">`
@@ -3284,16 +3338,17 @@
           const card = document.createElement('div');
           card.className = 'card entry-card tappable';
           card.dataset.id = entry.id;
-          card.style.cssText = `animation-delay:${animDelay}; border-left-color:${borderColor};`;
+          card.style.cssText = `animation-delay:${animDelay};`;
+          card.setAttribute('aria-label', dateStr);
           card.innerHTML = `
-              <div class="entry-header">
-                  <span class="entry-date">${dateStr}</span>
-                  <span style="font-size:20px;">${MOOD_FACE[entry.mood] || ''}</span>
-              </div>
-              <div class="entry-content">
-                  ${photoHtml}
-                  <div class="entry-text entry-preview">${richText(preview)}</div>
-                  ${metaHtml}
+              <div class="entry-row">
+                  <div class="entry-day" aria-hidden="true"><span class="entry-day-num">${d.getDate()}</span><span class="entry-day-sub">${WIR_WD[d.getDay()]}</span></div>
+                  <div class="entry-main">
+                      ${photoHtml}
+                      <div class="entry-text entry-preview">${richText(preview)}</div>
+                      ${metaHtml}
+                  </div>
+                  <span class="entry-mood" aria-hidden="true">${MOOD_FACE[entry.mood] || ''}</span>
               </div>`;
           fragment.appendChild(card);
       });
@@ -4016,13 +4071,15 @@
         const e = allEntriesCache.find(x => x.id === id);
         if (!e) return;
         detailEntryId = id;
-        const d = new Date(e.entry_date);
-        $('detailDate').textContent = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const tiles = $('detailTiles');
+        tiles.innerHTML = dateTilesHtml(e.entry_date);
+        tiles.setAttribute('aria-label', isoToDate(e.entry_date).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
+        tiles.setAttribute('role', 'img');
         $('detailMood').textContent = MOOD_FACE[e.mood] || '';
 
         const blocks = [];
         if (e.photo_path) blocks.push(`<img class="entry-photo" style="max-height:none; margin-bottom:22px;" data-path="${escapeHtml(e.photo_path)}" alt="Foto">`);
-        if (e.best_of_day) blocks.push(`<div class="detail-block"><div class="detail-text">${richText(e.best_of_day)}</div></div>`);
+        if (e.best_of_day) blocks.push(`<div class="detail-block"><div class="detail-text is-main">${richText(e.best_of_day)}</div></div>`);
         if (e.lotta) blocks.push(`<div class="detail-block"><div class="entry-label">${escapeHtml(settings.field1Label)}</div><div class="detail-text" style="font-size:16px;">${richText(e.lotta)}</div></div>`);
         if (e.thea) blocks.push(`<div class="detail-block"><div class="entry-label">${escapeHtml(settings.field2Label)}</div><div class="detail-text" style="font-size:16px;">${richText(e.thea)}</div></div>`);
         $('detailBody').innerHTML = blocks.join('') || '<div style="color:var(--text-secondary);">Kein Text zu diesem Tag.</div>';
@@ -4274,6 +4331,12 @@
         writeOrig: ''
     };
 
+    // Abreißkalender-Kacheln: SA | 17 | OKT | 26
+    function dateTilesHtml(iso) {
+        const d = isoToDate(iso);
+        return [WIR_WD[d.getDay()], d.getDate(), WIR_MON[d.getMonth()], String(d.getFullYear()).slice(2)]
+            .map(v => `<div class="wir-tile" aria-hidden="true">${v}</div>`).join('');
+    }
     function isoToDate(iso) {
         const [y, m, d] = iso.split('-').map(Number);
         return new Date(y, m - 1, d);
@@ -4378,8 +4441,7 @@
 
         const d = isoToDate(wir.date);
         const tiles = $('wirTiles');
-        tiles.innerHTML = [WIR_WD[d.getDay()], d.getDate(), WIR_MON[d.getMonth()], String(d.getFullYear()).slice(2)]
-            .map(v => `<div class="wir-tile" aria-hidden="true">${v}</div>`).join('');
+        tiles.innerHTML = dateTilesHtml(wir.date);
         tiles.setAttribute('aria-label', d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
 
         const isToday = wir.date === today;
