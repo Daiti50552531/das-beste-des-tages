@@ -1884,6 +1884,9 @@
           </label>
       </div>
 
+      <div class="section-title">Backup</div>
+      <button id="wirExportBtn" class="btn-secondary" style="margin-top:0; display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> „Wir zwei“ als Excel sichern</button>
+
       <div class="section-title private-only">Werkzeuge</div>
       <div class="action-grid private-only" style="position:relative;">
 
@@ -3790,6 +3793,42 @@
         }
         return xlsxPromise;
     }
+
+    // Backup von "Wir zwei": Blatt 1 je Tag eine Zeile (beide nebeneinander), Blatt 2 alle Einträge einzeln
+    async function exportWirZwei() {
+      try { await ensureXlsx(); }
+      catch (err) { return showToast(err.message, true); }
+      showToast('Exportiere …');
+      try { await loadWirZwei(); } catch (e) { /* offline: zwischengespeicherte Einträge nehmen */ }
+      const rows = [...wir.entries.values()];
+      if (!rows.length) return showToast('Noch keine Einträge bei „Wir zwei“.', true);
+      const meName = settings.displayName || 'Ich';
+      const partnerName = wir.partner?.name || 'Partner';
+      const who = uid => uid === currentUser.id ? meName : (uid === wir.partner?.id ? partnerName : 'Unbekannt');
+      const weekday = iso => isoToDate(iso).toLocaleDateString('de-DE', { weekday: 'long' });
+      const stamp = ts => ts ? new Date(ts).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : '';
+
+      const dates = [...new Set(rows.map(r => r.entry_date))].sort().reverse();
+      const byDay = dates.map(d => ({
+          'Datum': d,
+          'Wochentag': weekday(d),
+          [meName]: wirEntry('me', d)?.text || '',
+          [partnerName]: wirEntry('partner', d)?.text || ''
+      }));
+      const all = rows.slice().sort((a, b) => b.entry_date.localeCompare(a.entry_date) || who(a.user_id).localeCompare(who(b.user_id)))
+          .map(r => ({ 'Datum': r.entry_date, 'Von': who(r.user_id), 'Text': r.text, 'Geschrieben am': stamp(r.created_at), 'Geändert am': stamp(r.updated_at) }));
+
+      const wb = XLSX.utils.book_new();
+      const ws1 = XLSX.utils.json_to_sheet(byDay);
+      ws1['!cols'] = [{ wch: 12 }, { wch: 12 }, { wch: 60 }, { wch: 60 }];
+      XLSX.utils.book_append_sheet(wb, ws1, 'Nach Tagen');
+      const ws2 = XLSX.utils.json_to_sheet(all);
+      ws2['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 70 }, { wch: 16 }, { wch: 16 }];
+      XLSX.utils.book_append_sheet(wb, ws2, 'Alle Einträge');
+      XLSX.writeFile(wb, `WirZwei_Backup_${localISODate()}.xlsx`);
+      showToast(`${rows.length} Einträge gesichert`);
+    }
+    $('wirExportBtn').addEventListener('click', exportWirZwei);
 
     async function exportData(type) {
       if (type !== 'csv') {
