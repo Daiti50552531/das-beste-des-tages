@@ -1870,6 +1870,18 @@
           </label>
       </div>
 
+      <div class="section-title">Erinnerung</div>
+      <div class="setting-toggle-row">
+          <div>
+              <div class="st-label" style="display:flex; align-items:center; gap:9px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> Täglich um 20 Uhr</div>
+              <div class="st-desc">Nur wenn du bei „Wir zwei“ an dem Tag noch nichts geschrieben hast.</div>
+          </div>
+          <label class="switch">
+              <input type="checkbox" id="reminderToggle" aria-label="Tägliche Erinnerung um 20 Uhr">
+              <span class="slider"></span>
+          </label>
+      </div>
+
       <div class="section-title private-only">Werkzeuge</div>
       <div class="action-grid private-only" style="position:relative;">
 
@@ -1884,10 +1896,6 @@
               <input type="file" id="importFile" accept=".csv,.xlsx" class="hidden-input">
           </label>
 
-          <button id="notifyBtn" class="btn-tool">
-              <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-              Erinnerung
-          </button>
 
           <div id="exportPopover" class="export-popover">
             <button id="exportPdfBtn" class="popover-item"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Als PDF sichern</button>
@@ -2965,11 +2973,13 @@
         maybeShowWirWelcome();
       });
       maybeLockOnOpen();
+      refreshReminderToggle();
     }
 
     // --- PWA LAUNCH PARAMS (Homescreen-Shortcut) ---
     function handleLaunchParams() {
         const params = new URLSearchParams(window.location.search);
+        if (params.get('tab') === 'wir') switchTab('wir');
         if (params.get('action') === 'new') {
             scrollToTop();
             setTimeout(() => elements.fields.best.focus(), 300);
@@ -4385,38 +4395,72 @@
         return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
     }
 
-    $('notifyBtn').addEventListener('click', async () => {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-            return showToast('Push wird von diesem Browser nicht unterstützt.', true);
-        }
-        if (VAPID_PUBLIC_KEY.startsWith('PASTE_')) {
-            return showToast('Push-Setup noch nicht abgeschlossen (VAPID-Key fehlt).', true);
-        }
-        try {
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') return showToast('Benachrichtigungen wurden nicht erlaubt.', true);
+    // --- ERINNERUNG (Web-Push, verschickt von der Edge Function send-daily-reminder) ---
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
-            const reg = await navigator.serviceWorker.ready;
-            let sub = await reg.pushManager.getSubscription();
-            if (!sub) {
-                sub = await reg.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-                });
-            }
-            const { endpoint, keys } = sub.toJSON();
-            const { error } = await db.from('push_subscriptions').upsert({
-                user_id: currentUser.id,
-                endpoint,
-                p256dh: keys.p256dh,
-                auth: keys.auth
-            }, { onConflict: 'endpoint' });
-            if (error) throw error;
-            showToast('Tägliche Erinnerung aktiviert');
-        } catch (err) {
-            showToast('Fehler: ' + err.message, true);
+    async function currentPushSubscription() {
+        if (!pushSupported()) return null;
+        const reg = await navigator.serviceWorker.getRegistration();
+        return reg ? reg.pushManager.getSubscription() : null;
+    }
+    async function refreshReminderToggle() {
+        let on = false;
+        try { on = Notification.permission === 'granted' && !!(await currentPushSubscription()); } catch (e) {}
+        $('reminderToggle').checked = on;
+    }
+    async function enableReminder() {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            showToast('Benachrichtigungen sind nicht erlaubt. Du kannst sie in den Einstellungen deines Handys freigeben.', true, 6000);
+            return false;
         }
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+            sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+        }
+        const { endpoint, keys } = sub.toJSON();
+        const { error } = await db.from('push_subscriptions').upsert(
+            { user_id: currentUser.id, endpoint, p256dh: keys.p256dh, auth: keys.auth },
+            { onConflict: 'endpoint' });
+        if (error) throw error;
+        showToast('Erinnerung um 20 Uhr ist an');
+        return true;
+    }
+    async function disableReminder() {
+        const sub = await currentPushSubscription();
+        if (sub) {
+            await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+            await sub.unsubscribe().catch(() => {});
+        }
+        showToast('Erinnerung ist aus');
+    }
+    $('reminderToggle').addEventListener('change', async (e) => {
+        const t = e.target;
+        if (!t.checked) {
+            try { await disableReminder(); } catch (err) { showToast('Ausschalten hat nicht geklappt.', true); }
+            return refreshReminderToggle();
+        }
+        if (isIOS && !isStandalone) {
+            t.checked = false;
+            return showToast('Öffne die App vom Home-Bildschirm, dann kannst du die Erinnerung einschalten.', true, 6000);
+        }
+        if (!pushSupported()) {
+            t.checked = false;
+            return showToast('Dieser Browser kann keine Erinnerungen anzeigen.', true, 5000);
+        }
+        try { t.checked = await enableReminder(); }
+        catch (err) { t.checked = false; showToast('Einschalten hat nicht geklappt: ' + err.message, true, 6000); }
     });
+
+    // Tipp auf die Benachrichtigung bei geöffneter App: direkt zu "Wir zwei"
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data?.type === 'open-tab' && currentUser && TABS.includes(e.data.tab)) switchTab(e.data.tab);
+        });
+    }
 
     // --- VOICE INPUT ---
     function setupSpeechRecognition() {

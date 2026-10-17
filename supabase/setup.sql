@@ -188,26 +188,36 @@ create policy "Users manage own subscriptions" on push_subscriptions
   for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- ============================================================
--- 4) Optional: tägliches Auslösen der Edge Function per pg_cron.
--- Voraussetzung: Extensions "pg_cron" und "pg_net" sind aktiviert
--- (Dashboard > Database > Extensions).
--- Danach die Platzhalter unten ersetzen und den Block separat ausführen.
+-- 4) Tägliche Erinnerung per pg_cron (angewendet am 17.10.2026)
+-- Voraussetzung: Extensions "pg_cron", "pg_net" und "supabase_vault".
+-- Der Zeitplan ruft die Edge Function um 18 und 19 Uhr UTC auf; sie sendet
+-- nur, wenn es in Berlin 20 Uhr ist (Sommer- und Winterzeit).
+-- Statt eines API-Schlüssels prüft die Funktion ein Geheimnis aus dem Vault.
 -- ============================================================
 
--- create extension if not exists pg_cron;
--- create extension if not exists pg_net;
---
--- select cron.schedule(
---   'daily-reminder-push',
---   '0 18 * * *', -- UTC-Zeit anpassen (18:00 UTC = 19/20 Uhr in Deutschland je nach Sommer-/Winterzeit)
---   $$
---   select net.http_post(
---     url := 'https://<DEIN-PROJECT-REF>.supabase.co/functions/v1/send-daily-reminder',
---     headers := jsonb_build_object(
---       'Authorization', 'Bearer <DEIN-SERVICE-ROLE-KEY-ODER-ANON-KEY>',
---       'Content-Type', 'application/json'
---     ),
---     body := '{}'::jsonb
---   );
---   $$
--- );
+select vault.create_secret(encode(extensions.gen_random_bytes(32), 'hex'), 'reminder_cron_secret', 'Aufruf von send-daily-reminder durch pg_cron');
+
+create or replace function public.verify_reminder_secret(candidate text)
+returns boolean
+language sql
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from vault.decrypted_secrets
+    where name = 'reminder_cron_secret' and decrypted_secret = candidate
+  );
+$$;
+revoke all on function public.verify_reminder_secret(text) from public, anon, authenticated;
+grant execute on function public.verify_reminder_secret(text) to service_role;
+
+select cron.schedule('daily-reminder-push', '0 18,19 * * *', $cron$
+  select net.http_post(
+    url := 'https://<DEIN-PROJECT-REF>.supabase.co/functions/v1/send-daily-reminder',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-reminder-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'reminder_cron_secret')
+    ),
+    body := '{}'::jsonb
+  );
+$cron$);

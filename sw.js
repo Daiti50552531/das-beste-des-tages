@@ -1,4 +1,4 @@
-const CACHE_NAME = 'das-beste-des-tages-v18';
+const CACHE_NAME = 'das-beste-des-tages-v19';
 
 // Ohne diese beiden Dateien startet die App nicht. Sie liegen auf einem
 // fremden Server (jsDelivr), deshalb werden sie gleich bei der Installation
@@ -78,23 +78,27 @@ self.addEventListener('fetch', event => {
 self.addEventListener('push', event => {
   let payload = {};
   try { payload = event.data ? event.data.json() : {}; } catch (e) {}
-  const title = payload.title || 'Das Beste des Tages';
+  const title = payload.title || 'Wir zwei';
   const options = {
-    body: payload.body || 'Hast du heute schon dein Bestes des Tages festgehalten?',
+    body: payload.body || 'Was war heute dein schönster Moment? Halte ihn kurz fest.',
     icon: './icon.svg',
     badge: './icon.svg',
-    data: { url: payload.url || './?action=new' }
+    data: { url: payload.url || './?tab=wir' }
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const targetUrl = event.notification.data?.url || './';
+  const targetUrl = event.notification.data?.url || './?tab=wir';
+  const tab = new URL(targetUrl, self.location.href).searchParams.get('tab');
   event.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then(clientList => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) return client.focus();
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          if (tab) client.postMessage({ type: 'open-tab', tab });
+          return client.focus();
+        }
       }
       if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
     })
