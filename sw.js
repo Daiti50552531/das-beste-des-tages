@@ -1,4 +1,4 @@
-const CACHE_NAME = 'das-beste-des-tages-v14';
+const CACHE_NAME = 'das-beste-des-tages-v15';
 
 // Ohne diese beiden Dateien startet die App nicht. Sie liegen auf einem
 // fremden Server (jsDelivr), deshalb werden sie gleich bei der Installation
@@ -8,11 +8,13 @@ const EXTERNAL_ASSETS = [
   'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0'
 ];
 
+const FONT_URL = './fonts/schibsted-grotesk-latin-wght-normal.woff2';
+
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(async cache => {
-      await cache.addAll(['./index.html', './icon.svg', './manifest.json']);
+      await cache.addAll(['./index.html', './icon.svg', './manifest.json', FONT_URL]);
       // Fehlschläge hier dürfen die Installation nicht verhindern
       await Promise.all(EXTERNAL_ASSETS.map(url => cache.add(url).catch(() => {})));
     })
@@ -41,6 +43,17 @@ self.addEventListener('fetch', event => {
           return response;
         })
         .catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+
+  // Schrift ändert sich nie: direkt aus dem Cache
+  if (url.origin === self.location.origin && url.pathname.includes('/fonts/')) {
+    event.respondWith(
+      caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
+        if (response.ok) caches.open(CACHE_NAME).then(c => c.put(event.request, response.clone()));
+        return response;
+      }))
     );
     return;
   }

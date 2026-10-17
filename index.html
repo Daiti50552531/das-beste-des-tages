@@ -1208,6 +1208,289 @@
     .ptr.refreshing svg { animation: ptr-spin 0.9s linear infinite; }
     @keyframes ptr-spin { to { transform: rotate(360deg); } }
 
+    /* --- WIR ZWEI (geteiltes Tagebuch) ---
+       Eigene, ruhige Fläche: eine Farbe pro Person, eine große Karte. */
+    @font-face {
+        font-family: 'Schibsted Grotesk';
+        font-style: normal;
+        font-display: swap;
+        font-weight: 400 900;
+        src: url('fonts/schibsted-grotesk-latin-wght-normal.woff2') format('woff2-variations'),
+             url('fonts/schibsted-grotesk-latin-wght-normal.woff2') format('woff2');
+    }
+    :root {
+        --wir-font: 'Schibsted Grotesk', var(--font-stack);
+        --wir-accent: #D1311A;
+        --wir-text: #171A26;
+        --wir-muted: #6A6168;
+        --wir-faint: #7A6E66;
+        --wir-me-bg: #F6B9A6;
+        --wir-partner-bg: #FBD08C;
+        --wir-me-card: #FCF5F1;
+        --wir-partner-card: #FDF8EF;
+        --wir-me-soft: #FBD9CE;
+        --wir-partner-soft: #FDE6BC;
+        --wir-me-label: #9C2511;
+        --wir-partner-label: #7A4C00;
+        --wir-me-dash: #E8B4A2;
+        --wir-partner-dash: #E3C9A0;
+        --wir-pill: #FFFFFF;
+        --wir-ctrl: rgba(255, 255, 255, 0.55);
+        --wir-ctrl-off: rgba(255, 255, 255, 0.30);
+        --wir-sheet: #FFFBF8;
+        --wir-list: #FFF4EC;
+        --wir-tile-top: #FFFFFF;
+        --wir-tile-line: #E9E3DF;
+        --wir-tile-bottom: #F6F2EF;
+        --wir-shadow: rgba(120, 40, 20, 0.12);
+    }
+    .dark-mode {
+        --wir-accent: #D63A22;
+        --wir-text: #F6EFEA;
+        --wir-muted: #BBAFA8;
+        --wir-faint: #A89A90;
+        --wir-me-bg: #3D211A;
+        --wir-partner-bg: #3A2B12;
+        --wir-me-card: #261B18;
+        --wir-partner-card: #251E14;
+        --wir-me-soft: #4A2820;
+        --wir-partner-soft: #463415;
+        --wir-me-label: #F4A08C;
+        --wir-partner-label: #F2C26E;
+        --wir-me-dash: #5A342A;
+        --wir-partner-dash: #55401C;
+        --wir-pill: #2B2220;
+        --wir-ctrl: rgba(255, 255, 255, 0.10);
+        --wir-ctrl-off: rgba(255, 255, 255, 0.04);
+        --wir-sheet: #15110E;
+        --wir-list: #15110E;
+        --wir-tile-top: #2E2724;
+        --wir-tile-line: #171310;
+        --wir-tile-bottom: #27211E;
+        --wir-shadow: rgba(0, 0, 0, 0.40);
+    }
+
+    body.tab-wir {
+        background-color: var(--wir-me-bg);
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: calc(64px + env(safe-area-inset-bottom));
+    }
+    body.tab-wir.wir-partner { background-color: var(--wir-partner-bg); }
+    body.tab-wir .sticky-header-wrapper { display: none; }
+    body.tab-wir .tab-btn.active { color: var(--wir-accent); }
+
+    .wir-page {
+        font-family: var(--wir-font);
+        color: var(--wir-text);
+        display: flex;
+        flex-direction: column;
+        min-height: calc(100vh - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        min-height: calc(100dvh - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    }
+    .wir-top {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        padding: 22px 0 18px;
+    }
+    .wir-switch {
+        display: flex; background: var(--wir-pill); border-radius: 26px; padding: 4px;
+        box-shadow: 0 2px 8px var(--wir-shadow);
+        min-width: 0;
+    }
+    .wir-switch button {
+        height: 44px; padding: 0 20px; border-radius: 22px; border: none;
+        background: transparent; color: var(--wir-text);
+        font-family: inherit; font-size: 17px; font-weight: 600;
+        cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        transition: background-color 0.2s, color 0.2s;
+    }
+    .wir-switch button[aria-pressed="true"] { background: var(--wir-accent); color: #FFFFFF; font-weight: 700; }
+    .wir-pillbtn {
+        height: 52px; padding: 0 18px 0 14px; border-radius: 26px; border: none;
+        background: var(--wir-pill); color: var(--wir-text);
+        display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+        font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+        box-shadow: 0 2px 8px var(--wir-shadow);
+    }
+    .wir-pillbtn .icon { width: 20px; height: 20px; stroke-width: 2.2; }
+
+    .wir-tiles {
+        display: grid; grid-template-columns: 1fr 1fr 1.35fr 1fr; gap: 8px;
+        padding-bottom: 16px;
+    }
+    .wir-tile {
+        height: 66px; border-radius: 14px;
+        background: linear-gradient(var(--wir-tile-top) 0 49%, var(--wir-tile-line) 49% 51%, var(--wir-tile-bottom) 51% 100%);
+        box-shadow: 0 3px 8px var(--wir-shadow);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 30px; font-weight: 800; letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .wir-card {
+        flex: 1; min-height: 260px;
+        border-radius: 28px; background: var(--wir-me-card);
+        box-shadow: 0 6px 22px var(--wir-shadow);
+        position: relative;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 32px 28px; text-align: center; gap: 14px;
+        overflow-wrap: anywhere;
+    }
+    .wir-partner .wir-card { background: var(--wir-partner-card); }
+    .wir-card-label { font-size: 15px; font-weight: 500; color: var(--wir-muted); }
+    .wir-card-text {
+        font-size: 30px; font-weight: 700; line-height: 1.22; letter-spacing: -0.015em;
+        white-space: pre-wrap;
+    }
+    .wir-card-text.is-long { font-size: 23px; line-height: 1.3; letter-spacing: -0.01em; }
+    .wir-card-text.is-xlong { font-size: 18px; font-weight: 600; line-height: 1.45; letter-spacing: 0; text-align: left; }
+    .wir-card-text.is-empty { font-size: 22px; font-weight: 600; color: var(--wir-muted); letter-spacing: -0.01em; }
+    .wir-card-meta { font-size: 13px; font-weight: 500; color: var(--wir-faint); }
+    .wir-card.is-mine { cursor: pointer; }
+    .wir-edit {
+        position: absolute; right: 12px; bottom: 12px;
+        width: 48px; height: 48px; border: none; background: transparent;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--wir-text); cursor: pointer; border-radius: 24px;
+    }
+    .wir-edit .icon { width: 22px; height: 22px; }
+    .wir-write-btn {
+        margin-top: 6px; height: 48px; padding: 0 24px; border-radius: 24px; border: none;
+        background: var(--wir-accent); color: #FFFFFF;
+        font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+        box-shadow: 0 6px 16px rgba(209, 49, 26, 0.28);
+    }
+    .wir-note { font-size: 14px; line-height: 1.45; color: var(--wir-muted); text-align: center; margin: 14px 8px 0; }
+
+    .wir-nav {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 0 14px;
+    }
+    .wir-nav-btn {
+        width: 44px; height: 44px; border-radius: 22px; border: none;
+        background: var(--wir-ctrl); color: var(--wir-text);
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .wir-nav-btn .icon { width: 20px; height: 20px; stroke-width: 2.2; }
+    .wir-nav-btn:disabled { background: var(--wir-ctrl-off); color: var(--wir-faint); cursor: default; }
+    .wir-nav-today {
+        height: 44px; padding: 0 22px; border-radius: 22px; border: none;
+        background: var(--wir-ctrl); color: var(--wir-text);
+        font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    }
+    .wir-nav-today:disabled { cursor: default; color: var(--wir-muted); }
+
+    /* Vollbild-Ebenen: Schreiben und Verlauf */
+    .wir-sheet {
+        position: fixed; left: 0; right: 0; top: 0;
+        height: 100%;
+        z-index: 950;
+        background: var(--wir-sheet);
+        color: var(--wir-text);
+        font-family: var(--wir-font);
+        transform: translateY(100%);
+        visibility: hidden;
+        transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.34s;
+    }
+    /* Beim Öffnen sofort sichtbar, damit das Textfeld direkt den Fokus (und die Tastatur) bekommt */
+    .wir-sheet.open {
+        transform: translateY(0); visibility: visible;
+        transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s;
+    }
+    .wir-sheet-inner {
+        max-width: 600px; height: 100%; margin: 0 auto;
+        display: flex; flex-direction: column;
+        padding: calc(16px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+    }
+    .wir-back {
+        width: 44px; height: 44px; margin-left: -10px; border: none; background: transparent;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--wir-text); cursor: pointer; border-radius: 22px; flex-shrink: 0;
+    }
+    .wir-back .icon { width: 24px; height: 24px; }
+    .wir-chip {
+        align-self: flex-start; margin-top: 18px; padding: 7px 14px; border-radius: 10px;
+        background: var(--wir-me-soft); color: var(--wir-me-label);
+        font-size: 15px; font-weight: 600;
+    }
+    .wir-write-label {
+        display: block; margin: 14px 0 0; color: var(--wir-text);
+        font-size: 34px; font-weight: 800; line-height: 1.12; letter-spacing: -0.02em;
+    }
+    #wirText {
+        margin-top: 16px; flex: 1; min-height: 120px; width: 100%;
+        border: none; outline: none; resize: none; background: transparent;
+        font-family: inherit; font-size: 19px; line-height: 1.5; color: var(--wir-text); padding: 0;
+        border-radius: 0;
+    }
+    #wirText:focus { box-shadow: none; background: transparent; }
+    #wirText::placeholder { color: var(--wir-faint); opacity: 1; }
+    .wir-write-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 12px; }
+    .wir-hint { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.35; color: var(--wir-muted); }
+    .wir-hint .icon { flex-shrink: 0; width: 18px; height: 18px; }
+    .wir-save {
+        width: 64px; height: 64px; border-radius: 32px; border: none; flex-shrink: 0;
+        background: var(--wir-accent); color: #FFFFFF; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 8px 20px rgba(209, 49, 26, 0.35);
+    }
+    .wir-save .icon { width: 28px; height: 28px; stroke-width: 2.4; }
+    .wir-save:disabled { opacity: 0.55; cursor: default; }
+
+    #wirHistory { background: var(--wir-list); }
+    #wirHistory .wir-sheet-inner { padding: calc(14px + env(safe-area-inset-top)) 0 0; }
+    .wir-hist-head { padding: 0 20px; display: flex; flex-direction: column; gap: 14px; }
+    .wir-hist-title { display: flex; align-items: center; gap: 6px; }
+    .wir-hist-title h2 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+    .wir-search {
+        height: 48px; border-radius: 16px; background: var(--wir-pill);
+        display: flex; align-items: center; gap: 8px; padding: 0 14px; color: var(--wir-muted);
+        margin: 0; font-size: 16px; font-weight: 400;
+    }
+    .wir-search .icon { width: 18px; height: 18px; flex-shrink: 0; }
+    .wir-search input {
+        flex: 1; min-width: 0; height: 100%; border: none; outline: none; background: transparent;
+        font-family: inherit; font-size: 16px; color: var(--wir-text); padding: 0; margin: 0;
+    }
+    .wir-search input::placeholder { color: var(--wir-faint); }
+    .wir-search:focus-within { box-shadow: 0 0 0 2px var(--wir-accent); }
+    .wir-chips { display: flex; gap: 8px; }
+    .wir-chips button {
+        height: 36px; padding: 0 16px; border-radius: 18px; border: none;
+        background: var(--wir-pill); color: var(--wir-text);
+        font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .wir-chips button[aria-pressed="true"] { background: var(--wir-accent); color: #FFFFFF; font-weight: 700; }
+    .wir-hist-list {
+        flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+        padding: 18px 20px calc(24px + env(safe-area-inset-bottom));
+        display: flex; flex-direction: column; gap: 18px;
+    }
+    .wir-day { display: flex; flex-direction: column; gap: 8px; }
+    .wir-day h3 { margin: 0 0 2px 4px; font-size: 14px; font-weight: 700; color: var(--wir-muted); }
+    .wir-bubble {
+        border-radius: 18px; padding: 12px 16px; border: none; text-align: left;
+        display: flex; flex-direction: column; gap: 3px; width: 100%;
+        font-family: inherit; color: var(--wir-text); cursor: pointer;
+        background: var(--wir-me-soft);
+    }
+    .wir-bubble.is-partner { background: var(--wir-partner-soft); }
+    .wir-bubble-who { font-size: 12px; font-weight: 700; color: var(--wir-me-label); }
+    .wir-bubble.is-partner .wir-bubble-who { color: var(--wir-partner-label); }
+    .wir-bubble-text { font-size: 16px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .wir-bubble.is-missing {
+        background: transparent; border: 1.5px dashed var(--wir-me-dash); padding: 10.5px 14.5px;
+    }
+    .wir-bubble.is-missing.is-partner { border-color: var(--wir-partner-dash); }
+    .wir-bubble.is-missing .wir-bubble-text { font-size: 15px; color: var(--wir-faint); }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .wir-hist-empty { text-align: center; color: var(--wir-muted); font-size: 15px; line-height: 1.5; padding: 40px 12px; }
+
+    /* Nur das geteilte Tagebuch: private Bereiche ausblenden */
+    body.shared-only #tabbtn-heute,
+    body.shared-only #tabbtn-verlauf,
+    body.shared-only #tabbtn-statistik,
+    body.shared-only .private-only { display: none !important; }
+
   </style>
 </head>
 <body class="tab-heute">
@@ -1314,6 +1597,7 @@
 
       <div style="margin-top:24px; display:flex; flex-direction:column; gap:12px;">
         <button id="loginBtn" type="submit" class="btn-primary">Anmelden</button>
+        <button id="signupBtn" type="button" class="txt-btn" style="color:var(--text-secondary); margin-top:10px;">Account erstellen</button>
         <button id="forgotBtn" type="button" class="txt-btn" style="color:var(--accent); font-size:13px;">Passwort vergessen?</button>
       </div>
     </form>
@@ -1329,6 +1613,36 @@
     </div>
 
     <div class="container">
+
+      <div id="tab-wir" class="tab-page hidden">
+        <div class="wir-page">
+          <div class="wir-top">
+            <div class="wir-switch" role="group" aria-label="Wessen Eintrag">
+              <button type="button" id="wirMeBtn" aria-pressed="true">Ich</button>
+              <button type="button" id="wirPartnerBtn" aria-pressed="false" class="hidden"></button>
+            </div>
+            <button type="button" id="wirHistoryBtn" class="wir-pillbtn">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="9" y1="6" x2="20" y2="6"></line><line x1="9" y1="12" x2="20" y2="12"></line><line x1="9" y1="18" x2="20" y2="18"></line><line x1="4.5" y1="6" x2="4.51" y2="6"></line><line x1="4.5" y1="12" x2="4.51" y2="12"></line><line x1="4.5" y1="18" x2="4.51" y2="18"></line></svg>
+              Verlauf
+            </button>
+          </div>
+
+          <div id="wirTiles" class="wir-tiles" role="img"></div>
+
+          <div id="wirCard" class="wir-card" aria-live="polite"></div>
+          <p id="wirNote" class="wir-note hidden">Sobald ihr verbunden seid, seht ihr hier auch die Einträge des anderen.</p>
+
+          <div class="wir-nav">
+            <button type="button" id="wirPrevBtn" class="wir-nav-btn" aria-label="Vorheriger Tag">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <button type="button" id="wirTodayBtn" class="wir-nav-today">Heute</button>
+            <button type="button" id="wirNextBtn" class="wir-nav-btn" aria-label="Nächster Tag">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        </div>
+      </div><!-- /tab-wir -->
 
       <div id="tab-heute" class="tab-page">
 
@@ -1424,8 +1738,8 @@
       </div><!-- /tab-heute -->
 
       <div id="tab-mehr" class="tab-page hidden">
-      <div class="section-title">Einstellungen</div>
-      <button id="openSettingsBtn" class="btn-secondary" style="margin-top:0; margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg> App anpassen (Name, Felder, Farbe)</button>
+      <div class="section-title private-only">Einstellungen</div>
+      <button id="openSettingsBtn" class="btn-secondary private-only" style="margin-top:0; margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg> App anpassen (Name, Felder, Farbe)</button>
 
       <div class="section-title">Sicherheit</div>
       <div class="setting-toggle-row">
@@ -1439,8 +1753,8 @@
           </label>
       </div>
 
-      <div class="section-title">Werkzeuge</div>
-      <div class="action-grid" style="position:relative;">
+      <div class="section-title private-only">Werkzeuge</div>
+      <div class="action-grid private-only" style="position:relative;">
 
           <button id="exportTriggerBtn" class="btn-tool">
               <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
@@ -1468,8 +1782,8 @@
       <div class="section-title">Account</div>
       <button id="logoutBtn" class="btn-secondary" style="margin-top:0; display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Abmelden</button>
 
-      <div class="section-title">Gefahrenzone</div>
-      <button id="deleteAllBtn" class="btn-secondary" style="margin-top:0; color:var(--danger); display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Alle Einträge löschen</button>
+      <div class="section-title private-only">Gefahrenzone</div>
+      <button id="deleteAllBtn" class="btn-secondary private-only" style="margin-top:0; color:var(--danger); display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Alle Einträge löschen</button>
       </div><!-- /tab-mehr -->
 
       <div id="tab-statistik" class="tab-page hidden">
@@ -1573,9 +1887,13 @@
 
     <nav class="tabbar">
       <div class="tabbar-inner">
+        <button class="tab-btn" id="tabbtn-wir" data-tab="wir">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            Wir zwei
+        </button>
         <button class="tab-btn active" id="tabbtn-heute" data-tab="heute">
             <svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-            Heute
+            Tagebuch
         </button>
         <button class="tab-btn" id="tabbtn-verlauf" data-tab="verlauf">
             <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
@@ -1594,6 +1912,50 @@
   </div>
 
   <div id="lightbox" class="lightbox hidden"><img id="lightboxImg" alt="Foto"></div>
+
+  <div id="wirWrite" class="wir-sheet" role="dialog" aria-modal="true" aria-labelledby="wirWriteLabel">
+    <div class="wir-sheet-inner">
+      <button type="button" id="wirWriteBack" class="wir-back" aria-label="Zurück">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      </button>
+      <span id="wirWriteDate" class="wir-chip">Heute</span>
+      <label id="wirWriteLabel" for="wirText" class="wir-write-label">Das Beste des Tages war:</label>
+      <textarea id="wirText" maxlength="5000" placeholder="Was war heute schön?"></textarea>
+      <div class="wir-write-foot">
+        <div class="wir-hint">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span id="wirWriteHint"></span>
+        </div>
+        <button type="button" id="wirSaveBtn" class="wir-save" aria-label="Speichern">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="wirHistory" class="wir-sheet" role="dialog" aria-modal="true" aria-labelledby="wirHistTitle">
+    <div class="wir-sheet-inner">
+      <div class="wir-hist-head">
+        <div class="wir-hist-title">
+          <button type="button" id="wirHistBack" class="wir-back" aria-label="Zurück">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <h2 id="wirHistTitle">Unser Verlauf</h2>
+        </div>
+        <label class="wir-search">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="20" y1="20" x2="16.2" y2="16.2"></line></svg>
+          <span class="visually-hidden">Einträge durchsuchen</span>
+          <input id="wirSearch" type="search" placeholder="In euren Einträgen suchen" autocomplete="off">
+        </label>
+        <div id="wirChips" class="wir-chips" role="group" aria-label="Wessen Einträge">
+          <button type="button" data-who="both" aria-pressed="true">Beide</button>
+          <button type="button" data-who="me" aria-pressed="false">Ich</button>
+          <button type="button" data-who="partner" aria-pressed="false" id="wirChipPartner"></button>
+        </div>
+      </div>
+      <div id="wirHistList" class="wir-hist-list"></div>
+    </div>
+  </div>
 
   <div id="detailSheet" class="detail-sheet">
       <div class="detail-head">
@@ -1764,9 +2126,19 @@
       const pref = themePref();
       const isDark = pref === 'dark' || (pref === 'system' && systemDark.matches);
       document.body.classList.toggle('dark-mode', isDark);
-      const metaTheme = document.getElementById('themeColorMeta');
-      if (metaTheme) metaTheme.setAttribute('content', isDark ? '#121009' : '#F4F1EA');
+      updateThemeColor();
       if (typeof applyAccent === 'function') applyAccent();
+    }
+    // Statusleiste in der Farbe der Seite, auf "Wir zwei" in der Farbe der Person
+    function updateThemeColor() {
+      const metaTheme = document.getElementById('themeColorMeta');
+      if (!metaTheme) return;
+      const body = document.body;
+      let color = body.classList.contains('dark-mode') ? '#121009' : '#F4F1EA';
+      if (body.classList.contains('tab-wir')) {
+        color = getComputedStyle(body).getPropertyValue(body.classList.contains('wir-partner') ? '--wir-partner-bg' : '--wir-me-bg').trim() || color;
+      }
+      metaTheme.setAttribute('content', color);
     }
     function setTheme(pref) { localStorage.setItem('theme', pref); applyTheme(); renderThemeToggle(); }
     function initTheme() { applyTheme(); renderThemeToggle(); }
@@ -1802,14 +2174,17 @@
     }
 
     // --- TAB NAVIGATION ---
-    const TABS = ['heute', 'verlauf', 'statistik', 'mehr'];
+    const TABS = ['wir', 'heute', 'verlauf', 'statistik', 'mehr'];
     function switchTab(name) {
         document.body.classList.toggle('tab-heute', name === 'heute');
+        document.body.classList.toggle('tab-wir', name === 'wir');
         TABS.forEach(t => {
             $('tab-' + t).classList.toggle('hidden', t !== name);
             $('tabbtn-' + t).classList.toggle('active', t === name);
         });
         window.scrollTo({ top: 0 });
+        if (name === 'wir') renderWir();
+        updateThemeColor();
     }
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2393,6 +2768,7 @@
       $('recoveryModal').classList.add('hidden');
       hideLock();
       currentUser = null;
+      wirReset();
     }
 
     function showPasswordRecovery() {
@@ -2429,13 +2805,18 @@
       elements.appSection.classList.remove('hidden');
       loadSettings();
       applySettings();
+      wirLoadCache();
+      applySharedOnly();
       renderDailyPrompt();
       resetEditor();
       restoreDraft();
       loadEntries();
       checkMonthlyReminder();
       handleLaunchParams();
-      if (!settings.onboarded) openOnboarding();
+      // Erst wenn klar ist, ob nur "Wir zwei" sichtbar ist, über das Onboarding entscheiden
+      loadWirZwei().catch(() => {}).finally(() => {
+        if (currentUser === user && !settings.onboarded && !wir.sharedOnly) openOnboarding();
+      });
       maybeLockOnOpen();
     }
 
@@ -2467,6 +2848,27 @@
       });
       if (error) showToast('Fehler: ' + error.message, true);
       else showToast('Reset-Link gesendet. Bitte E-Mails prüfen.');
+    });
+
+
+    $('signupBtn').addEventListener('click', async () => {
+      const email = elements.email.value.trim();
+      const password = elements.password.value;
+      if (!email || !password) return showToast('Bitte E-Mail und Passwort eingeben.', true);
+      if (password.length < 6) return showToast('Das Passwort braucht mindestens 6 Zeichen.', true);
+      showToast('Account wird erstellt …');
+      const { data, error } = await db.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + window.location.pathname } });
+      if (error) {
+        if (/signups? not allowed/i.test(error.message)) {
+          return showToast('Die Registrierung ist geschlossen.', true);
+        }
+        return showToast('Fehler: ' + error.message, true);
+      }
+      if (data?.session) return;
+      if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        return showToast('Diese E-Mail ist bereits registriert. Bitte melde dich an.', true);
+      }
+      showToast('Fast geschafft: Bitte bestätige deine E-Mail über den Link in deinem Postfach.');
     });
 
     $('logoutBtn').addEventListener('click', () => db.auth.signOut());
@@ -3842,6 +4244,366 @@
     setupSpeechRecognition();
 
 
+    // --- WIR ZWEI (geteiltes Tagebuch) ---
+    // Nur Einträge aus shared_entries sind für die verknüpfte Person sichtbar.
+    // Das private Tagebuch (entries) bleibt davon vollständig getrennt.
+    const WIR_CACHE_PREFIX = 'wir_cache_v1_';
+    const WIR_WD = ['SO', 'MO', 'DI', 'MI', 'DO', 'FR', 'SA'];
+    const WIR_MON = ['JAN', 'FEB', 'MÄR', 'APR', 'MAI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEZ'];
+    const WD_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    const MONTH_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+
+    const wir = {
+        partner: null,          // { id, name }
+        sharedOnly: false,      // true: nur "Wir zwei" sichtbar
+        entries: new Map(),     // "uid|datum" -> Zeile
+        date: localISODate(),
+        who: 'me',
+        filter: 'both',
+        loadedAt: 0,
+        writeOrig: ''
+    };
+
+    function isoToDate(iso) {
+        const [y, m, d] = iso.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+    function shiftISO(iso, days) {
+        const d = isoToDate(iso);
+        d.setDate(d.getDate() + days);
+        return localISODate(d);
+    }
+    function wirDayLabel(iso) {
+        const today = localISODate();
+        if (iso === today) return 'Heute';
+        if (iso === shiftISO(today, -1)) return 'Gestern';
+        const d = isoToDate(iso);
+        const year = d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '';
+        return `${WD_SHORT[d.getDay()]}, ${d.getDate()}. ${MONTH_LONG[d.getMonth()]}${year}`;
+    }
+    function wirUid(who) { return who === 'partner' ? wir.partner?.id : currentUser?.id; }
+    function wirEntry(who, iso) {
+        const uid = wirUid(who);
+        return uid ? wir.entries.get(uid + '|' + iso) || null : null;
+    }
+    function wirSetEntries(rows) {
+        wir.entries = new Map((rows || []).map(r => [r.user_id + '|' + r.entry_date, r]));
+    }
+    function wirSaveCache() {
+        if (!currentUser) return;
+        try {
+            localStorage.setItem(WIR_CACHE_PREFIX + currentUser.id, JSON.stringify({
+                partner: wir.partner, sharedOnly: wir.sharedOnly, entries: [...wir.entries.values()]
+            }));
+        } catch (e) {}
+    }
+    function wirLoadCache() {
+        try {
+            const c = JSON.parse(localStorage.getItem(WIR_CACHE_PREFIX + currentUser.id) || 'null');
+            if (!c) return;
+            wir.partner = c.partner || null;
+            wir.sharedOnly = !!c.sharedOnly;
+            wirSetEntries(c.entries);
+        } catch (e) {}
+    }
+    function wirReset() {
+        wir.partner = null;
+        wir.sharedOnly = false;
+        wir.entries = new Map();
+        wir.date = localISODate();
+        wir.who = 'me';
+        wir.filter = 'both';
+        wir.loadedAt = 0;
+        closeWirSheet($('wirWrite'));
+        closeWirSheet($('wirHistory'));
+        document.body.classList.remove('shared-only', 'wir-partner');
+        switchTab('heute');
+    }
+
+    function applySharedOnly() {
+        document.body.classList.toggle('shared-only', wir.sharedOnly);
+        if (wir.sharedOnly && !['wir', 'mehr'].some(t => !$('tab-' + t).classList.contains('hidden'))) switchTab('wir');
+    }
+
+    async function loadWirZwei() {
+        if (!currentUser) return;
+        const uid = currentUser.id;
+        const [pRes, eRes] = await Promise.all([
+            db.from('partnerships').select('partner_id, partner_name, shared_only').maybeSingle(),
+            db.from('shared_entries').select('id, user_id, entry_date, text, created_at, updated_at').order('entry_date', { ascending: false })
+        ]);
+        if (!currentUser || currentUser.id !== uid) return;
+        if (pRes.error || eRes.error) throw (pRes.error || eRes.error);
+        const p = pRes.data;
+        wir.partner = p ? { id: p.partner_id, name: p.partner_name } : null;
+        if (p) {
+            wir.sharedOnly = !!p.shared_only;
+        } else {
+            // Noch nicht verknüpft: Wer kein privates Tagebuch führt, sieht nur "Wir zwei"
+            const { count, error } = await db.from('entries').select('id', { count: 'exact', head: true });
+            if (!error) wir.sharedOnly = count === 0;
+        }
+        wirSetEntries(eRes.data);
+        wir.loadedAt = Date.now();
+        wirSaveCache();
+        applySharedOnly();
+        renderWir();
+    }
+
+    function renderWir() {
+        if (!currentUser) return;
+        const today = localISODate();
+        if (wir.date > today) wir.date = today;
+        if (!wir.partner) wir.who = 'me';
+        const name = wir.partner?.name || '';
+        const partner = wir.who === 'partner';
+        document.body.classList.toggle('wir-partner', partner);
+
+        const meBtn = $('wirMeBtn'), pBtn = $('wirPartnerBtn');
+        pBtn.textContent = name;
+        pBtn.classList.toggle('hidden', !wir.partner);
+        meBtn.setAttribute('aria-pressed', String(!partner));
+        pBtn.setAttribute('aria-pressed', String(partner));
+        $('wirNote').classList.toggle('hidden', !!wir.partner);
+
+        const d = isoToDate(wir.date);
+        const tiles = $('wirTiles');
+        tiles.innerHTML = [WIR_WD[d.getDay()], d.getDate(), WIR_MON[d.getMonth()], String(d.getFullYear()).slice(2)]
+            .map(v => `<div class="wir-tile" aria-hidden="true">${v}</div>`).join('');
+        tiles.setAttribute('aria-label', d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
+
+        const isToday = wir.date === today;
+        const entry = wirEntry(wir.who, wir.date);
+        const card = $('wirCard');
+        card.classList.toggle('is-mine', !partner);
+        let html;
+        if (partner) {
+            html = `<div class="wir-card-label">Das Beste des Tages von ${escapeHtml(name)}</div>`;
+            if (entry) {
+                html += wirTextHtml(entry.text);
+                const meta = wirWrittenMeta(entry);
+                if (meta) html += `<div class="wir-card-meta">${meta}</div>`;
+            } else {
+                html += `<div class="wir-card-text is-empty">${escapeHtml(name)} hat ${isToday ? 'heute noch' : 'an diesem Tag'} nichts geschrieben.</div>`;
+            }
+        } else {
+            html = '<div class="wir-card-label">Das Beste des Tages</div>';
+            if (entry) {
+                html += wirTextHtml(entry.text);
+                html += `<button type="button" class="wir-edit" data-wir-write aria-label="Eintrag bearbeiten">${ic('edit', 'icon')}</button>`;
+            } else {
+                html += `<div class="wir-card-text is-empty">${isToday ? 'Noch nichts geschrieben.' : 'An diesem Tag hast du nichts geschrieben.'}</div>`;
+                html += `<button type="button" class="wir-write-btn" data-wir-write>${isToday ? 'Jetzt schreiben' : 'Nachtragen'}</button>`;
+            }
+        }
+        card.innerHTML = html;
+
+        $('wirNextBtn').disabled = isToday;
+        const todayBtn = $('wirTodayBtn');
+        todayBtn.disabled = isToday;
+        todayBtn.textContent = isToday ? 'Heute' : 'Zu heute';
+        updateThemeColor();
+    }
+    function wirTextHtml(text) {
+        const len = text.length;
+        const cls = len > 220 ? ' is-xlong' : len > 90 ? ' is-long' : '';
+        return `<div class="wir-card-text${cls}">${escapeHtml(text)}</div>`;
+    }
+    function wirWrittenMeta(entry) {
+        if (!entry.created_at) return '';
+        const c = new Date(entry.created_at);
+        if (localISODate(c) === entry.entry_date) {
+            return 'geschrieben um ' + c.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+        }
+        return `nachgetragen am ${c.getDate()}. ${MONTH_LONG[c.getMonth()]}`;
+    }
+
+    $('wirMeBtn').addEventListener('click', () => { wir.who = 'me'; renderWir(); });
+    $('wirPartnerBtn').addEventListener('click', () => { wir.who = 'partner'; renderWir(); });
+    $('wirPrevBtn').addEventListener('click', () => { wir.date = shiftISO(wir.date, -1); renderWir(); });
+    $('wirNextBtn').addEventListener('click', () => { wir.date = shiftISO(wir.date, 1); renderWir(); });
+    $('wirTodayBtn').addEventListener('click', () => { wir.date = localISODate(); renderWir(); });
+    $('wirCard').addEventListener('click', (e) => {
+        if (wir.who !== 'me') return;
+        if (e.target.closest('[data-wir-write]') || wirEntry('me', wir.date)) openWirWrite();
+    });
+
+    // Vollbild-Ebenen
+    function openWirSheet(el) {
+        el.classList.add('open');
+        document.documentElement.style.overflow = 'hidden';
+    }
+    function closeWirSheet(el) {
+        if (!el.classList.contains('open')) return;
+        el.classList.remove('open');
+        el.style.height = '';
+        el.style.top = '';
+        if (!document.querySelector('.wir-sheet.open')) document.documentElement.style.overflow = '';
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        if ($('wirWrite').classList.contains('open')) wirWriteBack();
+        else closeWirSheet($('wirHistory'));
+    });
+
+    // Schreiben
+    function openWirWrite() {
+        const entry = wirEntry('me', wir.date);
+        const isToday = wir.date === localISODate();
+        const name = wir.partner?.name;
+        wir.writeOrig = entry ? entry.text : '';
+        $('wirWriteDate').textContent = wirDayLabel(wir.date);
+        const ta = $('wirText');
+        ta.value = wir.writeOrig;
+        ta.placeholder = isToday ? 'Was war heute schön?' : 'Was war an diesem Tag schön?';
+        $('wirWriteHint').textContent = name
+            ? `${name} sieht das, sobald du speicherst.`
+            : 'Wird geteilt, sobald ihr verbunden seid.';
+        $('wirSaveBtn').disabled = false;
+        openWirSheet($('wirWrite'));
+        fitWirWrite();
+        ta.focus({ preventScroll: true });
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+    }
+    // Hält Speichern-Knopf über der Bildschirmtastatur
+    function fitWirWrite() {
+        const el = $('wirWrite');
+        const vv = window.visualViewport;
+        if (!vv || !el.classList.contains('open')) return;
+        el.style.height = vv.height + 'px';
+        el.style.top = vv.offsetTop + 'px';
+    }
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', fitWirWrite);
+        window.visualViewport.addEventListener('scroll', fitWirWrite);
+    }
+    function wirWriteBack() {
+        const changed = $('wirText').value.trim() !== wir.writeOrig.trim();
+        if (changed && !confirm('Änderungen verwerfen?')) return;
+        $('wirText').blur();
+        closeWirSheet($('wirWrite'));
+    }
+    $('wirWriteBack').addEventListener('click', wirWriteBack);
+
+    $('wirSaveBtn').addEventListener('click', async () => {
+        const text = $('wirText').value.trim();
+        const date = wir.date;
+        const existing = wirEntry('me', date);
+        if (text === wir.writeOrig.trim()) { $('wirText').blur(); closeWirSheet($('wirWrite')); return; }
+        if (!text) {
+            if (existing) await deleteWirEntry(existing);
+            $('wirText').blur();
+            closeWirSheet($('wirWrite'));
+            return;
+        }
+        const btn = $('wirSaveBtn');
+        btn.disabled = true;
+        const { data, error } = await db.from('shared_entries')
+            .upsert({ user_id: currentUser.id, entry_date: date, text }, { onConflict: 'user_id,entry_date' })
+            .select('id, user_id, entry_date, text, created_at, updated_at')
+            .single();
+        btn.disabled = false;
+        if (error) return showToast('Speichern fehlgeschlagen. Bitte nochmal versuchen.', true);
+        wir.entries.set(data.user_id + '|' + data.entry_date, data);
+        wirSaveCache();
+        $('wirText').blur();
+        closeWirSheet($('wirWrite'));
+        wir.who = 'me';
+        renderWir();
+        showToast('Gespeichert');
+    });
+
+    async function deleteWirEntry(entry) {
+        const { error } = await db.from('shared_entries').delete().eq('id', entry.id);
+        if (error) return showToast('Löschen fehlgeschlagen.', true);
+        wir.entries.delete(entry.user_id + '|' + entry.entry_date);
+        wirSaveCache();
+        renderWir();
+        showToastWithUndo('Eintrag gelöscht', async () => {
+            const { data, error: e2 } = await db.from('shared_entries')
+                .insert({ user_id: entry.user_id, entry_date: entry.entry_date, text: entry.text, created_at: entry.created_at })
+                .select('id, user_id, entry_date, text, created_at, updated_at').single();
+            if (e2) return showToast('Wiederherstellen fehlgeschlagen.', true);
+            wir.entries.set(data.user_id + '|' + data.entry_date, data);
+            wirSaveCache();
+            renderWir();
+        });
+    }
+
+    // Unser Verlauf
+    $('wirHistoryBtn').addEventListener('click', () => {
+        renderWirHistory();
+        openWirSheet($('wirHistory'));
+        $('wirHistList').scrollTop = 0;
+    });
+    $('wirHistBack').addEventListener('click', () => closeWirSheet($('wirHistory')));
+    $('wirSearch').addEventListener('input', () => renderWirHistory());
+    $('wirChips').addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-who]');
+        if (!b) return;
+        wir.filter = b.dataset.who;
+        renderWirHistory();
+    });
+    $('wirHistList').addEventListener('click', (e) => {
+        const b = e.target.closest('.wir-bubble');
+        if (!b) return;
+        wir.date = b.dataset.date;
+        wir.who = b.dataset.who;
+        closeWirSheet($('wirHistory'));
+        renderWir();
+    });
+
+    function renderWirHistory() {
+        if (!currentUser) return;
+        const name = wir.partner?.name || '';
+        if (!wir.partner && wir.filter === 'partner') wir.filter = 'both';
+        const chipP = $('wirChipPartner');
+        chipP.textContent = name;
+        chipP.classList.toggle('hidden', !wir.partner);
+        $('wirChips').classList.toggle('hidden', !wir.partner);
+        $('wirChips').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.who === wir.filter)));
+
+        const q = $('wirSearch').value.trim().toLowerCase();
+        const people = wir.filter === 'both' ? ['me', 'partner'] : [wir.filter];
+        const active = people.filter(w => wirUid(w));
+        const ids = new Set(active.map(wirUid));
+        const dates = [...new Set([...wir.entries.values()]
+            .filter(r => ids.has(r.user_id) && (!q || r.text.toLowerCase().includes(q)))
+            .map(r => r.entry_date))].sort().reverse();
+
+        const list = $('wirHistList');
+        if (!dates.length) {
+            list.innerHTML = `<div class="wir-hist-empty">${q ? 'Nichts gefunden.' : 'Hier erscheinen eure Einträge, sobald ihr etwas geschrieben habt.'}</div>`;
+            return;
+        }
+        list.innerHTML = dates.map(date => {
+            const bubbles = active.map(w => {
+                const e = wirEntry(w, date);
+                const cls = 'wir-bubble' + (w === 'partner' ? ' is-partner' : '');
+                const who = w === 'partner' ? escapeHtml(name) : 'Ich';
+                if (e && (!q || e.text.toLowerCase().includes(q))) {
+                    return `<button type="button" class="${cls}" data-date="${date}" data-who="${w}"><span class="wir-bubble-who">${who}</span><span class="wir-bubble-text">${escapeHtml(e.text)}</span></button>`;
+                }
+                if (e || q) return '';
+                return `<button type="button" class="${cls} is-missing" data-date="${date}" data-who="${w}"><span class="wir-bubble-who">${who}</span><span class="wir-bubble-text">Kein Eintrag an diesem Tag</span></button>`;
+            }).join('');
+            return `<section class="wir-day"><h3>${wirDayLabel(date)}</h3>${bubbles}</section>`;
+        }).join('');
+    }
+
+    // Beim Zurückkehren in die App neue Einträge holen und ggf. auf den neuen Tag springen
+    let wirLastToday = localISODate();
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible' || !currentUser) return;
+        const today = localISODate();
+        if (today !== wirLastToday) {
+            if (wir.date === wirLastToday) wir.date = today;
+            wirLastToday = today;
+            renderWir();
+        }
+        if (Date.now() - wir.loadedAt > 30000) loadWirZwei().catch(() => {});
+    });
+
     // --- PULL TO REFRESH (nach unten ziehen zum Aktualisieren) ---
     (function setupPullToRefresh() {
         const ptr = $('ptr');
@@ -3874,7 +4636,7 @@
                 refreshing = true;
                 ptr.classList.add('refreshing');
                 ptr.style.transform = 'translateX(-50%) translateY(0)';
-                try { await loadEntries(); } catch(e) {}
+                try { await Promise.all([loadEntries(), loadWirZwei()]); } catch(e) {}
                 ptr.classList.remove('refreshing');
                 refreshing = false;
                 showToast('Aktualisiert');
