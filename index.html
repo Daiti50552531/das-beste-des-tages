@@ -1628,6 +1628,7 @@
       <label for="confirmPassword">Passwort bestätigen</label>
       <input type="password" id="confirmPassword" autocomplete="new-password" placeholder="Passwort wiederholen">
       <button id="setPasswordBtn" class="btn-primary" style="margin-top:24px;">Passwort setzen</button>
+      <button id="cancelPasswordBtn" type="button" class="btn-secondary hidden">Abbrechen</button>
     </div>
   </div>
 
@@ -1906,6 +1907,7 @@
       </div>
 
       <div class="section-title">Account</div>
+      <button id="changePasswordBtn" class="btn-secondary" style="margin-top:0; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Passwort ändern</button>
       <button id="logoutBtn" class="btn-secondary" style="margin-top:0; display:flex; align-items:center; justify-content:center; gap:10px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Abmelden</button>
 
       <div class="section-title private-only">Gefahrenzone</div>
@@ -2923,7 +2925,10 @@
       wirReset();
     }
 
+    let pwChangeMode = false;   // true: Passwort ändern aus "Mehr", App bleibt sichtbar
     function showPasswordRecovery() {
+      pwChangeMode = false;
+      $('cancelPasswordBtn').classList.add('hidden');
       $('recoveryModal').classList.remove('hidden');
       elements.authSection.classList.add('hidden');
       elements.appSection.classList.add('hidden');
@@ -2946,6 +2951,7 @@
       } else {
         $('recoveryModal').classList.add('hidden');
         showToast('Passwort gesetzt');
+        if (pwChangeMode) { pwChangeMode = false; return; }
         const { data: { session } } = await db.auth.getSession();
         if (session) showApp(session.user);
       }
@@ -3110,6 +3116,19 @@
       else showToast('Reset-Link gesendet. Bitte E-Mails prüfen.');
     });
 
+
+    $('changePasswordBtn').addEventListener('click', () => {
+      pwChangeMode = true;
+      $('newPassword').value = '';
+      $('confirmPassword').value = '';
+      $('cancelPasswordBtn').classList.remove('hidden');
+      $('recoveryModal').classList.remove('hidden');
+      $('newPassword').focus();
+    });
+    $('cancelPasswordBtn').addEventListener('click', () => {
+      pwChangeMode = false;
+      $('recoveryModal').classList.add('hidden');
+    });
 
     $('logoutBtn').addEventListener('click', () => db.auth.signOut());
 
