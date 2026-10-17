@@ -6,7 +6,8 @@
 //
 // Aufruf nur durch pg_cron mit dem Geheimnis aus dem Vault (Header x-reminder-secret),
 // geprüft über public.verify_reminder_secret (siehe setup.sql, Abschnitt 4).
-// Parameter zum Testen: ?dry (nichts senden, nur Vorschau), ?force (Uhrzeit ignorieren).
+// Parameter zum Testen: ?dry (nichts senden, nur Vorschau), ?force (Uhrzeit ignorieren),
+// ?test (Uhrzeit ignorieren und an alle Abos senden, auch wer schon geschrieben hat).
 //
 // Benötigte Secrets (Dashboard > Edge Functions > Manage secrets):
 //   VAPID_PRIVATE_KEY           (privater Schlüssel, NIE ins Repo committen!)
@@ -53,9 +54,10 @@ Deno.serve(async (req) => {
 
   const params = new URL(req.url).searchParams;
   const dry = params.has("dry");
+  const test = params.has("test");
   const { date, hour } = berlinNow();
   // Der Zeitplan läuft um 18 und 19 Uhr UTC; gesendet wird nur, wenn es in Berlin 20 Uhr ist.
-  if (!params.has("force") && hour !== 20) return json({ skipped: "not 20:00 in Berlin", hour, date });
+  if (!params.has("force") && !test && hour !== 20) return json({ skipped: "not 20:00 in Berlin", hour, date });
 
   const [subsRes, writtenRes, pairsRes] = await Promise.all([
     supabase.from("push_subscriptions").select("user_id, endpoint, p256dh, auth"),
@@ -72,9 +74,11 @@ Deno.serve(async (req) => {
   const failed: unknown[] = [];
   const preview: unknown[] = [];
   for (const sub of subsRes.data || []) {
-    if (done.has(sub.user_id)) { skipped++; continue; }
+    if (done.has(sub.user_id) && !test) { skipped++; continue; }
     const p = partnerOf.get(sub.user_id);
-    const body = p && done.has(p.partner_id)
+    const body = test
+      ? "Test: So sieht deine Erinnerung um 20 Uhr aus."
+      : p && done.has(p.partner_id)
       ? `${p.partner_name} hat schon geschrieben. Und was war heute dein schönster Moment?`
       : "Was war heute dein schönster Moment? Halte ihn kurz fest.";
     if (dry) { preview.push({ user: sub.user_id.slice(0, 8), body }); continue; }
