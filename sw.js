@@ -1,4 +1,4 @@
-const CACHE_NAME = 'das-beste-des-tages-v19';
+const CACHE_NAME = 'das-beste-des-tages-v20';
 
 // Ohne diese beiden Dateien startet die App nicht. Sie liegen auf einem
 // fremden Server (jsDelivr), deshalb werden sie gleich bei der Installation
@@ -14,7 +14,7 @@ self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(async cache => {
-      await cache.addAll(['./index.html', './icon.svg', './manifest.json', FONT_URL]);
+      await cache.addAll(['./index.html', './icon.svg', './icon-192.png', './apple-touch-icon.png', './manifest.json', FONT_URL]);
       // Fehlschläge hier dürfen die Installation nicht verhindern
       await Promise.all(EXTERNAL_ASSETS.map(url => cache.add(url).catch(() => {})));
     })
@@ -81,8 +81,8 @@ self.addEventListener('push', event => {
   const title = payload.title || 'Wir zwei';
   const options = {
     body: payload.body || 'Was war heute dein schönster Moment? Halte ihn kurz fest.',
-    icon: './icon.svg',
-    badge: './icon.svg',
+    icon: './icon-192.png',
+    badge: './icon-192.png',
     data: { url: payload.url || './?tab=wir' }
   };
   event.waitUntil(self.registration.showNotification(title, options));
