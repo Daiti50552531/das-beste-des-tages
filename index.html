@@ -1462,6 +1462,21 @@
         font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
         box-shadow: 0 6px 16px rgba(209, 49, 26, 0.28);
     }
+    .wir-nudge-btn {
+        margin-top: 6px; height: 48px; padding: 0 22px; border-radius: 24px; border: none;
+        background: var(--wir-accent); color: #FFFFFF;
+        font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px;
+        box-shadow: 0 6px 16px rgba(201, 47, 24, 0.28);
+    }
+    .wir-nudge-btn .icon { width: 18px; height: 18px; }
+    .wir-nudge-btn:disabled { opacity: 0.6; cursor: default; }
+    .wir-nudge-done {
+        margin-top: 6px; display: inline-flex; align-items: center; gap: 8px;
+        font-size: 15px; font-weight: 600; color: var(--wir-muted);
+    }
+    .wir-nudge-done .icon { width: 16px; height: 16px; }
+    .wir-nudge-note { font-size: 14px; line-height: 1.45; color: var(--wir-muted); max-width: 260px; }
     .wir-note { font-size: 14px; line-height: 1.45; color: var(--wir-muted); text-align: center; margin: 14px 8px 0; }
 
     .wir-nav {
@@ -2235,6 +2250,7 @@
         auto: '<circle cx="12" cy="12" r="9"></circle><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"></path>',
         zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>',
         award: '<circle cx="12" cy="8" r="6"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.85"></polyline>',
+        bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path>',
         heart: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>',
         message: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>',
         type: '<polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line>',
@@ -4644,7 +4660,8 @@
         who: 'me',
         filter: 'both',
         loadedAt: 0,
-        writeOrig: ''
+        writeOrig: '',
+        nudge: null             // { reachable, nudgedAt, date } für den "Erinnern"-Knopf
     };
 
     // Abreißkalender-Kacheln: SA | 17 | OKT | 26
@@ -4752,6 +4769,10 @@
         }
         wirSetEntries(eRes.data);
         wir.loadedAt = Date.now();
+        if (wir.partner) {
+            const { data: ns } = await db.rpc('wir_nudge_status').then(r => r, () => ({}));
+            wir.nudge = ns ? { reachable: !!ns.reachable, nudgedAt: ns.nudged_at || null, date: localISODate() } : null;
+        } else wir.nudge = null;
         wirSaveCache();
         applySharedOnly();
         renderWir();
@@ -4791,6 +4812,7 @@
                 if (meta) html += `<div class="wir-card-meta">${meta}</div>`;
             } else {
                 html += `<div class="wir-card-text is-empty">${escapeHtml(name)} hat ${isToday ? 'heute noch' : 'an diesem Tag'} nichts geschrieben.</div>`;
+                if (isToday) html += wirNudgeHtml(name);
             }
         } else {
             html = '<div class="wir-card-label">Das Beste des Tages</div>';
@@ -4810,6 +4832,47 @@
         todayBtn.textContent = isToday ? 'Heute' : 'Zu heute';
         updateThemeColor();
     }
+    // "Erinnern"-Knopf auf der leeren Karte der Partnerin/des Partners (nur heute)
+    function wirNudgeHtml(name) {
+        const n = wir.nudge && wir.nudge.date === localISODate() ? wir.nudge : null;
+        if (n?.nudgedAt) {
+            const t = new Date(n.nudgedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            return `<div class="wir-nudge-done">${ic('bell')} Erinnert um ${t}</div>`;
+        }
+        if (n && !n.reachable) {
+            return `<div class="wir-nudge-note">${escapeHtml(name)} hat die Erinnerung noch nicht eingeschaltet (unter Mehr).</div>`;
+        }
+        return `<button type="button" class="wir-nudge-btn" data-wir-nudge>${ic('bell')} ${escapeHtml(name)} erinnern</button>`;
+    }
+    async function sendWirNudge(btn) {
+        const name = wir.partner?.name || '';
+        btn.disabled = true;
+        btn.textContent = 'Wird gesendet …';
+        let res;
+        try {
+            const { data, error } = await db.functions.invoke('nudge-partner', { body: {} });
+            res = data;
+            if (!res && error?.context && typeof error.context.json === 'function') {
+                try { res = await error.context.json(); } catch (e) { res = null; }
+            }
+            res = res || { status: 'error' };
+        } catch (e) { res = { status: 'error' }; }
+        const today = localISODate();
+        if (res.status === 'sent' || res.status === 'already_nudged') {
+            wir.nudge = { reachable: true, nudgedAt: res.nudged_at || new Date().toISOString(), date: today };
+            showToast(res.status === 'sent' ? `${name} wird erinnert` : `${name} wurde heute schon erinnert`);
+        } else if (res.status === 'unreachable') {
+            wir.nudge = { reachable: false, nudgedAt: null, date: today };
+            showToast(`${name} kann gerade keine Erinnerungen empfangen.`, true, 5000);
+        } else if (res.status === 'already_written') {
+            showToast(`${name} hat inzwischen geschrieben.`);
+            loadWirZwei().catch(() => {});
+        } else {
+            showToast('Erinnern hat nicht geklappt. Bitte später nochmal versuchen.', true, 5000);
+        }
+        renderWir();
+    }
+
     function wirTextHtml(text) {
         const len = text.length;
         const cls = len > 220 ? ' is-xlong' : len > 90 ? ' is-long' : '';
@@ -4830,6 +4893,8 @@
     $('wirNextBtn').addEventListener('click', () => { wir.date = shiftISO(wir.date, 1); renderWir(); });
     $('wirTodayBtn').addEventListener('click', () => { wir.date = localISODate(); renderWir(); });
     $('wirCard').addEventListener('click', (e) => {
+        const nudgeBtn = e.target.closest('[data-wir-nudge]');
+        if (nudgeBtn) { sendWirNudge(nudgeBtn); return; }
         if (wir.who !== 'me') return;
         if (e.target.closest('[data-wir-write]') || wirEntry('me', wir.date)) openWirWrite();
     });

@@ -129,6 +129,42 @@ create trigger on_auth_user_link_wir_zwei
 -- der App überleben. Die Code-Sperre bleibt nur auf dem Gerät.
 alter table public.profiles add column if not exists settings jsonb not null default '{}'::jsonb;
 
+-- 0e) "Erinnern"-Knopf bei "Wir zwei" (angewendet am 19.10.2026)
+-- Edge Function nudge-partner (supabase/nudge-partner.ts) schreibt hier mit der
+-- service role; höchstens eine Erinnerung pro Tag und Richtung.
+create table if not exists public.nudges (
+  id uuid primary key default gen_random_uuid(),
+  from_user uuid not null references auth.users(id) on delete cascade,
+  to_user uuid not null references auth.users(id) on delete cascade,
+  nudge_date date not null,
+  created_at timestamptz not null default now(),
+  constraint nudges_once_per_day unique (from_user, to_user, nudge_date)
+);
+create index if not exists idx_nudges_to_user on public.nudges (to_user);
+alter table public.nudges enable row level security;
+create policy "Read own nudges" on public.nudges
+  for select to authenticated
+  using ((select auth.uid()) = from_user or (select auth.uid()) = to_user);
+
+-- Für den Knopf: Kann die Partnerin/der Partner Benachrichtigungen empfangen, und wurde heute schon erinnert?
+create or replace function public.wir_nudge_status()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with p as (select partner_id from public.partnerships where user_id = (select auth.uid()))
+  select jsonb_build_object(
+    'reachable', exists (select 1 from public.push_subscriptions s join p on s.user_id = p.partner_id),
+    'nudged_at', (select n.created_at from public.nudges n join p on n.to_user = p.partner_id
+                  where n.from_user = (select auth.uid())
+                    and n.nudge_date = (now() at time zone 'Europe/Berlin')::date)
+  );
+$$;
+revoke all on function public.wir_nudge_status() from public, anon;
+grant execute on function public.wir_nudge_status() to authenticated;
+
 -- 1) Foto-Anhänge: Spalte auf der entries-Tabelle
 alter table entries add column if not exists photo_path text;
 

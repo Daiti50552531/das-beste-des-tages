@@ -1,4 +1,4 @@
-const CACHE_NAME = 'das-beste-des-tages-v23';
+const CACHE_NAME = 'das-beste-des-tages-v24';
 
 // Ohne diese beiden Dateien startet die App nicht. Sie liegen auf einem
 // fremden Server (jsDelivr), deshalb werden sie gleich bei der Installation
