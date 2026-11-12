@@ -165,6 +165,41 @@ $$;
 revoke all on function public.wir_nudge_status() from public, anon;
 grant execute on function public.wir_nudge_status() to authenticated;
 
+-- 0f) Herz und "hat geschrieben" bei "Wir zwei" (angewendet am 12.11.2026)
+-- Herz auf den Eintrag der Partnerin/des Partners: höchstens eines pro Eintrag.
+create table if not exists public.entry_likes (
+  entry_id uuid primary key references public.shared_entries(id) on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_entry_likes_user_id on public.entry_likes (user_id);
+alter table public.entry_likes enable row level security;
+-- Sehen: wer das Herz vergeben hat und wem der Eintrag gehört
+create policy "Read likes on own entries or own likes" on public.entry_likes
+  for select to authenticated
+  using (
+    user_id = (select auth.uid())
+    or exists (select 1 from public.shared_entries e where e.id = entry_id and e.user_id = (select auth.uid()))
+  );
+-- Vergeben: nur auf Einträge der verknüpften Person
+create policy "Like partner entries" on public.entry_likes
+  for insert to authenticated
+  with check (
+    user_id = (select auth.uid())
+    and exists (
+      select 1 from public.shared_entries e
+      join public.partnerships p on p.partner_id = e.user_id and p.user_id = (select auth.uid())
+      where e.id = entry_id
+    )
+  );
+create policy "Remove own likes" on public.entry_likes
+  for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+-- "… hat geschrieben": die Edge Function nudge-partner merkt sich hier, dass für
+-- diesen Eintrag schon benachrichtigt wurde.
+alter table public.shared_entries add column if not exists notified_at timestamptz;
+
 -- 1) Foto-Anhänge: Spalte auf der entries-Tabelle
 alter table entries add column if not exists photo_path text;
 
@@ -229,10 +264,11 @@ create policy "Users manage own subscriptions" on push_subscriptions
   for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- ============================================================
--- 4) Tägliche Erinnerung per pg_cron (angewendet am 17.10.2026)
+-- 4) Tägliche Erinnerung per pg_cron (angewendet am 17.10.2026, stündlich seit 12.11.2026)
 -- Voraussetzung: Extensions "pg_cron", "pg_net" und "supabase_vault".
--- Der Zeitplan ruft die Edge Function um 18 und 19 Uhr UTC auf; sie sendet
--- nur, wenn es in Berlin 20 Uhr ist (Sommer- und Winterzeit).
+-- Der Zeitplan ruft die Edge Function zu jeder vollen Stunde auf; sie sendet nur an
+-- Personen, deren gewählte Stunde (profiles.settings.reminderHour, Vorgabe 20) gerade
+-- in Berlin ist. Sommer- und Winterzeit sind damit berücksichtigt.
 -- Statt eines API-Schlüssels prüft die Funktion ein Geheimnis aus dem Vault.
 -- ============================================================
 
@@ -252,7 +288,7 @@ $$;
 revoke all on function public.verify_reminder_secret(text) from public, anon, authenticated;
 grant execute on function public.verify_reminder_secret(text) to service_role;
 
-select cron.schedule('daily-reminder-push', '0 18,19 * * *', $cron$
+select cron.schedule('daily-reminder-push', '0 * * * *', $cron$
   select net.http_post(
     url := 'https://<DEIN-PROJECT-REF>.supabase.co/functions/v1/send-daily-reminder',
     headers := jsonb_build_object(

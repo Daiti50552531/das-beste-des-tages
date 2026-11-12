@@ -12,7 +12,8 @@
 
   <title>Das Beste des Tages</title>
   
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Feste Versionen: ein fehlerhaftes Update der Bibliotheken kann die App so nicht lahmlegen -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
 
   <style>
@@ -1477,6 +1478,35 @@
     }
     .wir-nudge-done .icon { width: 16px; height: 16px; }
     .wir-nudge-note { font-size: 14px; line-height: 1.45; color: var(--wir-muted); max-width: 260px; }
+    .wir-like {
+        position: absolute; right: 12px; bottom: 12px;
+        width: 48px; height: 48px; border: none; background: transparent;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--wir-muted); cursor: pointer; border-radius: 24px;
+        transition: transform 0.15s;
+    }
+    .wir-like .icon { width: 26px; height: 26px; }
+    .wir-like:active { transform: scale(0.88); }
+    .wir-like.is-liked { color: var(--wir-accent); }
+    .wir-like.is-liked .icon, .wir-liked .icon, .wir-bubble-heart .icon { fill: currentColor; }
+    .wir-liked { display: inline-flex; align-items: center; gap: 6px; color: var(--wir-accent); font-weight: 600; }
+    .wir-liked .icon { width: 14px; height: 14px; }
+    .wir-bubble-heart { display: inline-flex; vertical-align: -2px; margin-left: 4px; color: var(--wir-accent); }
+    .wir-bubble-heart .icon { width: 12px; height: 12px; }
+    .wir-memories { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding-top: 14px; }
+    .wir-memory {
+        height: 40px; padding: 0 16px; border-radius: 20px; border: none;
+        background: var(--wir-pill); color: var(--wir-text);
+        font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px;
+        box-shadow: 0 2px 8px var(--wir-shadow);
+    }
+    .wir-memory .icon { width: 16px; height: 16px; }
+    .hour-select {
+        flex-shrink: 0; height: 40px; padding: 0 12px; border: none; border-radius: 12px;
+        background: var(--bg-input); color: var(--text-main);
+        font-family: var(--font-stack); font-size: 16px; font-weight: 600;
+    }
     .wir-note { font-size: 14px; line-height: 1.45; color: var(--wir-muted); text-align: center; margin: 14px 8px 0; }
 
     .wir-nav {
@@ -1759,6 +1789,7 @@
           <div id="wirTiles" class="wir-tiles" role="img"></div>
 
           <div id="wirCard" class="wir-card" aria-live="polite"></div>
+          <div id="wirMemories" class="wir-memories hidden"></div>
           <p id="wirNote" class="wir-note hidden">Sobald ihr verbunden seid, seht ihr hier auch die Einträge des anderen.</p>
 
           <div class="wir-nav">
@@ -1890,13 +1921,20 @@
       <div class="section-title">Erinnerung</div>
       <div class="setting-toggle-row">
           <div>
-              <div class="st-label" style="display:flex; align-items:center; gap:9px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> Täglich um 20 Uhr</div>
-              <div class="st-desc">Nur wenn du bei „Wir zwei“ an dem Tag noch nichts geschrieben hast.</div>
+              <div class="st-label" style="display:flex; align-items:center; gap:9px;"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> Benachrichtigungen</div>
+              <div class="st-desc" id="reminderDesc">Erinnert dich abends, wenn du bei „Wir zwei“ noch nichts geschrieben hast, und sagt dir, wenn der andere geschrieben hat.</div>
           </div>
           <label class="switch">
-              <input type="checkbox" id="reminderToggle" aria-label="Tägliche Erinnerung um 20 Uhr">
+              <input type="checkbox" id="reminderToggle" aria-label="Benachrichtigungen">
               <span class="slider"></span>
           </label>
+      </div>
+      <div class="setting-toggle-row">
+          <div>
+              <label class="st-label" for="reminderHour" style="margin:0;">Uhrzeit der Erinnerung</label>
+              <div class="st-desc">Zur vollen Stunde, deutsche Zeit.</div>
+          </div>
+          <select id="reminderHour" class="hour-select" aria-label="Uhrzeit der Erinnerung"></select>
       </div>
 
       <div class="section-title">Backup</div>
@@ -1921,6 +1959,7 @@
             <button id="exportPdfBtn" class="popover-item"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Als PDF sichern</button>
             <button id="exportCsvBtn" class="popover-item"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> CSV Datei</button>
             <button id="exportXlsxBtn" class="popover-item"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg> Excel Datei</button>
+            <button id="exportPhotosBtn" class="popover-item"><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Fotos (ZIP)</button>
           </div>
       </div>
 
@@ -2207,6 +2246,7 @@
     let filterDateFrom, filterDateTo, clearDateFilterBtn;
     let currentFilteredEntries = [];
     let currentPage = 0;
+    let entriesComplete = false;    // true, sobald in dieser Sitzung alle Einträge vollständig vom Server kamen
     let lastRenderedMonth = null;   // für Monatsüberschriften beim Nachladen
     let pendingPhotoFile = null;
     let removeExistingPhoto = false;
@@ -2353,6 +2393,7 @@
         field1Enabled: false,
         field2Enabled: false,
         accent: 'red',
+        reminderHour: 20,
         pinLock: false,
         onboarded: false
     };
@@ -2661,6 +2702,9 @@
     // --- EINSTELLUNGEN ANWENDEN (Felder, Filter, Farbe, Gruß) ---
     function applySettings() {
         applyAccent();
+        const hour = Number.isInteger(settings.reminderHour) && settings.reminderHour >= 6 && settings.reminderHour <= 23 ? settings.reminderHour : 20;
+        settings.reminderHour = hour;
+        $('reminderHour').value = String(hour);
         const f1 = settings.field1Enabled, f2 = settings.field2Enabled;
         $('field1Wrap').classList.toggle('hidden', !f1);
         $('field2Wrap').classList.toggle('hidden', !f2);
@@ -3416,6 +3460,30 @@
       try { localStorage.setItem(key, JSON.stringify(allEntriesCache)); } catch(e) {}
     }
 
+    // Lädt ALLE Zeilen einer Abfrage, seitenweise. Supabase liefert pro Abruf nur eine
+    // begrenzte Zahl Zeilen (üblich: 1000); ohne Blättern würden die ältesten Einträge
+    // irgendwann still fehlen. Die Gesamtzahl kommt vom Server und wird am Ende geprüft.
+    const FETCH_PAGE = 500;
+    async function fetchAllRows(makeQuery) {
+        const rows = [];
+        let total = null;
+        for (let guard = 0; guard < 400; guard++) {
+            const { data, error, count } = await makeQuery().range(rows.length, rows.length + FETCH_PAGE - 1);
+            if (error) {
+                if (error.code === 'PGRST103') break;   // Seite hinter dem letzten Eintrag angefragt
+                return { data: null, error };
+            }
+            if (typeof count === 'number') total = count;
+            if (!data || data.length === 0) break;
+            rows.push(...data);
+            if (total !== null && rows.length >= total) break;
+        }
+        if (total !== null && rows.length < total) {
+            return { data: null, error: { message: `Nur ${rows.length} von ${total} Einträgen geladen.` } };
+        }
+        return { data: rows, error: null };
+    }
+
     async function loadEntries() {
       const cacheKey = CACHE_KEY_PREFIX + (currentUser?.id || 'guest');
       const cached = localStorage.getItem(cacheKey);
@@ -3432,14 +3500,16 @@
       }
 
       let cancelled = false;
-      const fetchPromise = db.from('entries').select('*').order('entry_date', { ascending: false }).limit(2000);
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => { cancelled = true; reject(new Error('network-timeout')); }, 12000));
+      const fetchPromise = fetchAllRows(() => db.from('entries').select('*', { count: 'exact' })
+          .order('entry_date', { ascending: false }).order('id', { ascending: true }));
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => { cancelled = true; reject(new Error('network-timeout')); }, 30000));
 
       try {
           const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
           if (cancelled) return;
           if (error) { showToast('Ladefehler: ' + error.message, true); return; }
           allEntriesCache = data || [];
+          entriesComplete = true;
           try { localStorage.setItem(cacheKey, JSON.stringify(allEntriesCache)); } catch(e) {}
           renderAll();
       } catch(err) {
@@ -3787,11 +3857,13 @@
     });
 
     $('exportCsvBtn').addEventListener('click', () => { popover.style.display='none'; exportData('csv'); });
+    $('exportPhotosBtn').addEventListener('click', () => { popover.style.display='none'; exportPhotos(); });
     $('exportXlsxBtn').addEventListener('click', () => { popover.style.display='none'; exportData('xlsx'); });
 
     // Die Excel-Bibliothek ist rund 1 MB groß und wird nur für Import/Export
     // gebraucht. Sie wird deshalb erst beim ersten Klick nachgeladen.
-    const XLSX_URL = 'https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js';
+    const XLSX_URL = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    const JSZIP_URL = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
     let xlsxPromise = null;
     function ensureXlsx() {
         if (window.XLSX) return Promise.resolve();
@@ -3815,7 +3887,8 @@
       try { await ensureXlsx(); }
       catch (err) { return showToast(err.message, true); }
       showToast('Exportiere …');
-      try { await loadWirZwei(); } catch (e) { /* offline: zwischengespeicherte Einträge nehmen */ }
+      let fresh = true;
+      try { await loadWirZwei(); } catch (e) { fresh = false; /* offline: zwischengespeicherte Einträge nehmen */ }
       const rows = [...wir.entries.values()];
       if (!rows.length) return showToast('Noch keine Einträge bei „Wir zwei“.', true);
       const meName = settings.displayName || 'Ich';
@@ -3832,19 +3905,82 @@
           [partnerName]: wirEntry('partner', d)?.text || ''
       }));
       const all = rows.slice().sort((a, b) => b.entry_date.localeCompare(a.entry_date) || who(a.user_id).localeCompare(who(b.user_id)))
-          .map(r => ({ 'Datum': r.entry_date, 'Von': who(r.user_id), 'Text': r.text, 'Geschrieben am': stamp(r.created_at), 'Geändert am': stamp(r.updated_at) }));
+          .map(r => ({ 'Datum': r.entry_date, 'Von': who(r.user_id), 'Text': r.text, 'Herz': wir.likes.has(r.id) ? 'ja' : '', 'Geschrieben am': stamp(r.created_at), 'Geändert am': stamp(r.updated_at) }));
 
       const wb = XLSX.utils.book_new();
       const ws1 = XLSX.utils.json_to_sheet(byDay);
       ws1['!cols'] = [{ wch: 12 }, { wch: 12 }, { wch: 60 }, { wch: 60 }];
       XLSX.utils.book_append_sheet(wb, ws1, 'Nach Tagen');
       const ws2 = XLSX.utils.json_to_sheet(all);
-      ws2['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 70 }, { wch: 16 }, { wch: 16 }];
+      ws2['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 70 }, { wch: 6 }, { wch: 16 }, { wch: 16 }];
       XLSX.utils.book_append_sheet(wb, ws2, 'Alle Einträge');
       XLSX.writeFile(wb, `WirZwei_Backup_${localISODate()}.xlsx`);
-      showToast(`${rows.length} Einträge gesichert`);
+      if (fresh) showToast(`${rows.length} Einträge gesichert`);
+      else showToast('Keine Verbindung: Das Backup stammt aus den zuletzt geladenen Daten. Bitte mit Internet wiederholen.', true, 9000);
     }
     $('wirExportBtn').addEventListener('click', exportWirZwei);
+
+    let jszipPromise = null;
+    function ensureJsZip() {
+        if (window.JSZip) return Promise.resolve();
+        if (!jszipPromise) {
+            jszipPromise = new Promise((resolve, reject) => {
+                const tag = document.createElement('script');
+                tag.src = JSZIP_URL;
+                tag.onload = () => resolve();
+                tag.onerror = () => { jszipPromise = null; reject(new Error('Foto-Backup konnte nicht geladen werden. Bitte Internetverbindung prüfen.')); };
+                document.head.appendChild(tag);
+            });
+        }
+        return jszipPromise;
+    }
+
+    // Vor jedem Backup: Stimmt die Zahl der geladenen Einträge mit dem Server überein?
+    // Gibt zurück, ob das Backup sicher vollständig ist, und sonst einen Warntext.
+    async function verifyEntriesComplete() {
+        try {
+            let res = await db.from('entries').select('id', { count: 'exact', head: true });
+            if (res.error || typeof res.count !== 'number') throw new Error('offline');
+            if (res.count !== allEntriesCache.length) {
+                await loadEntries();
+                res = await db.from('entries').select('id', { count: 'exact', head: true });
+                if (res.error || typeof res.count !== 'number') throw new Error('offline');
+            }
+            if (res.count === allEntriesCache.length) return { ok: true };
+            return { ok: false, warn: `Achtung: Das Backup enthält ${allEntriesCache.length} von ${res.count} Einträgen. Bitte nochmal versuchen.` };
+        } catch (e) {
+            return { ok: false, warn: 'Keine Verbindung: Das Backup stammt aus den zuletzt geladenen Daten. Bitte mit Internet wiederholen.' };
+        }
+    }
+    // Dateiname eines Fotos im Foto-Backup, steht auch in der Excel-Spalte "photo"
+    function photoFileName(entry) {
+        if (!entry.photo_path) return '';
+        const ext = (entry.photo_path.match(/\.[A-Za-z0-9]+$/) || ['.jpg'])[0].toLowerCase();
+        return `${entry.entry_date}${ext}`;
+    }
+
+    async function exportPhotos() {
+      const withPhoto = allEntriesCache.filter(e => e.photo_path);
+      if (!withPhoto.length) return showToast('Es gibt noch keine Fotos zum Sichern.');
+      try { await ensureJsZip(); }
+      catch (err) { return showToast(err.message, true); }
+      showToast(`Sichere ${withPhoto.length} Fotos …`, false, 60000);
+      const zip = new JSZip();
+      let missing = 0;
+      for (const entry of withPhoto) {
+          try {
+              const { data, error } = await db.storage.from('entry-photos').download(entry.photo_path);
+              if (error || !data) throw error || new Error('leer');
+              zip.file(photoFileName(entry), data);
+          } catch (e) { missing++; }
+      }
+      const saved = withPhoto.length - missing;
+      if (!saved) return showToast('Die Fotos konnten nicht geladen werden. Bitte später nochmal versuchen.', true, 6000);
+      const blob = await zip.generateAsync({ type: 'blob' });
+      downloadBlob(blob, `Journal_Fotos_${localISODate()}.zip`, 'application/zip');
+      if (missing) showToast(`Achtung: ${missing} von ${withPhoto.length} Fotos fehlen im Backup. Bitte nochmal versuchen.`, true, 8000);
+      else showToast(`${saved} Fotos gesichert`);
+    }
 
     async function exportData(type) {
       if (type !== 'csv') {
@@ -3852,17 +3988,19 @@
           catch (err) { return showToast(err.message, true); }
       }
       showToast('Exportiere...');
+      const check = await verifyEntriesComplete();
       const data = allEntriesCache.map(r => ({
           entry_date: r.entry_date,
           best_of_day: r.best_of_day,
           lotta: r.lotta,
           thea: r.thea,
-          mood: r.mood
+          mood: r.mood,
+          photo: photoFileName(r)
       }));
       const fname = `Journal_Export_${localISODate()}.${type}`;
       
       if (type === 'csv') {
-        const headers = ['entry_date', 'best_of_day', 'lotta', 'thea', 'mood'];
+        const headers = ['entry_date', 'best_of_day', 'lotta', 'thea', 'mood', 'photo'];
         const csv = [headers.join(','), ...data.map(row => headers.map(h => `"${String(row[h]||'').replace(/"/g,'""')}"`).join(','))].join('\n');
         downloadBlob(csv, fname, 'text/csv;charset=utf-8;');
       } else {
@@ -3871,7 +4009,8 @@
         XLSX.utils.book_append_sheet(wb, ws, "Journal");
         XLSX.writeFile(wb, fname);
       }
-      showToast('Export erstellt');
+      if (!check.ok) return showToast(check.warn, true, 9000);
+      showToast(`Export erstellt: ${data.length} Einträge`);
       dismissReminder();
     }
 
@@ -3961,7 +4100,8 @@
     function downloadBlob(c, n, m) {
       const u = URL.createObjectURL(new Blob([c], {type:m}));
       const a = document.createElement('a'); a.href=u; a.download=n; a.click();
-      URL.revokeObjectURL(u);
+      // Nicht sofort freigeben: große Dateien (Foto-Backup) brauchen einen Moment
+      setTimeout(() => URL.revokeObjectURL(u), 60000);
     }
 
     // --- KEYBOARD SHORTCUTS ---
@@ -4542,7 +4682,7 @@
             { user_id: currentUser.id, endpoint, p256dh: keys.p256dh, auth: keys.auth },
             { onConflict: 'endpoint' });
         if (error) throw error;
-        showToast('Erinnerung um 20 Uhr ist an');
+        showToast(`Benachrichtigungen sind an, Erinnerung um ${settings.reminderHour} Uhr`);
         return true;
     }
     async function disableReminder() {
@@ -4551,8 +4691,19 @@
             await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
             await sub.unsubscribe().catch(() => {});
         }
-        showToast('Erinnerung ist aus');
+        showToast('Benachrichtigungen sind aus');
     }
+    // Uhrzeit der Erinnerung: volle Stunde, gespeichert in den Einstellungen (und damit in Supabase)
+    (function setupReminderHour() {
+        const sel = $('reminderHour');
+        for (let h = 6; h <= 23; h++) sel.insertAdjacentHTML('beforeend', `<option value="${h}">${h} Uhr</option>`);
+        sel.addEventListener('change', () => {
+            settings.reminderHour = Number(sel.value);
+            saveSettings();
+            showToast(`Erinnerung kommt um ${settings.reminderHour} Uhr`);
+        });
+    })();
+
     $('reminderToggle').addEventListener('change', async (e) => {
         const t = e.target;
         if (!t.checked) {
@@ -4656,6 +4807,7 @@
         partner: null,          // { id, name }
         sharedOnly: false,      // true: nur "Wir zwei" sichtbar
         entries: new Map(),     // "uid|datum" -> Zeile
+        likes: new Set(),       // IDs der Einträge mit Herz (eigene und erhaltene)
         date: localISODate(),
         who: 'me',
         filter: 'both',
@@ -4699,7 +4851,7 @@
         if (!currentUser) return;
         try {
             localStorage.setItem(WIR_CACHE_PREFIX + currentUser.id, JSON.stringify({
-                partner: wir.partner, sharedOnly: wir.sharedOnly, entries: [...wir.entries.values()]
+                partner: wir.partner, sharedOnly: wir.sharedOnly, entries: [...wir.entries.values()], likes: [...wir.likes]
             }));
         } catch (e) {}
     }
@@ -4710,6 +4862,7 @@
             wir.partner = c.partner || null;
             wir.sharedOnly = !!c.sharedOnly;
             wirSetEntries(c.entries);
+            wir.likes = new Set(c.likes || []);
             return true;
         } catch (e) { return false; }
     }
@@ -4733,6 +4886,7 @@
         wir.partner = null;
         wir.sharedOnly = false;
         wir.entries = new Map();
+        wir.likes = new Set();
         wir.date = localISODate();
         wir.who = 'me';
         wir.filter = 'both';
@@ -4752,9 +4906,12 @@
     async function loadWirZwei() {
         if (!currentUser) return;
         const uid = currentUser.id;
-        const [pRes, eRes] = await Promise.all([
+        const [pRes, eRes, lRes] = await Promise.all([
             db.from('partnerships').select('partner_id, partner_name, shared_only').maybeSingle(),
-            db.from('shared_entries').select('id, user_id, entry_date, text, created_at, updated_at').order('entry_date', { ascending: false })
+            fetchAllRows(() => db.from('shared_entries').select('id, user_id, entry_date, text, created_at, updated_at', { count: 'exact' })
+                .order('entry_date', { ascending: false }).order('id', { ascending: true })),
+            fetchAllRows(() => db.from('entry_likes').select('entry_id', { count: 'exact' }).order('entry_id', { ascending: true }))
+                .then(r => r, () => ({ data: null }))
         ]);
         if (!currentUser || currentUser.id !== uid) return;
         if (pRes.error || eRes.error) throw (pRes.error || eRes.error);
@@ -4768,6 +4925,7 @@
             if (!error) wir.sharedOnly = count === 0;
         }
         wirSetEntries(eRes.data);
+        if (lRes.data) wir.likes = new Set(lRes.data.map(l => l.entry_id));
         wir.loadedAt = Date.now();
         if (wir.partner) {
             const { data: ns } = await db.rpc('wir_nudge_status').then(r => r, () => ({}));
@@ -4810,21 +4968,27 @@
                 html += wirTextHtml(entry.text);
                 const meta = wirWrittenMeta(entry);
                 if (meta) html += `<div class="wir-card-meta">${meta}</div>`;
+                const liked = wir.likes.has(entry.id);
+                html += `<button type="button" class="wir-like${liked ? ' is-liked' : ''}" data-wir-like="${entry.id}" aria-pressed="${liked}" aria-label="${liked ? 'Herz zurücknehmen' : 'Herz geben'}">${ic('heart', 'icon')}</button>`;
             } else {
                 html += `<div class="wir-card-text is-empty">${escapeHtml(name)} hat ${isToday ? 'heute noch' : 'an diesem Tag'} nichts geschrieben.</div>`;
                 if (isToday) html += wirNudgeHtml(name);
             }
         } else {
             html = '<div class="wir-card-label">Das Beste des Tages</div>';
+            const draft = wirDraftGet(wir.date);
             if (entry) {
                 html += wirTextHtml(entry.text);
+                if (wir.likes.has(entry.id)) html += `<div class="wir-card-meta wir-liked">${ic('heart')} ${escapeHtml(name)} gefällt das</div>`;
+                if (draft !== null) html += '<div class="wir-card-meta">Ungespeicherte Änderung als Entwurf vorhanden</div>';
                 html += `<button type="button" class="wir-edit" data-wir-write aria-label="Eintrag bearbeiten">${ic('edit', 'icon')}</button>`;
             } else {
                 html += `<div class="wir-card-text is-empty">${isToday ? 'Noch nichts geschrieben.' : 'An diesem Tag hast du nichts geschrieben.'}</div>`;
-                html += `<button type="button" class="wir-write-btn" data-wir-write>${isToday ? 'Jetzt schreiben' : 'Nachtragen'}</button>`;
+                html += `<button type="button" class="wir-write-btn" data-wir-write>${draft !== null ? 'Entwurf weiterschreiben' : isToday ? 'Jetzt schreiben' : 'Nachtragen'}</button>`;
             }
         }
         card.innerHTML = html;
+        renderWirMemories(isToday);
 
         $('wirNextBtn').disabled = isToday;
         const todayBtn = $('wirTodayBtn');
@@ -4832,6 +4996,63 @@
         todayBtn.textContent = isToday ? 'Heute' : 'Zu heute';
         updateThemeColor();
     }
+    // "Heute vor einem Jahr": ein Knopf pro früherem Jahr, in dem an diesem Kalendertag
+    // jemand von beiden geschrieben hat. Wächst mit: nächstes Jahr heißt derselbe Tag "Vor 2 Jahren".
+    function renderWirMemories(isToday) {
+        const box = $('wirMemories');
+        if (!isToday) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+        const today = localISODate();
+        const md = today.slice(4);
+        const year = Number(today.slice(0, 4));
+        const dates = [...new Set([...wir.entries.values()].map(r => r.entry_date))]
+            .filter(d => d.slice(4) === md && d < today).sort().reverse();
+        box.innerHTML = dates.map(d => {
+            const n = year - Number(d.slice(0, 4));
+            return `<button type="button" class="wir-memory" data-wir-date="${d}">${ic('calendar')} ${n === 1 ? 'Heute vor 1 Jahr' : `Heute vor ${n} Jahren`}</button>`;
+        }).join('');
+        box.classList.toggle('hidden', !dates.length);
+    }
+    $('wirMemories').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-wir-date]');
+        if (!b) return;
+        wir.date = b.dataset.wirDate;
+        renderWir();
+    });
+
+    // Herz auf den Eintrag der Partnerin/des Partners
+    async function toggleWirLike(entryId) {
+        const had = wir.likes.has(entryId);
+        if (had) wir.likes.delete(entryId); else wir.likes.add(entryId);
+        renderWir();
+        const { error } = had
+            ? await db.from('entry_likes').delete().eq('entry_id', entryId)
+            : await db.from('entry_likes').insert({ entry_id: entryId });
+        if (error) {
+            if (had) wir.likes.add(entryId); else wir.likes.delete(entryId);
+            renderWir();
+            return showToast('Das hat nicht geklappt. Bitte nochmal versuchen.', true);
+        }
+        wirSaveCache();
+    }
+
+    // Entwürfe: ungespeicherter Text bleibt auf dem Gerät, bis er gespeichert oder geleert wird
+    const WIR_DRAFT_PREFIX = 'wir_draft_v1_';
+    function wirDrafts() {
+        try { return JSON.parse(localStorage.getItem(WIR_DRAFT_PREFIX + currentUser.id) || '{}') || {}; }
+        catch (e) { return {}; }
+    }
+    function wirDraftGet(date) {
+        if (!currentUser) return null;
+        const d = wirDrafts()[date];
+        return typeof d === 'string' && d.trim() ? d : null;
+    }
+    function wirDraftSet(date, text) {
+        if (!currentUser) return;
+        const all = wirDrafts();
+        if (text === null) delete all[date]; else all[date] = text;
+        try { localStorage.setItem(WIR_DRAFT_PREFIX + currentUser.id, JSON.stringify(all)); } catch (e) {}
+    }
+
     // "Erinnern"-Knopf auf der leeren Karte der Partnerin/des Partners (nur heute)
     function wirNudgeHtml(name) {
         const n = wir.nudge && wir.nudge.date === localISODate() ? wir.nudge : null;
@@ -4850,7 +5071,7 @@
         btn.textContent = 'Wird gesendet …';
         let res;
         try {
-            const { data, error } = await db.functions.invoke('nudge-partner', { body: {} });
+            const { data, error } = await db.functions.invoke('nudge-partner', { body: { type: 'nudge' } });
             res = data;
             if (!res && error?.context && typeof error.context.json === 'function') {
                 try { res = await error.context.json(); } catch (e) { res = null; }
@@ -4895,6 +5116,8 @@
     $('wirCard').addEventListener('click', (e) => {
         const nudgeBtn = e.target.closest('[data-wir-nudge]');
         if (nudgeBtn) { sendWirNudge(nudgeBtn); return; }
+        const likeBtn = e.target.closest('[data-wir-like]');
+        if (likeBtn) { toggleWirLike(likeBtn.dataset.wirLike); return; }
         if (wir.who !== 'me') return;
         if (e.target.closest('[data-wir-write]') || wirEntry('me', wir.date)) openWirWrite();
     });
@@ -4925,7 +5148,9 @@
         wir.writeOrig = entry ? entry.text : '';
         $('wirWriteDate').textContent = wirDayLabel(wir.date);
         const ta = $('wirText');
-        ta.value = wir.writeOrig;
+        const draft = wirDraftGet(wir.date);
+        ta.value = draft !== null ? draft : wir.writeOrig;
+        if (draft !== null && draft.trim() !== wir.writeOrig.trim()) showToast('Entwurf wiederhergestellt');
         ta.placeholder = isToday ? 'Was war heute schön?' : 'Was war an diesem Tag schön?';
         $('wirWriteHint').textContent = name
             ? `${name} sieht das, sobald du speicherst.`
@@ -4948,23 +5173,34 @@
         window.visualViewport.addEventListener('resize', fitWirWrite);
         window.visualViewport.addEventListener('scroll', fitWirWrite);
     }
+    // Zurück ohne Speichern: der Text bleibt als Entwurf erhalten. Leeren verwirft ihn.
+    function wirKeepDraft() {
+        const text = $('wirText').value;
+        const changed = text.trim() && text.trim() !== wir.writeOrig.trim();
+        wirDraftSet(wir.date, changed ? text : null);
+        return !!changed;
+    }
     function wirWriteBack() {
-        const changed = $('wirText').value.trim() !== wir.writeOrig.trim();
-        if (changed && !confirm('Änderungen verwerfen?')) return;
+        const kept = wirKeepDraft();
         $('wirText').blur();
         closeWirSheet($('wirWrite'));
+        renderWir();
+        if (kept) showToast('Als Entwurf gesichert');
     }
     $('wirWriteBack').addEventListener('click', wirWriteBack);
+    $('wirText').addEventListener('input', () => { if ($('wirWrite').classList.contains('open')) wirKeepDraft(); });
 
     $('wirSaveBtn').addEventListener('click', async () => {
         const text = $('wirText').value.trim();
         const date = wir.date;
         const existing = wirEntry('me', date);
-        if (text === wir.writeOrig.trim()) { $('wirText').blur(); closeWirSheet($('wirWrite')); return; }
+        if (text === wir.writeOrig.trim()) { wirDraftSet(date, null); $('wirText').blur(); closeWirSheet($('wirWrite')); renderWir(); return; }
         if (!text) {
+            wirDraftSet(date, null);
             if (existing) await deleteWirEntry(existing);
             $('wirText').blur();
             closeWirSheet($('wirWrite'));
+            renderWir();
             return;
         }
         const btn = $('wirSaveBtn');
@@ -4974,7 +5210,11 @@
             .select('id, user_id, entry_date, text, created_at, updated_at')
             .single();
         btn.disabled = false;
-        if (error) return showToast('Speichern fehlgeschlagen. Bitte nochmal versuchen.', true);
+        if (error) {
+            wirDraftSet(date, $('wirText').value);
+            return showToast('Speichern fehlgeschlagen. Dein Text bleibt als Entwurf erhalten.', true, 6000);
+        }
+        wirDraftSet(date, null);
         wir.entries.set(data.user_id + '|' + data.entry_date, data);
         wirSaveCache();
         $('wirText').blur();
@@ -4982,6 +5222,10 @@
         wir.who = 'me';
         renderWir();
         showToast('Gespeichert');
+        // Neuer Eintrag: die Partnerin/der Partner erfährt es per Benachrichtigung (einmal pro Eintrag)
+        if (!existing && wir.partner) {
+            db.functions.invoke('nudge-partner', { body: { type: 'wrote', entry_date: date } }).then(() => {}, () => {});
+        }
     });
 
     async function deleteWirEntry(entry) {
@@ -5053,7 +5297,7 @@
                 const cls = 'wir-bubble' + (w === 'partner' ? ' is-partner' : '');
                 const who = w === 'partner' ? escapeHtml(name) : 'Ich';
                 if (e && (!q || e.text.toLowerCase().includes(q))) {
-                    return `<button type="button" class="${cls}" data-date="${date}" data-who="${w}"><span class="wir-bubble-who">${who}</span><span class="wir-bubble-text">${escapeHtml(e.text)}</span></button>`;
+                    return `<button type="button" class="${cls}" data-date="${date}" data-who="${w}"><span class="wir-bubble-who">${who}${wir.likes.has(e.id) ? ` <span class="wir-bubble-heart" aria-label="mit Herz">${ic('heart')}</span>` : ''}</span><span class="wir-bubble-text">${escapeHtml(e.text)}</span></button>`;
                 }
                 if (e || q) return '';
                 return `<button type="button" class="${cls} is-missing" data-date="${date}" data-who="${w}"><span class="wir-bubble-who">${who}</span><span class="wir-bubble-text">Kein Eintrag an diesem Tag</span></button>`;

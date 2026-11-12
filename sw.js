@@ -1,10 +1,10 @@
-const CACHE_NAME = 'das-beste-des-tages-v24';
+const CACHE_NAME = 'das-beste-des-tages-v25';
 
 // Ohne diese beiden Dateien startet die App nicht. Sie liegen auf einem
 // fremden Server (jsDelivr), deshalb werden sie gleich bei der Installation
 // mitgesichert – sonst bleibt die App beim ersten Start ohne Netz leer.
 const EXTERNAL_ASSETS = [
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js',
   'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0'
 ];
 

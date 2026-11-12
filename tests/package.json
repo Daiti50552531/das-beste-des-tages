@@ -1,0 +1,11 @@
+{
+  "name": "das-beste-des-tages-tests",
+  "private": true,
+  "type": "module",
+  "description": "Browser-Tests mit Playwright gegen einen nachgebauten Supabase-Server im Browser",
+  "scripts": { "test": "node run.mjs" },
+  "devDependencies": {
+    "jszip": "3.10.1",
+    "xlsx": "0.18.5"
+  }
+}
